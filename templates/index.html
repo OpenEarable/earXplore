@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>earXplore - Earable Interaction Database</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@yaireo/ui-range@1.1.2/dist/ui-range.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Show only first five columns initially
+            $('table thead th:nth-child(n+6), table tbody td:nth-child(n+6)').hide();
+
+            // Populate column toggle menu
+            let columns = [];
+            $('table thead th').each(function (index) {
+                let colName = $(this).data('col').split('_').pop(); // Removes prefixes, keeping only the last part
+                columns.push(`<div class="form-check">
+                                <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${index < 5 ? 'checked' : ''}>
+                                <label class="form-check-label">${colName}</label>
+                              </div>`);
+            });
+            $('#columnToggles').html(columns.join(''));
+
+            // Toggle column visibility
+            $('.column-toggle').on('change', function () {
+                let colIndex = $(this).data('index');
+                let isChecked = $(this).is(':checked');
+                $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
+            });
+
+            // Filtering logic
+            $('.filter-group input[type=checkbox]').prop('checked', true);
+            $('.filter-group input[type=range]').each(function () {
+                $(this).val($(this).attr('max'));
+            });
+
+            let originalData = {{ data | tojson }}; // Store the full dataset
+            let filteredData = [...originalData]; // Clone for filtering
+
+            function applyFilters() {
+                $('tbody tr').each(function () {
+                    let row = $(this);
+                    let showRow = true;
+
+                    $('.filter-group').each(function () {
+                        // Determine the target column for this filter group
+                        let colName = $(this).data('col');
+                        let colIndex = $('table thead th[data-col="' + colName + '"]').index() + 1;
+
+                        // If there are checkboxes in this filter group:
+                        if ($(this).find('input[type=checkbox]').length > 0) {
+                            let checked = $(this).find('input[type=checkbox]:checked');
+                            // If no checkbox is selected, then hide the row.
+                            if (checked.length === 0) {
+                                showRow = false;
+                            } else {
+                                let values = checked.map(function () {
+                                    return $(this).val();
+                                }).get();
+                                // Get the text in the corresponding column cell.
+                                let cellText = row.find('td:nth-child(' + colIndex + ')').text().trim();
+                                // If the cell's text doesn't match one of the selected values, hide the row.
+                                if (values.indexOf(cellText) === -1) {
+                                    showRow = false;
+                                }
+                            }
+                        }
+
+                        // If there's a range filter in this group:
+                        if ($(this).find('.range-slider').length > 0) {
+                            let range = $(this).find('.range-slider');
+                            let minValue = parseInt(range.attr('data-min'));
+                            let maxValue = parseInt(range.attr('data-max'));
+                            // Get the number from the corresponding column cell.
+                            let cellValue = parseInt(row.find('td:nth-child(' + colIndex + ')').text());
+                            if (cellValue < minValue || cellValue > maxValue) {
+                                showRow = false;
+                            }
+                        }
+                    });
+                    row.toggle(showRow);
+                });
+            }
+
+
+            $('.filter-group input').on('change', applyFilters);
+        });
+
+        function sortTable(header) {
+            let table = header.closest("table");
+            let tbody = table.querySelector("tbody");
+            let colIndex = Array.from(header.parentElement.children).indexOf(header);
+            let rows = Array.from(tbody.querySelectorAll("tr"));
+            let ascending = header.dataset.order !== "asc"; // Toggle order
+            header.dataset.order = ascending ? "asc" : "desc";
+
+            // Detect if the column is numeric
+            let isNumeric = rows.every(row => !isNaN(parseFloat(row.cells[colIndex].innerText)));
+
+            rows.sort((rowA, rowB) => {
+                let cellA = rowA.cells[colIndex].innerText.trim();
+                let cellB = rowB.cells[colIndex].innerText.trim();
+
+                if (isNumeric) {
+                    return ascending ? cellA - cellB : cellB - cellA;
+                } else {
+                    return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+                }
+            });
+
+            // Append sorted rows back
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+    <style>
+        body {
+            padding: 0px !important;
+        }
+
+        .container-fluid {
+            display: flex;
+            height: 100vh;
+        }
+
+        .table-container {
+            flex: 2;
+            overflow: auto;
+        }
+
+        .sidebar {
+            flex: 0.8;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            padding: 15px;
+            max-height: 100vh;
+            overflow-y: scroll;
+        }
+
+        .panel {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            flex: 1;
+        }
+
+        .navbar-item {
+            padding: 20px;
+        }
+
+        .navbar-item:hover {
+            background-color: #B89491;
+            opacity: 0.6;
+            color: white;
+        }
+
+        .navbar-item-selected {
+            background-color: #B89491;
+            
+            font-weight: bold;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="container-fluid">
+    <div class="table-container p-3">
+        <div class="d-flex w-100 flex-row align-items-center justify-content-between mb-5">
+            <div class="d-flex flex-row">
+            <div class="d-flex flex-row align-items-center">
+                <img style="height: 40px" class="me-4"
+                    src="https://open-earable.teco.edu/assets/images/OE_Logo_black_RGB.png">
+                <div>
+                    <h3 class=""><b>earXplore</b></h3>
+                    Interaction
+                </div>
+            </div>
+            <div class="ms-5 d-flex flex-row align-items-center">
+                <div class="navbar-item navbar-item-selected" data-section="tableView">Tabular Overview</div>
+                <div class="navbar-item ms-1" data-section="chartView">Distribution Charts</div>
+                <div class="navbar-item ms-1" data-section="similarityView">Similarity Clusters</div>
+            </div>
+        </div>
+            <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
+        </div>
+    
+        <!-- Tabular Overview Section -->
+        <div id="tableView" class="content-section">
+            <div class="mb-5">
+                <div id="columnToggles" class="d-flex flex-wrap gap-2"></div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            {% for col in data[0].keys() %}
+                            <th data-col="{{ col }}" onclick="sortTable(this)">{{ col.split('_')[-1] }} ▲▼</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data %}
+                        <tr>
+                            {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    
+        <!-- Distribution Charts Section -->
+        <div id="chartView" class="content-section" style="display: none;">
+            {% include 'bar_charts.html' %}
+        </div>
+
+        <div id="similarityView" class="content-section" style="display: none;">
+            {% include 'similarity.html' %}
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const navbarItems = document.querySelectorAll(".navbar-item");
+            const sections = document.querySelectorAll(".content-section");
+    
+            navbarItems.forEach(item => {
+                item.addEventListener("click", function() {
+                    // Remove selected class from all items
+                    navbarItems.forEach(nav => nav.classList.remove("navbar-item-selected"));
+                    // Add selected class to clicked item
+                    this.classList.add("navbar-item-selected");
+    
+                    // Hide all sections
+                    sections.forEach(section => section.style.display = "none");
+                    // Show selected section
+                    const sectionId = this.getAttribute("data-section");
+                    document.getElementById(sectionId).style.display = "block";
+                });
+            });
+        });
+    </script>
+
+    <div class="sidebar">
+        {% set panels = {} %}
+        {% for col in data[0].keys() %}
+        {% set prefix = col.split('_')[0] if '_' in col else 'General Information' %}
+        {% if prefix not in panels %}
+        {% set _ = panels.update({prefix: []}) %}
+        {% endif %}
+        {% set _ = panels[prefix].append(col) %}
+        {% endfor %}
+
+        {% for panel, columns in panels.items() %}
+        <div class="panel">
+            <h3>{{ panel.replace('_PANEL', '') }}</h3>
+            <div class="filters">
+                {% for col in columns if col != 'Author' %}
+                {% if col == 'Year' or col == 'Interaction_PANEL_Number of Selected Gestures' %}
+                {% set min_value = data | map(attribute=col) | min %}
+                {% set max_value = data | map(attribute=col) | max %}
+                <div class="filter-group" data-col="{{ col }}">
+                    <strong>{{ col.split('_')[-1] }}</strong>
+                    {% if col in explanations %}
+                    <span title="{{ explanations[col] }}" class="ms-1">
+                        <i class="bi bi-question-circle-fill"></i>
+                    </span>
+                    {% endif %}
+                    <br>
+                    <input class="range-slider" type="range" name="{{ col }}" min="{{ min_value }}"
+                        max="{{ max_value }}" step="1" data-min="{{ min_value }}" data-max="{{ max_value }}">
+                </div>
+                {% else %}
+                {% set unique_values = data | map(attribute=col) | unique | list %}
+                <div class="filter-group mt-2" data-col="{{ col }}">
+                    <strong>{{ col.split('_')[-1] }}</strong>
+                    {% if col in explanations %}
+                    <span title="{{ explanations[col] }}" class="ms-1">
+                        <i class="bi bi-question-circle-fill"></i>
+                    </span>
+                    {% endif %}
+                    <br>
+                    <div class="d-flex flex-wrap flex-row">
+                        {% for value in unique_values %}
+                        <label class="me-3 d-flex align-items-center">
+                            <input class="me-1" type="checkbox" name="{{ col }}" value="{{ value }}"> {{ value }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+
+</html>
