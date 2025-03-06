@@ -3,7 +3,12 @@ import pandas as pd
 
 app = Flask(__name__)
 
+def custom_sort(values):
+    special_orders = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3}
+    sorted_values = sorted(values, key=lambda x: (special_orders.get(x, 0), x.lower()))
+    return sorted_values
 
+app.jinja_env.filters['custom_sort'] = custom_sort
 
 @app.route("/")
 def index():

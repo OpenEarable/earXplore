@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/ui-range@1.1.2/dist/ui-range.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
     <script>
         $(document).ready(function () {
             // Show only first five columns initially
@@ -30,6 +32,28 @@
                 let colIndex = $(this).data('index');
                 let isChecked = $(this).is(':checked');
                 $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
+            });
+
+            // Select All and Deselect All functionality
+            $('.select-all').on('click', function () {
+                let colName = $(this).data('col');
+                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', true).trigger('change');
+            });
+
+            $('.deselect-all').on('click', function () {
+                let colName = $(this).data('col');
+                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', false).trigger('change');
+            });
+
+            // New functionality for panel-wide select/deselect
+            $('.select-all-panel').on('click', function () {
+                let panelName = $(this).data('panel');
+                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', true).trigger('change');
+            });
+
+            $('.deselect-all-panel').on('click', function () {
+                let panelName = $(this).data('panel');
+                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', false).trigger('change');
             });
 
             // Filtering logic
@@ -261,6 +285,12 @@
         {% for panel, columns in panels.items() %}
         <div class="panel">
             <h3>{{ panel.replace('_PANEL', '') }}</h3>
+            {% if panel in ['Interaction', 'Implementation', 'Study'] %}
+            <div class="d-flex flex-row mt-2">
+                <button type="button" class="btn btn-sm btn-primary select-all-panel" data-panel="{{ panel }}">Select All</button>
+                <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2" data-panel="{{ panel }}">Deselect All</button>
+            </div>
+            {% endif %}
             <div class="filters">
                 {% for col in columns if col != 'Author' %}
                 {% if col == 'Year' or col == 'Interaction_PANEL_Number of Selected Gestures' %}
@@ -273,12 +303,19 @@
                         <i class="bi bi-question-circle-fill"></i>
                     </span>
                     {% endif %}
+                    {% if panel in ['General Information', 'Sensing', 'Applications'] %}
+                    <div class="d-flex flex-row mt-2">
+                        <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
+                        <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
+                    </div>
+                    {% endif %}
                     <br>
                     <input class="range-slider" type="range" name="{{ col }}" min="{{ min_value }}"
                         max="{{ max_value }}" step="1" data-min="{{ min_value }}" data-max="{{ max_value }}">
                 </div>
                 {% else %}
                 {% set unique_values = data | map(attribute=col) | unique | list %}
+                {% set sorted_values = unique_values | custom_sort %}
                 <div class="filter-group mt-2" data-col="{{ col }}">
                     <strong>{{ col.split('_')[-1] }}</strong>
                     {% if col in explanations %}
@@ -286,9 +323,14 @@
                         <i class="bi bi-question-circle-fill"></i>
                     </span>
                     {% endif %}
-                    <br>
+                    {% if panel in ['General Information', 'Sensing', 'Application'] %}
+                    <div class="d-flex flex-row mt-2">
+                        <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
+                        <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
+                    </div>
+                    {% endif %}
                     <div class="d-flex flex-wrap flex-row">
-                        {% for value in unique_values %}
+                        {% for value in sorted_values %}
                         <label class="me-3 d-flex align-items-center">
                             <input class="me-1" type="checkbox" name="{{ col }}" value="{{ value }}"> {{ value }}
                         </label>
