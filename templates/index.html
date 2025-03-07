@@ -96,8 +96,16 @@
                 $(this).val($(this).attr('max'));
             });
 
-            let originalData = {{ data | tojson }}; // Store the full dataset
-            let filteredData = [...originalData]; // Clone for filtering
+            // Exclusive Filtering state
+            let exclusiveFiltering = {};
+
+            // Toggle Exclusive Filtering
+            $('.exclusive-filter').on('click', function () {
+                let colName = $(this).data('col');
+                exclusiveFiltering[colName] = !exclusiveFiltering[colName];
+                $(this).text(`Exclusive Filtering (${exclusiveFiltering[colName] ? 'Activated' : 'Deactivated'})`);
+                applyFilters();
+            });
 
             function applyFilters() {
                 $('tbody tr').each(function () {
@@ -112,6 +120,7 @@
                         // If there are checkboxes in this filter group:
                         if ($(this).find('input[type=checkbox]').length > 0) {
                             let checked = $(this).find('input[type=checkbox]:checked');
+                            let unchecked = $(this).find('input[type=checkbox]:not(:checked)');
                             // If no checkbox is selected, then hide the row.
                             if (checked.length === 0) {
                                 showRow = false;
@@ -119,11 +128,24 @@
                                 let values = checked.map(function () {
                                     return $(this).val();
                                 }).get();
+                                let uncheckedValues = unchecked.map(function () {
+                                    return $(this).val();
+                                }).get();
                                 // Get the text in the corresponding column cell.
                                 let cellText = row.find('td:nth-child(' + colIndex + ')').text().trim();
-                                // If the cell's text doesn't match one of the selected values, hide the row.
-                                if (values.indexOf(cellText) === -1) {
-                                    showRow = false;
+                                // Split the cell text by commas and trim each value.
+                                let cellValues = cellText.split(',').map(value => value.trim());
+
+                                if (exclusiveFiltering[colName]) {
+                                    // Exclusive filtering: none of the deselected values must be present
+                                    if (uncheckedValues.some(value => cellValues.includes(value))) {
+                                        showRow = false;
+                                    }
+                                } else {
+                                    // Non-exclusive filtering: at least one selected value must be present
+                                    if (!cellValues.some(value => values.includes(value))) {
+                                        showRow = false;
+                                    }
                                 }
                             }
                         }
@@ -144,9 +166,8 @@
                 });
             }
 
-
             $('.filter-group input').on('change', applyFilters);
-        });
+            });
 
         function sortTable(header) {
             let table = header.closest("table");
@@ -367,7 +388,16 @@
                     </div>
                 </div>
                 {% else %}
-                {% set unique_values = data | map(attribute=col) | unique | list %}
+                {% set unique_values = [] %}
+                {% for row in data %}
+                {% set cell_values = row[col].split(',') %}
+                {% for value in cell_values %}
+                {% set trimmed_value = value.strip() %}
+                {% if trimmed_value not in unique_values %}
+                {% set _ = unique_values.append(trimmed_value) %}
+                {% endif %}
+                {% endfor %}
+                {% endfor %}
                 {% set sorted_values = unique_values | custom_sort %}
                 <div class="filter-group mt-2" data-col="{{ col }}">
                     <div class="d-flex justify-content-between align-items-center">
@@ -381,7 +411,10 @@
                         </div>
                         {% if panel in ['General Information', 'Sensing', 'Application'] and col != 'Sensing_PANEL_No Additional Sensing' %}
                         <div class="d-flex justify-content-end">
-                            <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
+                            {% if col == 'Sensing_PANEL_Sensors' %}
+                            <button type="button" class="btn btn-sm btn-warning exclusive-filter ms-2" data-col="{{ col }}">Exclusive Filtering (Deactivated)</button>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-primary select-all ms-2" data-col="{{ col }}">Select All</button>
                             <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
                         </div>
                         {% endif %}
