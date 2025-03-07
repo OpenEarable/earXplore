@@ -276,14 +276,12 @@
         }
 
         .navbar-item:hover {
-            background-color: #B89491;
-            opacity: 0.6;
+            background-color: rgba(184, 148, 145, 0.6); /* Use the same color with 60% opacity */
             color: white;
         }
 
         .navbar-item-selected {
             background-color: #B89491;
-            
             font-weight: bold;
             color: white;
         }
@@ -306,7 +304,6 @@
             color: inherit; /* Inherit text color */
             padding: 0; /* Remove padding */
             bottom: -5px; /* Adjust this value as needed to move the tooltip further down */
-
         }
 
         .centered-cell {
@@ -333,15 +330,50 @@
             border-radius: 5px;
         }
 
-        .modal-body .list-group {
-            padding-left: 0;
+        /* Style checkboxes to match the grey color of the modal close button */
+        input[type="checkbox"] {
+            accent-color: #6c757d; /* Bootstrap's secondary color */
         }
 
-        .modal-body .list-group-item strong {
-            display: inline-block;
-            width: 150px; /* Adjust width as needed */
-            color: #333;
+        /* Style sliders to match the color #B89491 */
+        .noUi-connect {
+            background: #B89491; /* Connected range color */
         }
+
+        /* Style the select all and deselect all buttons to match the grey color */
+        .btn-primary, .btn-secondary {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .btn-primary:hover, .btn-secondary:hover {
+            background-color: rgba(108, 117, 125, 0.6); /* Use the same color with 60% opacity */
+            border-color: rgba(108, 117, 125, 0.6); /* Use the same color with 60% opacity */
+        }
+
+        /* Style the exclusive filtering button to match the color #B89491 */
+        .btn-warning {
+            background-color: #B89491;
+            border-color: #B89491;
+            color: white; /* Change font color to white */
+        }
+
+        .btn-warning:hover {
+            background-color: rgba(184, 148, 145, 0.6); /* Use the same color with 60% opacity */
+            border-color: rgba(184, 148, 145, 0.6); /* Use the same color with 60% opacity */
+            color: white; /* Change font color to white */
+        }
+
+        .form-check-input:checked {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+
+        .form-check-input:hover {
+            background-color: rgba(108, 117, 125, 0.6); /* Use the same color with 60% opacity */
+            border-color: rgba(108, 117, 125, 0.6); /* Use the same color with 60% opacity */
+        }
+
     </style>
 </head>
 
@@ -369,7 +401,7 @@
         <!-- Tabular Overview Section -->
         <div id="tableView" class="content-section">
             <div class="mb-5">
-                <div id="columnToggles" class="d-flex flex-wrap gap-2"></div>
+                <div id="columnToggles" class="d-flex flex-wrap gap-2" type="checkbox"></div>
             </div>
             <div class="table-responsive">
                 <table class="table table-bordered">
