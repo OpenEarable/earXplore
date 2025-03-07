@@ -56,6 +56,40 @@
                 $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', false).trigger('change');
             });
 
+            // Initialize noUiSlider for range sliders
+            $('.range-slider').each(function () {
+                let slider = this;
+                let min = parseInt($(slider).data('min'));
+                let max = parseInt($(slider).data('max'));
+
+                noUiSlider.create(slider, {
+                    start: [min, max],
+                    connect: true,
+                    range: {
+                        'min': min,
+                        'max': max
+                    },
+                    tooltips: [true, true],
+                    format: {
+                        to: function (value) {
+                            return Math.round(value);
+                        },
+                        from: function (value) {
+                            return Number(value);
+                        }
+                    }
+                });
+
+                slider.noUiSlider.on('update', function (values, handle) {
+                    let minValue = Math.round(values[0]);
+                    let maxValue = Math.round(values[1]);
+                    $(slider).closest('.filter-group').find('.range-min').text(minValue);
+                    $(slider).closest('.filter-group').find('.range-max').text(maxValue);
+                });
+
+                slider.noUiSlider.on('change', applyFilters);
+            });
+
             // Filtering logic
             $('.filter-group input[type=checkbox]').prop('checked', true);
             $('.filter-group input[type=range]').each(function () {
@@ -96,9 +130,9 @@
 
                         // If there's a range filter in this group:
                         if ($(this).find('.range-slider').length > 0) {
-                            let range = $(this).find('.range-slider');
-                            let minValue = parseInt(range.attr('data-min'));
-                            let maxValue = parseInt(range.attr('data-max'));
+                            let range = $(this).find('.range-slider')[0].noUiSlider.get();
+                            let minValue = parseInt(range[0]);
+                            let maxValue = parseInt(range[1]);
                             // Get the number from the corresponding column cell.
                             let cellValue = parseInt(row.find('td:nth-child(' + colIndex + ')').text());
                             if (cellValue < minValue || cellValue > maxValue) {
@@ -188,6 +222,27 @@
             
             font-weight: bold;
             color: white;
+        }
+
+        .slider-container {
+            padding: 0 20px; /* Adjust the padding as needed */
+            margin-top: 5px; /* Add extra space underneath the slider */
+            margin-bottom: 25px; /* Add extra space underneath the slider */
+        }
+
+        .slider-container .noUi-tooltip {
+            bottom: -25px; /* Adjust this value as needed to move the tooltip further down */
+            padding: 0px 0px; /* Adjust the padding as needed */
+        }
+
+        .noUi-tooltip {
+            background: none; /* Remove background */
+            border: none; /* Remove border */
+            box-shadow: none; /* Remove box shadow */
+            color: inherit; /* Inherit text color */
+            padding: 0; /* Remove padding */
+            bottom: -5px; /* Adjust this value as needed to move the tooltip further down */
+
         }
     </style>
 </head>
@@ -303,15 +358,16 @@
                         <i class="bi bi-question-circle-fill"></i>
                     </span>
                     {% endif %}
-                    {% if panel in ['General Information', 'Sensing', 'Applications'] %}
+                    {% if panel in ['General Information', 'Sensing', 'Applications'] and col != 'Year' and col != 'No Additional Sensing' %}
                     <div class="d-flex flex-row mt-2">
                         <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
                         <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
                     </div>
                     {% endif %}
                     <br>
-                    <input class="range-slider" type="range" name="{{ col }}" min="{{ min_value }}"
-                        max="{{ max_value }}" step="1" data-min="{{ min_value }}" data-max="{{ max_value }}">
+                    <div class="slider-container">
+                        <div class="range-slider" data-col="{{ col }}" data-min="{{ min_value }}" data-max="{{ max_value }}"></div>
+                    </div>
                 </div>
                 {% else %}
                 {% set unique_values = data | map(attribute=col) | unique | list %}
