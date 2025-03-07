@@ -13,17 +13,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Show only first five columns initially
-            $('table thead th:nth-child(n+6), table tbody td:nth-child(n+6)').hide();
+            // Show only first six columns initially
+            $('table thead th:nth-child(n+7), table tbody td:nth-child(n+7)').hide();
 
             // Populate column toggle menu
             let columns = [];
             $('table thead th').each(function (index) {
-                let colName = $(this).data('col').split('_').pop(); // Removes prefixes, keeping only the last part
-                columns.push(`<div class="form-check">
-                                <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${index < 5 ? 'checked' : ''}>
-                                <label class="form-check-label">${colName}</label>
-                              </div>`);
+                if (index > 0) { // Skip the first column
+                    let colName = $(this).data('col').split('_').pop(); // Removes prefixes, keeping only the last part
+                    columns.push(`<div class="form-check">
+                                    <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${index < 6 ? 'checked' : ''}>
+                                    <label class="form-check-label">${colName}</label>
+                                </div>`);
+                }
             });
             $('#columnToggles').html(columns.join(''));
 
@@ -266,6 +268,14 @@
 
         }
 
+        .centered-cell {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .fixed-width {
+            width: 25px; /* Adjust the width as needed */
+        }
     </style>
 </head>
 
@@ -299,6 +309,7 @@
                 <table class="table table-bordered">
                     <thead class="table-light">
                         <tr>
+                            <th data-col="INFO" class="fixed-width"></th> <!-- New column header with fixed width and transparency -->
                             {% for col in data[0].keys() %}
                             <th data-col="{{ col }}" onclick="sortTable(this)">{{ col.split('_')[-1] }} ▲▼</th>
                             {% endfor %}
@@ -307,6 +318,7 @@
                     <tbody>
                         {% for row in data %}
                         <tr>
+                            <td class="centered-cell fixed-width"><i class="bi bi-info-circle" title="Info about this row"></i></td> <!-- New column with info icon, fixed width -->
                             {% for value in row.values() %}
                             <td>{{ value }}</td>
                             {% endfor %}

@@ -7,7 +7,6 @@ def generate_author_short_name():
 
 # Define dictionary-based options for each column
 mock_data_options = {
-    "Info": ["INFO"],
     "Author": lambda: f"{generate_author_short_name()} et al",
     "Year":  lambda: f"{2005 + random.randint(1, 20)}",
     "Location": ["Actuation", "Head", "Ear and Earable", "Mouth", "Face", "Eyes", "Brain", "Hand"],
