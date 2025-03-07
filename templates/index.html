@@ -11,6 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@yaireo/ui-range@1.1.2/dist/ui-range.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function () {
             // Show only first six columns initially
@@ -107,6 +108,46 @@
                 exclusiveFiltering[colName] = !exclusiveFiltering[colName];
                 $(this).text(`Exclusive Filtering (${exclusiveFiltering[colName] ? 'Activated' : 'Deactivated'})`);
                 applyFilters();
+            });
+
+            // Add event listener to info icons
+            $('table').on('click', '.bi-info-circle', function () {
+                let row = $(this).closest('tr');
+                let rowData = {};
+                row.find('td').each(function (index) {
+                    let colName = $('table thead th').eq(index).data('col');
+                    rowData[colName] = $(this).text().trim();
+                });
+
+                // Populate the modal with row data
+                let detailsHtml = '<nav>';
+                delete rowData.INFO; // Remove the INFO column
+
+                let colNames = Object.keys(rowData); // Skip the first column
+
+                // Add headings and details
+                detailsHtml += '<h5>General Information</h5>';
+                for (let i = 0; i < colNames.length; i++) {
+                    if (i === 5) {
+                        detailsHtml += '<h5>Sensors</h5>';
+                    } else if (i === 7) {
+                        detailsHtml += '<h5>Interaction</h5>';
+                    } else if (i === 15) {
+                        detailsHtml += '<h5>Implementation</h5>';
+                    } else if (i === 18) {
+                        detailsHtml += '<h5>Study</h5>';
+                    } else if (i === 27) {
+                        detailsHtml += '<h5>Applications</h5>';
+                    }
+                    let colName = colNames[i];
+                    let formattedColName = colName.split('_').pop(); // Format the column name
+                    detailsHtml += `<div><strong>${formattedColName}:</strong> ${rowData[colName]}</div>`;
+                }
+                detailsHtml += '</nav>';
+                $('#rowDetailsContainer').html(detailsHtml);
+
+                // Show the modal
+                $('#infoModal').modal('show');
             });
 
             function applyFilters() {
@@ -275,6 +316,31 @@
 
         .fixed-width {
             width: 25px; /* Adjust the width as needed */
+        }
+
+        .modal-body h5 {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #B89491;
+        }
+
+        .modal-body .list-group-item {
+            border: none;
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        .modal-body .list-group {
+            padding-left: 0;
+        }
+
+        .modal-body .list-group-item strong {
+            display: inline-block;
+            width: 150px; /* Adjust width as needed */
+            color: #333;
         }
     </style>
 </head>
@@ -445,6 +511,21 @@
         </div>
         {% endfor %}
     </div>
+<!-- Modal Structure -->
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="rowDetailsContainer">
+                    <!-- Row details will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 
 </html>
