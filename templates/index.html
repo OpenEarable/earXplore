@@ -227,7 +227,7 @@
         .slider-container {
             padding: 0 20px; /* Adjust the padding as needed */
             margin-top: 5px; /* Add extra space underneath the slider */
-            margin-bottom: 25px; /* Add extra space underneath the slider */
+            margin-bottom: 30px; /* Add extra space underneath the slider */
         }
 
         .slider-container .noUi-tooltip {
@@ -244,6 +244,7 @@
             bottom: -5px; /* Adjust this value as needed to move the tooltip further down */
 
         }
+
     </style>
 </head>
 
@@ -339,13 +340,15 @@
 
         {% for panel, columns in panels.items() %}
         <div class="panel">
-            <h3>{{ panel.replace('_PANEL', '') }}</h3>
-            {% if panel in ['Interaction', 'Implementation', 'Study'] %}
-            <div class="d-flex flex-row mt-2">
-                <button type="button" class="btn btn-sm btn-primary select-all-panel" data-panel="{{ panel }}">Select All</button>
-                <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2" data-panel="{{ panel }}">Deselect All</button>
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>{{ panel.replace('_PANEL', '') }}</h3>
+                {% if panel in ['Interaction', 'Implementation', 'Study'] %}
+                <div class="button-container">
+                    <button type="button" class="btn btn-sm btn-primary select-all-panel" data-panel="{{ panel }}">Select All</button>
+                    <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2" data-panel="{{ panel }}">Deselect All</button>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
             <div class="filters">
                 {% for col in columns if col != 'Author' %}
                 {% if col == 'Year' or col == 'Interaction_PANEL_Number of Selected Gestures' %}
@@ -358,12 +361,6 @@
                         <i class="bi bi-question-circle-fill"></i>
                     </span>
                     {% endif %}
-                    {% if panel in ['General Information', 'Sensing', 'Applications'] and col != 'Year' and col != 'No Additional Sensing' %}
-                    <div class="d-flex flex-row mt-2">
-                        <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
-                        <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
-                    </div>
-                    {% endif %}
                     <br>
                     <div class="slider-container">
                         <div class="range-slider" data-col="{{ col }}" data-min="{{ min_value }}" data-max="{{ max_value }}"></div>
@@ -373,18 +370,22 @@
                 {% set unique_values = data | map(attribute=col) | unique | list %}
                 {% set sorted_values = unique_values | custom_sort %}
                 <div class="filter-group mt-2" data-col="{{ col }}">
-                    <strong>{{ col.split('_')[-1] }}</strong>
-                    {% if col in explanations %}
-                    <span title="{{ explanations[col] }}" class="ms-1">
-                        <i class="bi bi-question-circle-fill"></i>
-                    </span>
-                    {% endif %}
-                    {% if panel in ['General Information', 'Sensing', 'Application'] %}
-                    <div class="d-flex flex-row mt-2">
-                        <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
-                        <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ col.split('_')[-1] }}</strong>
+                            {% if col in explanations %}
+                            <span title="{{ explanations[col] }}" class="ms-1">
+                                <i class="bi bi-question-circle-fill"></i>
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if panel in ['General Information', 'Sensing', 'Application'] and col != 'Sensing_PANEL_No Additional Sensing' %}
+                        <div class="d-flex justify-content-end">
+                            <button type="button" class="btn btn-sm btn-primary select-all" data-col="{{ col }}">Select All</button>
+                            <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
+                        </div>
+                        {% endif %}
                     </div>
-                    {% endif %}
                     <div class="d-flex flex-wrap flex-row">
                         {% for value in sorted_values %}
                         <label class="me-3 d-flex align-items-center">
