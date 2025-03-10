@@ -150,7 +150,11 @@
                 $('#infoModal').modal('show');
             });
 
+
+            let filteredData = [];
+
             function applyFilters() {
+                filteredData = [];
                 $('tbody tr').each(function () {
                     let row = $(this);
                     let showRow = true;
@@ -206,7 +210,17 @@
                         }
                     });
                     row.toggle(showRow);
+                    if (showRow) {
+                        const rowData = {};
+                        row.find('td').each(function (index) {
+                            const colName = $('table thead th').eq(index).data('col');
+                            rowData[colName] = $(this).text().trim();
+                        });
+                        filteredData.push(rowData);
+                    }
                 });
+
+                generateBarCharts(filteredData);
             }
 
             $('.filter-group input').on('change', applyFilters);

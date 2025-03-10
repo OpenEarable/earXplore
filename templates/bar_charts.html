@@ -46,13 +46,16 @@
 <div id="chartsContainer"></div>
 
 <script>
-    function generateBarCharts() {
+    function generateBarCharts(filteredData) {
         const columns = {{ data[0].keys() | list | tojson }};
-        const tableData = {{ data | tojson }};
+        const tableData = filteredData || {{ data | tojson }};
         const explanations = {{ explanations | tojson }}; // Explanation mapping
 
         const container = document.getElementById('chartsContainer');
         container.innerHTML = ""; // Clear previous charts
+
+        // Define a custom color palette
+        const colorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
 
         columns.forEach((col, colIndex) => {
             if (col === 'Author') return; // Skip Author column
@@ -93,7 +96,7 @@
                     datasets: [{
                         label: 'Number of Studies',
                         data: dataValues,
-                        backgroundColor: labels.map((_, index) => `hsl(${index * 45 % 360}, 70%, 60%)`),
+                        backgroundColor: labels.map((_, index) => colorPalette[index % colorPalette.length]),
                         barThickness: 30
                     }]
                 },
@@ -109,11 +112,23 @@
                                     return `${label}: ${tooltipItem.raw} studies (${studies})`;
                                 }
                             }
+                        },
+                        legend: {
+                            display: false // Hide the legend
                         }
                     },
                     scales: {
-                        x: { stacked: false, ticks: { autoSkip: false } },
-                        y: { stacked: false, beginAtZero: true }
+                        x: {
+    stacked: false,
+    ticks: {
+        autoSkip: false,
+        callback: function(value, index, values) {
+            const label = this.getLabelForValue(value);
+            return label.length > 15 ? label.substr(0, 15) + '...' : label;
+        }
+    }
+},
+                        y: { stacked: false, beginAtZero: true, ticks: {stepSize: 1}}
                     },
                     onClick: (evt, activeElements) => {
                         if (activeElements.length > 0) {
@@ -126,5 +141,5 @@
         });
     }
 
-    document.addEventListener("DOMContentLoaded", generateBarCharts);
+    document.addEventListener("DOMContentLoaded", () => generateBarCharts());
 </script>
