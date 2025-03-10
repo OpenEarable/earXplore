@@ -406,7 +406,8 @@
             <div class="ms-5 d-flex flex-row align-items-center">
                 <div class="navbar-item navbar-item-selected" data-section="tableView">Tabular Overview</div>
                 <div class="navbar-item ms-1" data-section="chartView">Distribution Charts</div>
-                <div class="navbar-item ms-1" data-section="similarityView">Similarity Clusters</div>
+                <div class="navbar-item ms-1" data-section="similarityView">Study Similarity</div>
+                <div class="navbar-item ms-1" data-section="timeView">Study Timeline</div>
             </div>
         </div>
             <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
@@ -448,6 +449,10 @@
 
         <div id="similarityView" class="content-section" style="display: none;">
             {% include 'similarity.html' %}
+        </div>
+
+        <div id="timeView" class="content-section" style="display: none;">
+            {% include 'time.html' %}
         </div>
     </div>
     

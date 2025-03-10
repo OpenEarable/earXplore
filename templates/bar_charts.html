@@ -88,6 +88,11 @@
             const labels = Object.keys(uniqueGroups);
             const dataValues = labels.map(label => uniqueGroups[label].length);
 
+            // Calculate dynamic bar thickness
+            const maxBarThickness = 30;
+            const minBarThickness = 5;
+            const barThickness = Math.max(minBarThickness, Math.min(maxBarThickness, 250 / labels.length));
+
             // Render Chart.js bar chart (Side-by-Side)
             new Chart(document.getElementById(`chart-${colIndex}`).getContext('2d'), {
                 type: 'bar',
@@ -97,7 +102,7 @@
                         label: 'Number of Studies',
                         data: dataValues,
                         backgroundColor: labels.map((_, index) => colorPalette[index % colorPalette.length]),
-                        barThickness: 30
+                        barThickness: barThickness
                     }]
                 },
                 options: {
@@ -119,16 +124,20 @@
                     },
                     scales: {
                         x: {
-    stacked: false,
-    ticks: {
-        autoSkip: false,
-        callback: function(value, index, values) {
-            const label = this.getLabelForValue(value);
-            return label.length > 15 ? label.substr(0, 15) + '...' : label;
-        }
-    }
-},
-                        y: { stacked: false, beginAtZero: true, ticks: {stepSize: 1}}
+                            stacked: false,
+                            ticks: {
+                                autoSkip: false,
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    return label.length > 15 ? label.substr(0, 15) + '...' : label;
+                                }
+                            }
+                        },
+                        y: { 
+                            stacked: false, 
+                            beginAtZero: true, 
+                            ticks: { stepSize: 1 }
+                        }
                     },
                     onClick: (evt, activeElements) => {
                         if (activeElements.length > 0) {
