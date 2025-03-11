@@ -9,7 +9,7 @@
     /* Grid layout for charts */
     #chartsContainer {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsive grid */
         gap: 20px;
         padding: 20px;
     }
@@ -88,7 +88,7 @@
         }
     }
         
-    function generateBarCharts(filteredData) {
+    function generateBarCharts(filteredData, selectedColumns) {
         const columns = {{ data[0].keys() | list | tojson }};
         const tableData = filteredData || {{ data | tojson }};
         const explanations = {{ explanations | tojson }}; // Explanation mapping
@@ -100,7 +100,7 @@
         const colorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
 
         columns.forEach((col, colIndex) => {
-            if (col === 'Author') return; // Skip Author column
+            if (col === 'Author' || !selectedColumns.includes(col.split('_').pop())) return; // Skip Author column and unselected columns
             
             const uniqueGroups = {};
             tableData.forEach(row => {

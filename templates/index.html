@@ -14,6 +14,19 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function () {
+
+            let filteredData = [];
+
+            // Initialize filteredData with the full dataset
+            $('tbody tr').each(function () {
+                const rowData = {};
+                $(this).find('td').each(function (index) {
+                    const colName = $('table thead th').eq(index).data('col');
+                    rowData[colName] = $(this).text().trim();
+                });
+                filteredData.push(rowData);
+            });
+            
             // Show only first six columns initially
             $('table thead th:nth-child(n+7), table tbody td:nth-child(n+7)').hide();
 
@@ -30,11 +43,19 @@
             });
             $('#columnToggles').html(columns.join(''));
 
-            // Toggle column visibility
+            // Toggle column visibility and regenerate bar charts
             $('.column-toggle').on('change', function () {
                 let colIndex = $(this).data('index');
                 let isChecked = $(this).is(':checked');
                 $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
+
+                // Get the checked columns
+                let selectedColumns = $('.column-toggle:checked').map(function () {
+                    return $(this).closest('.form-check').find('label').text();
+                }).get();
+
+                // Regenerate bar charts with the selected columns
+                generateBarCharts(filteredData, selectedColumns);
             });
 
             // Select All and Deselect All functionality
@@ -151,10 +172,9 @@
             });
 
 
-            let filteredData = [];
 
             function applyFilters() {
-                filteredData = [];
+                let filteredData = [];
                 $('tbody tr').each(function () {
                     let row = $(this);
                     let showRow = true;
@@ -220,7 +240,12 @@
                     }
                 });
 
-                generateBarCharts(filteredData);
+                // Get the checked columns
+                let selectedColumns = $('.column-toggle:checked').map(function () {
+                    return $(this).closest('.form-check').find('label').text();
+                }).get();
+
+                generateBarCharts(filteredData, selectedColumns);
             }
 
             $('.filter-group input').on('change', applyFilters);
@@ -412,12 +437,13 @@
         </div>
             <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
         </div>
+
+        <div class="mb-5">
+            <div id="columnToggles" class="d-flex flex-wrap gap-2" type="checkbox"></div>
+        </div>
     
         <!-- Tabular Overview Section -->
         <div id="tableView" class="content-section">
-            <div class="mb-5">
-                <div id="columnToggles" class="d-flex flex-wrap gap-2" type="checkbox"></div>
-            </div>
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead class="table-light">
