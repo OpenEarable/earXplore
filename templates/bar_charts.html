@@ -62,11 +62,14 @@
             
             const uniqueGroups = {};
             tableData.forEach(row => {
-                const value = row[col] || "Unknown";
-                if (!uniqueGroups[value]) {
-                    uniqueGroups[value] = [];
-                }
-                uniqueGroups[value].push(row);
+                const cellText = row[col] || "Unknown";
+                const cellValues = cellText.split(',').map(value => value.trim()); // Split the cell text by commas and trim each value
+                cellValues.forEach(value => {
+                    if (!uniqueGroups[value]) {
+                        uniqueGroups[value] = [];
+                    }
+                    uniqueGroups[value].push(row);
+                });
             });
 
             // Get explanation for this column (if available)
