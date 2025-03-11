@@ -65,6 +65,29 @@
 </div>
 
 <script>
+    const specialOrdersBarChart = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3};
+
+    function customSortBarChart(a, b) {
+        const orderA = specialOrdersBarChart[a];
+        const orderB = specialOrdersBarChart[b];
+
+        if (orderA !== undefined && orderB !== undefined) {
+            return orderA - orderB; // Both are special cases, sort by their order in the dictionary
+        } else if (orderA !== undefined) {
+            return -1; // a is a special case, it should come first
+        } else if (orderB !== undefined) {
+            return 1; // b is a special case, it should come first
+        } else {
+            const numA = parseFloat(a);
+            const numB = parseFloat(b);
+            if (!isNaN(numA) && !isNaN(numB)) {
+                return numA - numB; // Both are numbers, sort numerically
+            } else {
+                return a.localeCompare(b); // Default alphabetical sorting
+            }
+        }
+    }
+        
     function generateBarCharts(filteredData) {
         const columns = {{ data[0].keys() | list | tojson }};
         const tableData = filteredData || {{ data | tojson }};
@@ -108,6 +131,7 @@
 
             // Prepare data for the chart
             const labels = Object.keys(uniqueGroups);
+            labels.sort(customSortBarChart); // Use custom sort function
             const dataValues = labels.map(label => uniqueGroups[label].length);
 
             // Calculate dynamic bar thickness
@@ -164,7 +188,10 @@
                         if (activeElements.length > 0) {
                             const datasetIndex = activeElements[0].index;
                             const label = labels[datasetIndex];
-                            const studies = uniqueGroups[label].map(row => `${row["Author"]}., (${row["Year"]})`).join("<br>");
+                            const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + uniqueGroups[label]
+                            .sort((a, b) => a["Author"].localeCompare(b["Author"]))
+                                .map(row => `${row["Author"]}., (${row["Year"]})`)
+                                .join("<br>");
                             document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
                             const infoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
                             infoModal.show();
