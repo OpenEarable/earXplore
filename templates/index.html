@@ -15,17 +15,17 @@
     <script>
         $(document).ready(function () {
 
-            let filteredData = [];
-
-            // Initialize filteredData with the full dataset
-            $('tbody tr').each(function () {
-                const rowData = {};
-                $(this).find('td').each(function (index) {
-                    const colName = $('table thead th').eq(index).data('col');
-                    rowData[colName] = $(this).text().trim();
-                });
-                filteredData.push(rowData);
-            });
+            //let filteredData = [];
+//
+            //// Initialize filteredData with the full dataset
+            //$('tbody tr').each(function () {
+            //    const rowData = {};
+            //    $(this).find('td').each(function (index) {
+            //        const colName = $('table thead th').eq(index).data('col');
+            //        rowData[colName] = $(this).text().trim();
+            //    });
+            //    filteredData.push(rowData);
+            //});
             
             // Show only first six columns initially
             $('table thead th:nth-child(n+7), table tbody td:nth-child(n+7)').hide();
@@ -41,6 +41,7 @@
                                 </div>`);
                 }
             });
+
             $('#columnToggles').html(columns.join(''));
 
             // Toggle column visibility and regenerate bar charts
@@ -49,6 +50,16 @@
                 let isChecked = $(this).is(':checked');
                 $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
 
+                // Check if all columns are deselected
+                if ($('.column-toggle:checked').length === 0) {
+                    $('table').hide();
+                } else {
+                    $('table').show();
+                }
+
+                // Update filteredData and regenerate bar charts
+                applyFilters();
+
                 // Get the checked columns
                 let selectedColumns = $('.column-toggle:checked').map(function () {
                     return $(this).closest('.form-check').find('label').text();
@@ -56,6 +67,26 @@
 
                 // Regenerate bar charts with the selected columns
                 generateBarCharts(filteredData, selectedColumns);
+            });
+
+            // Select All columns
+            $('#selectAllColumns').on('click', function () {
+                $('.column-toggle').prop('checked', true).each(function () {
+                    let colIndex = $(this).data('index');
+                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
+                });
+                $('table').show(); // Show the table
+                applyFilters();
+            });
+
+            // Deselect All columns
+            $('#deselectAllColumns').on('click', function () {
+                $('.column-toggle').prop('checked', false).each(function () {
+                    let colIndex = $(this).data('index');
+                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
+                });
+                $('table').hide(); // Hide the table
+                applyFilters();
             });
 
             // Select All and Deselect All functionality
@@ -170,7 +201,6 @@
                 // Show the modal
                 $('#infoModal').modal('show');
             });
-
 
 
             function applyFilters() {
@@ -441,6 +471,11 @@
             </div>
         </div>
             <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
+        </div>
+
+        <div class="d-flex mb-2">
+            <button type="button" class="btn btn-sm btn-primary me-2 small-button" id="selectAllColumns">Select All</button>
+            <button type="button" class="btn btn-sm btn-secondary small-button" id="deselectAllColumns">Deselect All</button>
         </div>
 
         <div class="mb-5">
