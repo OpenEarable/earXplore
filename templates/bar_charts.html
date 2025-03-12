@@ -1,10 +1,6 @@
 <!-- Include Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Include Bootstrap CSS and JS for the modal -->
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
 <style>
     /* Grid layout for charts */
     #chartsContainer {
@@ -90,23 +86,38 @@
     }
         
     function generateBarCharts(filteredData, selectedColumns) {
+        // Initialize chart tracking as an object keyed by column name
+        if (!window.chartInstances) {
+            window.chartInstances = {};
+        }
+        
+        // Keep track of which columns are still active
+        const activeColumns = new Set();
+
         const columns = {{ data[0].keys() | list | tojson }};
         const tableData = filteredData || {{ data | tojson }};
         const explanations = {{ explanations | tojson }}; // Explanation mapping
 
         const container = document.getElementById('chartsContainer');
-        container.innerHTML = ""; // Clear previous charts
-
+        // Don't clear container - we'll update existing charts instead
+        
         // Define a custom color palette
         const colorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
 
         columns.forEach((col, colIndex) => {
-            if (col === 'Author' || !selectedColumns.includes(col.split('_').pop())) return; // Skip Author column and unselected columns
+            if (col === 'Author' || !selectedColumns.includes(col.split('_').pop())) {
+                // Skip this column
+                return;
+            }
             
+            // Mark this column as active
+            activeColumns.add(col);
+            
+            // Process data for this column
             const uniqueGroups = {};
             tableData.forEach(row => {
                 const cellText = row[col] || "Unknown";
-                const cellValues = cellText.split(',').map(value => value.trim()); // Split the cell text by commas and trim each value
+                const cellValues = cellText.split(',').map(value => value.trim());
                 cellValues.forEach(value => {
                     if (!uniqueGroups[value]) {
                         uniqueGroups[value] = [];
@@ -114,22 +125,7 @@
                     uniqueGroups[value].push(row);
                 });
             });
-
-            // Get explanation for this column (if available)
-            const explanation = explanations[col] || '';
-
-            // Create chart container
-            const chartContainer = document.createElement('div');
-            chartContainer.classList.add("chart-wrapper");
-            chartContainer.innerHTML = `
-                <h4 class="chart-title">
-                    ${col.split('_').pop()}
-                    ${explanation ? `<i class="bi bi-question-circle-fill" title="${explanation}"></i>` : ''}
-                </h4>
-                <canvas id="chart-${colIndex}"></canvas>
-            `;
-            container.appendChild(chartContainer);
-
+            
             // Prepare data for the chart
             const labels = Object.keys(uniqueGroups);
             labels.sort(customSortBarChart); // Use custom sort function
@@ -139,67 +135,126 @@
             const maxBarThickness = 30;
             const minBarThickness = 5;
             const barThickness = Math.max(minBarThickness, Math.min(maxBarThickness, 250 / labels.length));
+            
+            // Check if we already have a chart for this column
+            if (window.chartInstances[col]) {
+                // Update existing chart
+                const chart = window.chartInstances[col].chart;
+                
+                // Update chart data
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = dataValues;
+                chart.data.datasets[0].backgroundColor = labels.map((_, index) => 
+                    colorPalette[index % colorPalette.length]);
+                chart.data.datasets[0].barThickness = barThickness;
+                
+                // Store updated data for click handler
+                window.chartInstances[col].labels = labels;
+                window.chartInstances[col].uniqueGroups = uniqueGroups;
+                
+                // Apply changes
+                chart.update();
+            } else {
+                // Create new chart container with column-based ID
+                const chartId = `chart-${col.replace(/\s+/g, '-')}`;
+                const chartContainer = document.createElement('div');
+                chartContainer.id = `chart-container-${col.replace(/\s+/g, '-')}`;
+                chartContainer.classList.add("chart-wrapper");
+                
+                // Add explanation if available
+                const explanation = explanations[col] || '';
+                chartContainer.innerHTML = `
+                    <h4 class="chart-title">
+                        ${col.split('_').pop()}
+                        ${explanation ? `<i class="bi bi-question-circle-fill" title="${explanation}"></i>` : ''}
+                    </h4>
+                    <canvas id="${chartId}"></canvas>
+                `;
+                container.appendChild(chartContainer);
 
-            // Render Chart.js bar chart (Side-by-Side)
-            new Chart(document.getElementById(`chart-${colIndex}`).getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: labels,  // Labels for each unique group
-                    datasets: [{
-                        label: 'Number of Studies',
-                        data: dataValues,
-                        backgroundColor: labels.map((_, index) => colorPalette[index % colorPalette.length]),
-                        barThickness: barThickness
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        tooltip: {
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    const label = labels[tooltipItem.dataIndex];
-                                    return `${tooltipItem.raw} studies. Click for list!`;
+                // Create new chart
+                const chart = new Chart(document.getElementById(chartId).getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Number of Studies',
+                            data: dataValues,
+                            backgroundColor: labels.map((_, index) => colorPalette[index % colorPalette.length]),
+                            barThickness: barThickness
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                callbacks: {
+                                    label: function(tooltipItem) {
+                                        return `${tooltipItem.raw} studies. Click for list!`;
+                                    }
                                 }
+                            },
+                            legend: {
+                                display: false // Hide the legend
                             }
                         },
-                        legend: {
-                            display: false // Hide the legend
-                        }
-                    },
-                    scales: {
-                        x: {
-                            stacked: false,
-                            ticks: {
-                                autoSkip: false,
-                                callback: function(value, index, values) {
-                                    const label = this.getLabelForValue(value);
-                                    return label.length > 15 ? label.substr(0, 15) + '...' : label;
+                        scales: {
+                            x: {
+                                stacked: false,
+                                ticks: {
+                                    autoSkip: false,
+                                    callback: function(value, index, values) {
+                                        const label = this.getLabelForValue(value);
+                                        return label.length > 15 ? label.substr(0, 15) + '...' : label;
+                                    }
                                 }
+                            },
+                            y: { 
+                                stacked: false, 
+                                beginAtZero: true, 
+                                ticks: { stepSize: 1 }
                             }
                         },
-                        y: { 
-                            stacked: false, 
-                            beginAtZero: true, 
-                            ticks: { stepSize: 1 }
-                        }
-                    },
-                    onClick: (evt, activeElements) => {
-                        if (activeElements.length > 0) {
-                            const datasetIndex = activeElements[0].index;
-                            const label = labels[datasetIndex];
-                            const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + uniqueGroups[label]
-                            .sort((a, b) => a["Author"].localeCompare(b["Author"]))
-                                .map(row => `${row["Author"]}., (${row["Year"]})`)
-                                .join("<br>");
-                            document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
-                            const infoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
-                            infoModal.show();
+                        onClick: (evt, activeElements) => {
+                            if (activeElements.length > 0) {
+                                const datasetIndex = activeElements[0].index;
+                                const chartInfo = window.chartInstances[col];
+                                const label = chartInfo.labels[datasetIndex];
+                                const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + 
+                                    chartInfo.uniqueGroups[label]
+                                    .sort((a, b) => a["Author"].localeCompare(b["Author"]))
+                                    .map(row => `${row["Author"]}., (${row["Year"]})`)
+                                    .join("<br>");
+                                document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
+                                const infoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
+                                infoModal.show();
+                            }
                         }
                     }
+                });
+                
+                // Add the chart instance to our tracking object
+                window.chartInstances[col] = {
+                    chart: chart,
+                    labels: labels,
+                    uniqueGroups: uniqueGroups
+                };
+            }
+        });
+        
+        // Clean up charts for columns that are no longer active
+        Object.keys(window.chartInstances).forEach(col => {
+            if (!activeColumns.has(col)) {
+                // Remove this chart
+                window.chartInstances[col].chart.destroy();
+                const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+                const container = document.getElementById(containerId);
+                if (container) {
+                    container.remove();
                 }
-            });
+                delete window.chartInstances[col];
+            }
         });
     }
 </script>

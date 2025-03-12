@@ -288,6 +288,18 @@
 
             applyFilters(); // Apply filters on page load - Important - please keep!
             $('.filter-group input').on('change', applyFilters);
+
+                
+                $('#downloadFilteredCsv, #downloadFilteredCsvChart').on('click', function () {
+                    const filteredData = getFilteredData();
+                    downloadCsv(filteredData, 'filtered_data.csv');
+                });
+
+                $('#downloadFullCsv, #downloadFullCsvChart').on('click', function () {
+                    const fullData = getFullData();
+                    downloadCsv(fullData, 'full_data.csv');
+                });
+
             });
 
         function sortTable(header) {
@@ -372,18 +384,6 @@
             });
             return fullData;
         }
-
-        $(document).ready(function () {
-            $('#downloadFilteredCsv, #downloadFilteredCsvChart').on('click', function () {
-                const filteredData = getFilteredData();
-                downloadCsv(filteredData, 'filtered_data.csv');
-            });
-
-            $('#downloadFullCsv, #downloadFullCsvChart').on('click', function () {
-                const fullData = getFullData();
-                downloadCsv(fullData, 'full_data.csv');
-            });
-        });
     </script>
     <style>
         body {
