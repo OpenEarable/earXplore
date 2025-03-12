@@ -57,25 +57,25 @@
                 generateBarCharts(filteredData, selectedColumns);
             });
 
-                // Toggle Menu Select All columns
-    $('#toggleSelectAllColumns').on('click', function () {
-        $('.column-toggle').prop('checked', true).each(function () {
-            let colIndex = $(this).data('index');
-            $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
-        });
-        $('table').show(); // Show the table
-        applyFilters();
-    });
+            // Toggle Menu Select All columns
+            $('#toggleSelectAllColumns').on('click', function () {
+                $('.column-toggle').prop('checked', true).each(function () {
+                    let colIndex = $(this).data('index');
+                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
+                });
+                $('table').show(); // Show the table
+                applyFilters();
+            });
 
-    // Toggle Menu Deselect All columns
-    $('#toggleDeselectAllColumns').on('click', function () {
-        $('.column-toggle').prop('checked', false).each(function () {
-            let colIndex = $(this).data('index');
-            $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
-        });
-        $('table').hide(); // Hide the table
-        applyFilters();
-    });
+            // Toggle Menu Deselect All columns
+            $('#toggleDeselectAllColumns').on('click', function () {
+                $('.column-toggle').prop('checked', false).each(function () {
+                    let colIndex = $(this).data('index');
+                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
+                });
+                $('table').hide(); // Hide the table
+                applyFilters();
+            });
 
             // Select All and Deselect All functionality
             $('.select-all').on('click', function () {
@@ -527,7 +527,7 @@
                 <div class="navbar-item ms-1" data-section="timeView">Study Timeline</div>
             </div>
         </div>
-            <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
+            <div ><b><a style="text-decoration: none; color: #B89491">Add your study <br/> Report Mistake</b></a></div>
         </div>
 
         <!-- Toggle Menu Select/Deselect All Buttons -->
