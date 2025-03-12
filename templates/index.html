@@ -57,25 +57,25 @@
                 generateBarCharts(filteredData, selectedColumns);
             });
 
-            // Select All columns
-            $('#selectAllColumns').on('click', function () {
-                $('.column-toggle').prop('checked', true).each(function () {
-                    let colIndex = $(this).data('index');
-                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
-                });
-                $('table').show(); // Show the table
-                applyFilters();
-            });
+                // Toggle Menu Select All columns
+    $('#toggleSelectAllColumns').on('click', function () {
+        $('.column-toggle').prop('checked', true).each(function () {
+            let colIndex = $(this).data('index');
+            $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
+        });
+        $('table').show(); // Show the table
+        applyFilters();
+    });
 
-            // Deselect All columns
-            $('#deselectAllColumns').on('click', function () {
-                $('.column-toggle').prop('checked', false).each(function () {
-                    let colIndex = $(this).data('index');
-                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
-                });
-                $('table').hide(); // Hide the table
-                applyFilters();
-            });
+    // Toggle Menu Deselect All columns
+    $('#toggleDeselectAllColumns').on('click', function () {
+        $('.column-toggle').prop('checked', false).each(function () {
+            let colIndex = $(this).data('index');
+            $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
+        });
+        $('table').hide(); // Hide the table
+        applyFilters();
+    });
 
             // Select All and Deselect All functionality
             $('.select-all').on('click', function () {
@@ -530,9 +530,10 @@
             <div ><b><a style="text-decoration: none; color: #B89491" href="https://github.com/OpenEarable/earXplore">Add your study?</b> <i class="bi bi-github font-large"></i></a></div>
         </div>
 
+        <!-- Toggle Menu Select/Deselect All Buttons -->
         <div class="d-flex mb-2">
-            <button type="button" class="btn btn-sm btn-primary me-2 small-button" id="selectAllColumns">Select All</button>
-            <button type="button" class="btn btn-sm btn-secondary small-button" id="deselectAllColumns">Deselect All</button>
+            <button type="button" class="btn btn-sm btn-primary me-2 small-button" id="toggleSelectAllColumns">Select All</button>
+            <button type="button" class="btn btn-sm btn-secondary small-button" id="toggleDeselectAllColumns">Deselect All</button>
         </div>
 
         <div class="mb-5">
@@ -622,8 +623,8 @@
                 <h3>{{ panel.replace('_PANEL', '') }}</h3>
                 {% if panel in ['Interaction', 'Implementation', 'Study'] %}
                 <div class="button-container">
-                    <button type="button" class="btn btn-sm btn-primary select-all-panel small-button data-panel="{{ panel }}">Select All</button>
-                    <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2 small-button data-panel="{{ panel }}">Deselect All</button>
+                    <button type="button" class="btn btn-sm btn-primary select-all-panel small-button" data-panel="{{ panel }}">Select All</button>
+                    <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2 small-button" data-panel="{{ panel }}">Deselect All</button>
                 </div>
                 {% endif %}
             </div>
