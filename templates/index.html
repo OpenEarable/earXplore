@@ -287,9 +287,9 @@
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
+
             $('.filter-group input').on('change', applyFilters);
 
-                
                 $('#downloadFilteredCsv, #downloadFilteredCsvChart').on('click', function () {
                     const filteredData = getFilteredData();
                     downloadCsv(filteredData, 'filtered_data.csv');
@@ -584,6 +584,10 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                <div class="d-flex mb-2">
+                    <button type="button" class="btn btn-sm btn-warning me-2 small-button" id="downloadFilteredCsv">Download Selection as .csv</button>
+                    <button type="button" class="btn btn-sm btn-warning small-button" id="downloadFullCsv">Download Full Dataset as .csv</button>
+                </div>
             </div>
         </div>
     
@@ -598,11 +602,6 @@
 
         <div id="timeView" class="content-section" style="display: none;">
             {% include 'time.html' %}
-        </div>
-
-        <div class="d-flex mb-2">
-            <button type="button" class="btn btn-sm btn-warning me-2 small-button" id="downloadFilteredCsv">Download Selection as .csv</button>
-            <button type="button" class="btn btn-sm btn-warning small-button" id="downloadFullCsv">Download Full Dataset as .csv</button>
         </div>
     </div>
     
