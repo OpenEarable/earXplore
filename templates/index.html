@@ -309,11 +309,23 @@
         }
 
         function getFilteredData() {
-            const filteredData = [];
+            const selectedColumns = $('.column-toggle:checked').map(function () {
+                return $(this).data('index');
+            }).get();
+
+            const header = $('table thead th').map(function (index) {
+                if (selectedColumns.includes(index + 1)) {
+                    return $(this).text().trim().replace(' ▲▼', '');
+                }
+            }).get();
+
+            const filteredData = [header];
             $('tbody tr:visible').each(function () {
                 const row = [];
-                $(this).find('td').each(function () {
-                    row.push($(this).text().trim());
+                $(this).find('td').each(function (index) {
+                    if (selectedColumns.includes(index + 1)) {
+                        row.push($(this).text().trim());
+                    }
                 });
                 filteredData.push(row);
             });
@@ -321,11 +333,19 @@
         }
 
         function getFullData() {
-            const fullData = [];
+            const header = $('table thead th').map(function (index) {
+                if (index > 0) { // Skip the first column
+                    return $(this).text().trim().replace(' ▲▼', '');
+                }
+            }).get();
+
+            const fullData = [header];
             $('tbody tr').each(function () {
                 const row = [];
-                $(this).find('td').each(function () {
-                    row.push($(this).text().trim());
+                $(this).find('td').each(function (index) {
+                    if (index > 0) { // Skip the first column
+                        row.push($(this).text().trim());
+                    }
                 });
                 fullData.push(row);
             });
@@ -543,19 +563,11 @@
                     </tbody>
                 </table>
             </div>
-            <div class="d-flex mb-2">
-                <button type="button" class="btn btn-sm btn-warning me-2 small-button" id="downloadFilteredCsv">Download Selection as .csv</button>
-                <button type="button" class="btn btn-sm btn-warning small-button" id="downloadFullCsv">Download Full Dataset as .csv</button>
-            </div>
         </div>
     
         <!-- Distribution Charts Section -->
         <div id="chartView" class="content-section" style="display: none;">
             {% include 'bar_charts.html' %}
-            <div class="d-flex mb-2">
-                <button type="button" class="btn btn-sm btn-warning me-2 small-button" id="downloadFilteredCsvChart">Download Selection as .csv</button>
-                <button type="button" class="btn btn-sm btn-warning small-button" id="downloadFullCsvChart">Download Full Dataset as .csv</button>
-            </div>
         </div>
 
         <div id="similarityView" class="content-section" style="display: none;">
@@ -564,6 +576,11 @@
 
         <div id="timeView" class="content-section" style="display: none;">
             {% include 'time.html' %}
+        </div>
+
+        <div class="d-flex mb-2">
+            <button type="button" class="btn btn-sm btn-warning me-2 small-button" id="downloadFilteredCsv">Download Selection as .csv</button>
+            <button type="button" class="btn btn-sm btn-warning small-button" id="downloadFullCsv">Download Full Dataset as .csv</button>
         </div>
     </div>
     
