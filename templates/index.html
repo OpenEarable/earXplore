@@ -266,6 +266,7 @@
                 generateBarCharts(filteredData, selectedColumns);
             }
 
+            applyFilters(); // Apply filters on page load - Important - please keep!
             $('.filter-group input').on('change', applyFilters);
             });
 
