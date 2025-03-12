@@ -77,26 +77,46 @@
                 applyFilters();
             });
 
-            // Select All and Deselect All functionality
+            // Select All and Deselect All functionality for specific columns
             $('.select-all').on('click', function () {
                 let colName = $(this).data('col');
-                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', true).trigger('change');
+                $('.filter-group input').off('change');
+                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', true);
+                $('.filter-group input').on('change', applyFilters);
+                applyFilters();
             });
 
             $('.deselect-all').on('click', function () {
                 let colName = $(this).data('col');
-                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', false).trigger('change');
+                $('.filter-group input').off('change');
+                $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', false);
+                $('.filter-group input').on('change', applyFilters);
+                applyFilters();
             });
 
-            // New functionality for panel-wide select/deselect
+            // Modified panel-wide select/deselect
             $('.select-all-panel').on('click', function () {
                 let panelName = $(this).data('panel');
-                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', true).trigger('change');
+                // Temporarily remove the change event handler
+                $('.filter-group input').off('change');
+                // Change all checkboxes
+                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', true);
+                // Reattach the change event handler
+                $('.filter-group input').on('change', applyFilters);
+                // Apply filters just once
+                applyFilters();
             });
 
             $('.deselect-all-panel').on('click', function () {
                 let panelName = $(this).data('panel');
-                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', false).trigger('change');
+                // Temporarily remove the change event handler
+                $('.filter-group input').off('change');
+                // Change all checkboxes
+                $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', false);
+                // Reattach the change event handler
+                $('.filter-group input').on('change', applyFilters);
+                // Apply filters just once
+                applyFilters();
             });
 
             // Initialize noUiSlider for range sliders
