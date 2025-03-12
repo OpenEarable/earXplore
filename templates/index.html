@@ -413,6 +413,11 @@
             border-color: rgba(108, 117, 125, 0.6); /* Use the same color with 60% opacity */
         }
 
+        .small-button {
+            font-size: 0.75rem; /* Adjust the font size as needed */
+            padding: 0.1rem 0.2rem; /* Adjust the padding as needed */
+        }
+
     </style>
 </head>
 
@@ -520,8 +525,8 @@
                 <h3>{{ panel.replace('_PANEL', '') }}</h3>
                 {% if panel in ['Interaction', 'Implementation', 'Study'] %}
                 <div class="button-container">
-                    <button type="button" class="btn btn-sm btn-primary select-all-panel" data-panel="{{ panel }}">Select All</button>
-                    <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2" data-panel="{{ panel }}">Deselect All</button>
+                    <button type="button" class="btn btn-sm btn-primary select-all-panel small-button data-panel="{{ panel }}">Select All</button>
+                    <button type="button" class="btn btn-sm btn-secondary deselect-all-panel ms-2 small-button data-panel="{{ panel }}">Deselect All</button>
                 </div>
                 {% endif %}
             </div>
@@ -567,10 +572,10 @@
                         {% if panel in ['General Information', 'Sensing', 'Application'] and col != 'Sensing_PANEL_No Additional Sensing' %}
                         <div class="d-flex justify-content-end">
                             {% if col == 'Sensing_PANEL_Sensors' %}
-                            <button type="button" class="btn btn-sm btn-warning exclusive-filter ms-2" data-col="{{ col }}">Exclusive Filtering (Deactivated)</button>
+                            <button type="button" class="btn btn-sm btn-warning exclusive-filter ms-2 small-button" data-col="{{ col }}">Exclusive Filtering (Deactivated)</button>
                             {% endif %}
-                            <button type="button" class="btn btn-sm btn-primary select-all ms-2" data-col="{{ col }}">Select All</button>
-                            <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2" data-col="{{ col }}">Deselect All</button>
+                            <button type="button" class="btn btn-sm btn-primary select-all ms-2 small-button" data-col="{{ col }}">Select All</button>
+                            <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2 small-button" data-col="{{ col }}">Deselect All</button>
                         </div>
                         {% endif %}
                     </div>
