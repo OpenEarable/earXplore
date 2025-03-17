@@ -61,19 +61,37 @@
 </div>
 
 <script>
+    // Cache modal instance - avoids creating a new one for each click
+    let barChartInfoModal;
+    document.addEventListener('DOMContentLoaded', function() {
+        barChartInfoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
+    });
 
+    // Shared color palette - consider moving to a separate file
+    const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
+
+    // Special order for categorical values
     const specialOrdersBarChart = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3};
+
+    // Debounce function to limit frequent updates
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
 
     function customSortBarChart(a, b) {
         const orderA = specialOrdersBarChart[a];
         const orderB = specialOrdersBarChart[b];
 
         if (orderA !== undefined && orderB !== undefined) {
-            return orderA - orderB; // Both are special cases, sort by their order in the dictionary
+            return orderA - orderB; // Both are special cases, sort by their order
         } else if (orderA !== undefined) {
-            return -1; // a is a special case, it should come first
+            return -1; // a is a special case, it comes first
         } else if (orderB !== undefined) {
-            return 1; // b is a special case, it should come first
+            return 1; // b is a special case, it comes first
         } else {
             const numA = parseFloat(a);
             const numB = parseFloat(b);
@@ -84,40 +102,173 @@
             }
         }
     }
+    
+    // Create chart options centrally to avoid duplication
+    function createChartOptions(col) {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(tooltipItem) {
+                            return `${tooltipItem.raw} studies. Click for list!`;
+                        }
+                    }
+                },
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    stacked: false,
+                    ticks: {
+                        autoSkip: false,
+                        callback: function(value, index, values) {
+                            const label = this.getLabelForValue(value);
+                            return label.length > 15 ? label.substr(0, 15) + '...' : label;
+                        }
+                    }
+                },
+                y: { 
+                    stacked: false, 
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 }
+                }
+            },
+            onClick: (evt, activeElements) => {
+                if (activeElements.length > 0) {
+                    const datasetIndex = activeElements[0].index;
+                    const chartInfo = window.chartInstances[col];
+                    const label = chartInfo.labels[datasetIndex];
+                    const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + 
+                        chartInfo.uniqueGroups[label]
+                        .sort((a, b) => a["Author"].localeCompare(b["Author"]))
+                        .map(row => `${row["Author"]}., (${row["Year"]})`)
+                        .join("<br>");
+                    document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
+                    
+                    // Use cached modal instance
+                    barChartInfoModal.show();
+                }
+            }
+        };
+    }
+
+    // Create or update a chart - extracted logic for better organization
+    function updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness) {
+        const explanations = {{ explanations | tojson }};
+        const container = document.getElementById('chartsContainer');
+        const chartId = `chart-${col.replace(/\s+/g, '-')}`;
+        
+        if (window.chartInstances[col]) {
+            // Update existing chart
+            const chart = window.chartInstances[col].chart;
+            
+            // Update chart data - batch all updates before calling chart.update()
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = dataValues;
+            chart.data.datasets[0].backgroundColor = labels.map((_, index) => 
+                chartColorPalette[index % chartColorPalette.length]);
+            chart.data.datasets[0].barThickness = barThickness;
+            
+            // Store updated data for click handler
+            window.chartInstances[col].labels = labels;
+            window.chartInstances[col].uniqueGroups = uniqueGroups;
+            
+            // Apply changes once
+            chart.update();
+        } else {
+            // Create new chart container
+            const chartContainer = document.createElement('div');
+            chartContainer.id = `chart-container-${col.replace(/\s+/g, '-')}`;
+            chartContainer.classList.add("chart-wrapper");
+            
+            // Get explanation if available
+            const explanation = explanations[col] || '';
+            
+            // Use document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            // Create chart title
+            const heading = document.createElement('h4');
+            heading.className = 'chart-title';
+            heading.textContent = col.split('_').pop();
+            
+            if (explanation) {
+                const icon = document.createElement('i');
+                icon.className = 'bi bi-question-circle-fill';
+                icon.title = explanation;
+                heading.appendChild(icon);
+            }
+            
+            // Create canvas for chart
+            const canvas = document.createElement('canvas');
+            canvas.id = chartId;
+            
+            // Build the DOM structure with a single operation
+            fragment.appendChild(heading);
+            fragment.appendChild(canvas);
+            chartContainer.appendChild(fragment);
+            container.appendChild(chartContainer);
+
+            // Create the chart
+            const chart = new Chart(document.getElementById(chartId).getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Number of Studies',
+                        data: dataValues,
+                        backgroundColor: labels.map((_, index) => chartColorPalette[index % chartColorPalette.length]),
+                        barThickness: barThickness
+                    }]
+                },
+                options: createChartOptions(col)
+            });
+            
+            // Track the chart instance
+            window.chartInstances[col] = {
+                chart: chart,
+                labels: labels,
+                uniqueGroups: uniqueGroups
+            };
+        }
+    }
         
     function generateBarCharts(filteredData, selectedColumns) {
-        // Initialize chart tracking as an object keyed by column name
+        // Initialize chart tracking if needed
         if (!window.chartInstances) {
             window.chartInstances = {};
         }
         
-        // Keep track of which columns are still active
+        // Keep track of active columns
         const activeColumns = new Set();
-
+        
+        // Process which columns to display
+        const columnsToProcess = [];
         const columns = {{ data[0].keys() | list | tojson }};
         const tableData = filteredData || {{ data | tojson }};
-        const explanations = {{ explanations | tojson }}; // Explanation mapping
-
-        const container = document.getElementById('chartsContainer');
-        // Don't clear container - we'll update existing charts instead
         
-        // Define a custom color palette
-        const colorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
-
-        columns.forEach((col, colIndex) => {
-            if (col === 'Author' || !selectedColumns.includes(col.split('_').pop())) {
-                // Skip this column
-                return;
+        columns.forEach(col => {
+            if (col !== 'Author' && selectedColumns.includes(col.split('_').pop())) {
+                columnsToProcess.push(col);
+                activeColumns.add(col);
             }
-            
-            // Mark this column as active
-            activeColumns.add(col);
-            
-            // Process data for this column
+        });
+
+        // Process all data once and store in a map for reuse
+        const columnDataMap = {};
+        
+        columnsToProcess.forEach(col => {
+            // Process data for this column efficiently
             const uniqueGroups = {};
+            
             tableData.forEach(row => {
                 const cellText = row[col] || "Unknown";
                 const cellValues = cellText.split(',').map(value => value.trim());
+                
                 cellValues.forEach(value => {
                     if (!uniqueGroups[value]) {
                         uniqueGroups[value] = [];
@@ -128,133 +279,50 @@
             
             // Prepare data for the chart
             const labels = Object.keys(uniqueGroups);
-            labels.sort(customSortBarChart); // Use custom sort function
+            labels.sort(customSortBarChart);
             const dataValues = labels.map(label => uniqueGroups[label].length);
 
-            // Calculate dynamic bar thickness
+            // Calculate dynamic bar thickness once
             const maxBarThickness = 30;
             const minBarThickness = 5;
             const barThickness = Math.max(minBarThickness, Math.min(maxBarThickness, 250 / labels.length));
             
-            // Check if we already have a chart for this column
-            if (window.chartInstances[col]) {
-                // Update existing chart
-                const chart = window.chartInstances[col].chart;
-                
-                // Update chart data
-                chart.data.labels = labels;
-                chart.data.datasets[0].data = dataValues;
-                chart.data.datasets[0].backgroundColor = labels.map((_, index) => 
-                    colorPalette[index % colorPalette.length]);
-                chart.data.datasets[0].barThickness = barThickness;
-                
-                // Store updated data for click handler
-                window.chartInstances[col].labels = labels;
-                window.chartInstances[col].uniqueGroups = uniqueGroups;
-                
-                // Apply changes
-                chart.update();
-            } else {
-                // Create new chart container with column-based ID
-                const chartId = `chart-${col.replace(/\s+/g, '-')}`;
-                const chartContainer = document.createElement('div');
-                chartContainer.id = `chart-container-${col.replace(/\s+/g, '-')}`;
-                chartContainer.classList.add("chart-wrapper");
-                
-                // Add explanation if available
-                const explanation = explanations[col] || '';
-                chartContainer.innerHTML = `
-                    <h4 class="chart-title">
-                        ${col.split('_').pop()}
-                        ${explanation ? `<i class="bi bi-question-circle-fill" title="${explanation}"></i>` : ''}
-                    </h4>
-                    <canvas id="${chartId}"></canvas>
-                `;
-                container.appendChild(chartContainer);
-
-                // Create new chart
-                const chart = new Chart(document.getElementById(chartId).getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: labels,
-                        datasets: [{
-                            label: 'Number of Studies',
-                            data: dataValues,
-                            backgroundColor: labels.map((_, index) => colorPalette[index % colorPalette.length]),
-                            barThickness: barThickness
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            tooltip: {
-                                callbacks: {
-                                    label: function(tooltipItem) {
-                                        return `${tooltipItem.raw} studies. Click for list!`;
-                                    }
-                                }
-                            },
-                            legend: {
-                                display: false // Hide the legend
-                            }
-                        },
-                        scales: {
-                            x: {
-                                stacked: false,
-                                ticks: {
-                                    autoSkip: false,
-                                    callback: function(value, index, values) {
-                                        const label = this.getLabelForValue(value);
-                                        return label.length > 15 ? label.substr(0, 15) + '...' : label;
-                                    }
-                                }
-                            },
-                            y: { 
-                                stacked: false, 
-                                beginAtZero: true, 
-                                ticks: { stepSize: 1 }
-                            }
-                        },
-                        onClick: (evt, activeElements) => {
-                            if (activeElements.length > 0) {
-                                const datasetIndex = activeElements[0].index;
-                                const chartInfo = window.chartInstances[col];
-                                const label = chartInfo.labels[datasetIndex];
-                                const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + 
-                                    chartInfo.uniqueGroups[label]
-                                    .sort((a, b) => a["Author"].localeCompare(b["Author"]))
-                                    .map(row => `${row["Author"]}., (${row["Year"]})`)
-                                    .join("<br>");
-                                document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
-                                const infoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
-                                infoModal.show();
-                            }
-                        }
-                    }
-                });
-                
-                // Add the chart instance to our tracking object
-                window.chartInstances[col] = {
-                    chart: chart,
-                    labels: labels,
-                    uniqueGroups: uniqueGroups
-                };
-            }
+            // Store processed data
+            columnDataMap[col] = {
+                uniqueGroups,
+                labels,
+                dataValues,
+                barThickness
+            };
+        });
+        
+        // Create or update charts using the processed data
+        columnsToProcess.forEach(col => {
+            const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
+            updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
         });
         
         // Clean up charts for columns that are no longer active
-        Object.keys(window.chartInstances).forEach(col => {
+        Object.keys(window.chartInstances || {}).forEach(col => {
             if (!activeColumns.has(col)) {
-                // Remove this chart
-                window.chartInstances[col].chart.destroy();
-                const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
-                const container = document.getElementById(containerId);
-                if (container) {
-                    container.remove();
+                // Remove this chart and clean up
+                if (window.chartInstances[col] && window.chartInstances[col].chart) {
+                    window.chartInstances[col].chart.destroy();
+                    const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+                    const container = document.getElementById(containerId);
+                    if (container) {
+                        container.remove();
+                    }
+                    delete window.chartInstances[col];
                 }
-                delete window.chartInstances[col];
             }
         });
     }
+    
+    // Create a debounced version that can be used where rapid updates might occur
+    const debouncedGenerateBarCharts = debounce(generateBarCharts, 250);
+    
+    // Expose both regular and debounced versions
+    window.generateBarCharts = generateBarCharts;
+    window.debouncedGenerateBarCharts = debouncedGenerateBarCharts;
 </script>

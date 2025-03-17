@@ -14,6 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function () {
+
+            let isUpdatingCheckboxes = false;
             
             // Show only first six columns initially
             $('table thead th:nth-child(n+7), table tbody td:nth-child(n+7)').hide();
@@ -32,90 +34,101 @@
 
             $('#columnToggles').html(columns.join(''));
 
-            // Toggle column visibility and regenerate bar charts
-            $('.column-toggle').on('change', function () {
-                let colIndex = $(this).data('index');
-                let isChecked = $(this).is(':checked');
-                $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
+        // Find the column toggle change event handler (around line 42)
+        $('.column-toggle').on('change', function () {
+            let colIndex = $(this).data('index');
+            let isChecked = $(this).is(':checked');
+            $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).toggle(isChecked);
 
-                // Check if all columns are deselected
-                if ($('.column-toggle:checked').length === 0) {
-                    $('table').hide();
-                } else {
-                    $('table').show();
-                }
+            // Cache the checked columns selection
+            const $checkedColumns = $('.column-toggle:checked');
+            
+            // Check if all columns are deselected
+            if ($checkedColumns.length === 0) {
+                $('table').hide();
+            } else {
+                $('table').show();
+            }
 
-                // Update filteredData and regenerate bar charts
-                applyFilters();
+            // Update filteredData and regenerate bar charts
+            applyFilters();
 
-                // Get the checked columns
-                let selectedColumns = $('.column-toggle:checked').map(function () {
-                    return $(this).closest('.form-check').find('label').text();
-                }).get();
+            // Use the cached selection instead of querying again
+            let selectedColumns = $checkedColumns.map(function () {
+                return $(this).closest('.form-check').find('label').text();
+            }).get();
 
-                // Regenerate bar charts with the selected columns
-                // generateBarCharts(filteredData, selectedColumns);
-            });
+        });
 
             // Toggle Menu Select All columns
             $('#toggleSelectAllColumns').on('click', function () {
-                $('.column-toggle').prop('checked', true).each(function () {
-                    let colIndex = $(this).data('index');
-                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).show();
+                const $columnToggles = $('.column-toggle');
+                $columnToggles.prop('checked', true);
+                
+                // Batch DOM updates
+                const columns = [];
+                $columnToggles.each(function () {
+                    columns.push($(this).data('index'));
                 });
-                $('table').show(); // Show the table
+                
+                // Single DOM update for all columns
+                const selectors = columns.map(idx => `table thead th:nth-child(${idx}), table tbody td:nth-child(${idx})`).join(', ');
+                $(selectors).show();
+                
+                $('table').show();
                 applyFilters();
             });
 
             // Toggle Menu Deselect All columns
             $('#toggleDeselectAllColumns').on('click', function () {
-                $('.column-toggle').prop('checked', false).each(function () {
-                    let colIndex = $(this).data('index');
-                    $(`table thead th:nth-child(${colIndex}), table tbody td:nth-child(${colIndex})`).hide();
+                const $columnToggles = $('.column-toggle');
+                $columnToggles.prop('checked', false);
+                
+                // Batch DOM updates
+                const columns = [];
+                $columnToggles.each(function () {
+                    columns.push($(this).data('index'));
                 });
-                $('table').hide(); // Hide the table
+                
+                // Single DOM update for all columns
+                const selectors = columns.map(idx => `table thead th:nth-child(${idx}), table tbody td:nth-child(${idx})`).join(', ');
+                $(selectors).hide();
+                
+                $('table').hide();
                 applyFilters();
             });
 
-            // Select All and Deselect All functionality for specific columns
+            // Select All functionality for specific columns
             $('.select-all').on('click', function () {
                 let colName = $(this).data('col');
-                $('.filter-group input').off('change');
+                isUpdatingCheckboxes = true;
                 $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', true);
-                $('.filter-group input').on('change', applyFilters);
+                isUpdatingCheckboxes = false;
                 applyFilters();
             });
 
             $('.deselect-all').on('click', function () {
                 let colName = $(this).data('col');
-                $('.filter-group input').off('change');
+                isUpdatingCheckboxes = true;
                 $(`.filter-group[data-col="${colName}"] input[type=checkbox]`).prop('checked', false);
-                $('.filter-group input').on('change', applyFilters);
+                isUpdatingCheckboxes = false;
                 applyFilters();
             });
 
             // Modified panel-wide select/deselect
             $('.select-all-panel').on('click', function () {
                 let panelName = $(this).data('panel');
-                // Temporarily remove the change event handler
-                $('.filter-group input').off('change');
-                // Change all checkboxes
+                isUpdatingCheckboxes = true;
                 $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', true);
-                // Reattach the change event handler
-                $('.filter-group input').on('change', applyFilters);
-                // Apply filters just once
+                isUpdatingCheckboxes = false;
                 applyFilters();
             });
 
             $('.deselect-all-panel').on('click', function () {
                 let panelName = $(this).data('panel');
-                // Temporarily remove the change event handler
-                $('.filter-group input').off('change');
-                // Change all checkboxes
+                isUpdatingCheckboxes = true; 
                 $(`.panel:has(h3:contains("${panelName}")) .filter-group input[type=checkbox]`).prop('checked', false);
-                // Reattach the change event handler
-                $('.filter-group input').on('change', applyFilters);
-                // Apply filters just once
+                isUpdatingCheckboxes = false;
                 applyFilters();
             });
 
@@ -179,32 +192,51 @@
                     rowData[colName] = $(this).text().trim();
                 });
 
-                // Populate the modal with row data
-                let detailsHtml = '<nav>';
                 delete rowData.INFO; // Remove the INFO column
-
-                let colNames = Object.keys(rowData); // Skip the first column
-
-                // Add headings and details
-                detailsHtml += '<h5>General Information</h5>';
-                for (let i = 0; i < colNames.length; i++) {
-                    if (i === 5) {
-                        detailsHtml += '<h5>Sensors</h5>';
-                    } else if (i === 7) {
-                        detailsHtml += '<h5>Interaction</h5>';
-                    } else if (i === 15) {
-                        detailsHtml += '<h5>Implementation</h5>';
-                    } else if (i === 18) {
-                        detailsHtml += '<h5>Study</h5>';
-                    } else if (i === 27) {
-                        detailsHtml += '<h5>Applications</h5>';
-                    }
-                    let colName = colNames[i];
-                    let formattedColName = colName.split('_').pop(); // Format the column name
-                    detailsHtml += `<div><strong>${formattedColName}:</strong> ${rowData[colName]}</div>`;
+                
+                // Use document fragment for efficient DOM manipulation
+                const fragment = document.createDocumentFragment();
+                const nav = document.createElement('nav');
+                
+                // Add headings and sections
+                let currentSection = 'General Information';
+                const addSectionHeading = (title) => {
+                    const heading = document.createElement('h5');
+                    heading.textContent = title;
+                    nav.appendChild(heading);
+                    currentSection = title;
+                };
+                
+                // Add initial heading
+                addSectionHeading('General Information');
+                
+                // Process all columns
+                let colIndex = 0;
+                for (const colName in rowData) {
+                    // Add section headings at appropriate positions
+                    if (colIndex === 5) addSectionHeading('Sensors');
+                    else if (colIndex === 7) addSectionHeading('Interaction');
+                    else if (colIndex === 15) addSectionHeading('Implementation');
+                    else if (colIndex === 18) addSectionHeading('Study');
+                    else if (colIndex === 27) addSectionHeading('Applications');
+                    
+                    // Create the row element
+                    const rowDiv = document.createElement('div');
+                    const strong = document.createElement('strong');
+                    strong.textContent = colName.split('_').pop() + ': ';
+                    rowDiv.appendChild(strong);
+                    rowDiv.appendChild(document.createTextNode(rowData[colName]));
+                    
+                    nav.appendChild(rowDiv);
+                    colIndex++;
                 }
-                detailsHtml += '</nav>';
-                $('#rowDetailsContainer').html(detailsHtml);
+                
+                fragment.appendChild(nav);
+                
+                // Single DOM update
+                const container = document.getElementById('rowDetailsContainer');
+                container.innerHTML = '';
+                container.appendChild(fragment);
 
                 // Show the modal
                 $('#infoModal').modal('show');
@@ -213,82 +245,141 @@
 
             function applyFilters() {
                 let filteredData = [];
-                $('tbody tr').each(function () {
-                    let row = $(this);
+
+                // Cache all column indices at the beginning
+                const columnIndices = {};
+                $('table thead th').each(function() {
+                    const colName = $(this).data('col');
+                    if (colName) {
+                        columnIndices[colName] = $(this).index() + 1;
+                    }
+                });
+                
+                // Pre-compute filter states for all filter groups
+                const filterStates = {};
+                $('.filter-group').each(function() {
+                    const $filterGroup = $(this);
+                    const colName = $filterGroup.data('col');
+                    
+                    // Cache checkbox states
+                    const $checkboxes = $filterGroup.find('input[type=checkbox]');
+                    if ($checkboxes.length > 0) {
+                        const checked = $checkboxes.filter(':checked');
+                        const unchecked = $checkboxes.not(':checked');
+                        
+                        filterStates[colName] = {
+                            hasCheckboxes: true,
+                            hasCheckedBoxes: checked.length > 0,
+                            values: checked.length > 0 ? checked.map(function() { return $(this).val(); }).get() : [],
+                            uncheckedValues: unchecked.map(function() { return $(this).val(); }).get(),
+                            isExclusive: exclusiveFiltering[colName] || false
+                        };
+                    }
+                    
+                    // Cache range filter states
+                    const $rangeSlider = $filterGroup.find('.range-slider');
+                    if ($rangeSlider.length > 0) {
+                        const range = $rangeSlider[0].noUiSlider.get();
+                        filterStates[colName] = {
+                            hasRangeSlider: true,
+                            minValue: parseInt(range[0]),
+                            maxValue: parseInt(range[1])
+                        };
+                    }
+                });
+                
+                // Cache DOM selections
+                const $rows = $('tbody tr');
+                const $tableHeaders = $('table thead th');
+                const visibleRows = []; // Track rows to show
+                
+                // Process each row
+                $rows.each(function() {
+                    const row = $(this);
                     let showRow = true;
-
-                    $('.filter-group').each(function () {
-                        // Determine the target column for this filter group
-                        let colName = $(this).data('col');
-                        let colIndex = $('table thead th[data-col="' + colName + '"]').index() + 1;
-
-                        // If there are checkboxes in this filter group:
-                        if ($(this).find('input[type=checkbox]').length > 0) {
-                            let checked = $(this).find('input[type=checkbox]:checked');
-                            let unchecked = $(this).find('input[type=checkbox]:not(:checked)');
-                            // If no checkbox is selected, then hide the row.
-                            if (checked.length === 0) {
+                    
+                    // Cache cell values for this row
+                    const cellValues = {};
+                    
+                    // Process each filter group
+                    for (const colName in filterStates) {
+                        if (!showRow) break; // Early termination if row is already hidden
+                        
+                        const colIndex = columnIndices[colName];
+                        const filterState = filterStates[colName];
+                        
+                        // Process checkbox filters
+                        if (filterState.hasCheckboxes) {
+                            if (!filterState.hasCheckedBoxes) {
                                 showRow = false;
+                                continue;
+                            }
+                            
+                            // Get cell text only when needed
+                            if (!cellValues[colIndex]) {
+                                cellValues[colIndex] = row.find(`td:nth-child(${colIndex})`).text().trim()
+                                                        .split(',').map(value => value.trim());
+                            }
+                            
+                            if (filterState.isExclusive) {
+                                if (filterState.uncheckedValues.some(value => cellValues[colIndex].includes(value))) {
+                                    showRow = false;
+                                }
                             } else {
-                                let values = checked.map(function () {
-                                    return $(this).val();
-                                }).get();
-                                let uncheckedValues = unchecked.map(function () {
-                                    return $(this).val();
-                                }).get();
-                                // Get the text in the corresponding column cell.
-                                let cellText = row.find('td:nth-child(' + colIndex + ')').text().trim();
-                                // Split the cell text by commas and trim each value.
-                                let cellValues = cellText.split(',').map(value => value.trim());
-
-                                if (exclusiveFiltering[colName]) {
-                                    // Exclusive filtering: none of the deselected values must be present
-                                    if (uncheckedValues.some(value => cellValues.includes(value))) {
-                                        showRow = false;
-                                    }
-                                } else {
-                                    // Non-exclusive filtering: at least one selected value must be present
-                                    if (!cellValues.some(value => values.includes(value))) {
-                                        showRow = false;
-                                    }
+                                if (!cellValues[colIndex].some(value => filterState.values.includes(value))) {
+                                    showRow = false;
                                 }
                             }
                         }
-
-                        // If there's a range filter in this group:
-                        if ($(this).find('.range-slider').length > 0) {
-                            let range = $(this).find('.range-slider')[0].noUiSlider.get();
-                            let minValue = parseInt(range[0]);
-                            let maxValue = parseInt(range[1]);
-                            // Get the number from the corresponding column cell.
-                            let cellValue = parseInt(row.find('td:nth-child(' + colIndex + ')').text());
-                            if (cellValue < minValue || cellValue > maxValue) {
+                        
+                        // Process range filters
+                        if (filterState.hasRangeSlider && showRow) {
+                            // Get cell value only when needed
+                            if (!cellValues[colIndex + '_raw']) {
+                                cellValues[colIndex + '_raw'] = parseInt(row.find(`td:nth-child(${colIndex})`).text());
+                            }
+                            
+                            if (cellValues[colIndex + '_raw'] < filterState.minValue || 
+                                cellValues[colIndex + '_raw'] > filterState.maxValue) {
                                 showRow = false;
                             }
                         }
-                    });
-                    row.toggle(showRow);
+                    }
+                    
+                    // Collect rows to show/hide
                     if (showRow) {
+                        // Create a fresh object for row data
                         const rowData = {};
-                        row.find('td').each(function (index) {
-                            const colName = $('table thead th').eq(index).data('col');
-                            rowData[colName] = $(this).text().trim();
+                        row.find('td').each(function(index) {
+                            const colName = $tableHeaders.eq(index).data('col');
+                            if (colName) { // Add check to handle potential undefined values
+                                rowData[colName] = $(this).text().trim();
+                            }
                         });
                         filteredData.push(rowData);
                     }
+                    
+                    // Toggle visibility
+                    row.toggle(showRow);
                 });
-
-                // Get the checked columns
-                let selectedColumns = $('.column-toggle:checked').map(function () {
+                
+                // Cache the checked columns selection
+                const $checkedColumns = $('.column-toggle:checked');
+                const selectedColumns = $checkedColumns.map(function() {
                     return $(this).closest('.form-check').find('label').text();
                 }).get();
 
+                // Generate bar charts with the filtered data
                 generateBarCharts(filteredData, selectedColumns);
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
 
-            $('.filter-group input').on('change', applyFilters);
+            $('.filter-group input').on('change', function() {
+                if (!isUpdatingCheckboxes) {
+                    applyFilters();
+                }
+            });
 
                 $('#downloadFilteredCsv, #downloadFilteredCsvChart').on('click', function () {
                     const filteredData = getFilteredData();
@@ -303,29 +394,38 @@
             });
 
         function sortTable(header) {
-            let table = header.closest("table");
-            let tbody = table.querySelector("tbody");
-            let colIndex = Array.from(header.parentElement.children).indexOf(header);
-            let rows = Array.from(tbody.querySelectorAll("tr"));
-            let ascending = header.dataset.order !== "asc"; // Toggle order
+            const table = header.closest("table");
+            const tbody = table.querySelector("tbody");
+            
+            // Cache header position calculation
+            const colIndex = Array.prototype.indexOf.call(header.parentElement.children, header);
+            
+            // Toggle order
+            const ascending = header.dataset.order !== "asc";
             header.dataset.order = ascending ? "asc" : "desc";
 
-            // Detect if the column is numeric
-            let isNumeric = rows.every(row => !isNaN(parseFloat(row.cells[colIndex].innerText)));
-
+            // Use document fragment for efficient DOM manipulation
+            const fragment = document.createDocumentFragment();
+            const rows = Array.from(tbody.querySelectorAll("tr"));
+            
+            // Detect if the column is numeric (one-time check outside the sort function)
+            const isNumeric = rows.every(row => !isNaN(parseFloat(row.cells[colIndex].innerText)));
+            
+            // Sort all rows at once
             rows.sort((rowA, rowB) => {
-                let cellA = rowA.cells[colIndex].innerText.trim();
-                let cellB = rowB.cells[colIndex].innerText.trim();
-
+                const cellA = rowA.cells[colIndex].innerText.trim();
+                const cellB = rowB.cells[colIndex].innerText.trim();
+                
                 if (isNumeric) {
-                    return ascending ? cellA - cellB : cellB - cellA;
+                    return ascending ? Number(cellA) - Number(cellB) : Number(cellB) - Number(cellA);
                 } else {
                     return ascending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
                 }
             });
-
-            // Append sorted rows back
-            rows.forEach(row => tbody.appendChild(row));
+            
+            // Append all rows to fragment first, then to DOM in a single operation
+            rows.forEach(row => fragment.appendChild(row));
+            tbody.appendChild(fragment);
         }
 
         function downloadCsv(data, filename) {
@@ -342,18 +442,22 @@
         }
 
         function getFilteredData() {
-            const selectedColumns = $('.column-toggle:checked').map(function () {
+            // Cache DOM selections
+            const $checkedColumns = $('.column-toggle:checked');
+            const selectedColumns = $checkedColumns.map(function () {
                 return $(this).data('index');
             }).get();
 
-            const header = $('table thead th').map(function (index) {
+            const $tableHeaders = $('table thead th');
+            const header = $tableHeaders.map(function (index) {
                 if (selectedColumns.includes(index + 1)) {
                     return $(this).text().trim().replace(' ▲▼', '');
                 }
             }).get();
 
             const filteredData = [header];
-            $('tbody tr:visible').each(function () {
+            const $visibleRows = $('tbody tr:visible');
+            $visibleRows.each(function () {
                 const row = [];
                 $(this).find('td').each(function (index) {
                     if (selectedColumns.includes(index + 1)) {
