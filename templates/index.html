@@ -745,6 +745,7 @@
         <div class="panel">
             <div class="d-flex justify-content-between align-items-center">
                 <h3>{{ panel.replace('_PANEL', '') }}</h3>
+                
                 {% if panel in ['Interaction', 'Implementation', 'Study'] %}
                 <div class="button-container">
                     <button type="button" class="btn btn-sm btn-primary select-all-panel small-button" data-panel="{{ panel }}">Select All</button>
@@ -752,6 +753,7 @@
                 </div>
                 {% endif %}
             </div>
+            <hr/>
             <div class="filters">
                 {% for col in columns if col != 'Author' %}
                 {% if col == 'Year' or col == 'Interaction_PANEL_Number of Selected Gestures' %}
