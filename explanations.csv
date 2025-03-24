@@ -32,7 +32,7 @@
 "Device_PANEL_Real-Time Processing","The system is demonstrated to be able to immediately detect and respond to a user’s performed interaction."
 "Device_PANEL_On-Device Processing","Excluding any initial training phase, interaction detection is processed entirely on the earable itself, without reliance on external devices. Only processing performed directly on the device attached in, on, or the immediate vicinity of the ear qualifies as on-device. This excludes connected external microcomputers or linked devices such as smartphones." 
 "Applications_PANEL_Intended Applications","The applications the authors explicitly suggest for their proposed interaction with earables."
-"Keywords_PANEL_Keywords","The keywords selected by the authors."
+"Keywords","The keywords selected by the authors."
 "Abstract","A brief summary of the study."
 "Study Link","Link to the study."
 

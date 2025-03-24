@@ -16,9 +16,21 @@
         $(document).ready(function () {
 
             let isUpdatingCheckboxes = false;
+
+            const parentheticalColumns = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition', 
+            'Interaction_PANEL_Robustness of Interaction Detection', 
+            'Study_PANEL_Elicitation Study', 
+            'Study_PANEL_Usability Evaluations', 
+            'Study_PANEL_Cognitive Ease Evaluations', 
+            'Study_PANEL_Discreetness of Interactions Evaluations', 
+            'Study_PANEL_Social Acceptability of Interactions Evaluations', 
+            'Study_PANEL_Accuracy of Interactions Evaluations', 
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ];
             
             // Show only first six columns initially
-            $('table thead th:nth-child(n+7), table tbody td:nth-child(n+7)').hide();
+            $('table thead th:nth-child(n+8), table tbody td:nth-child(n+8)').hide();
 
             // Populate column toggle menu
             let columns = [];
@@ -26,7 +38,7 @@
                 if (index > 0) { // Skip the first column
                     let colName = $(this).data('col').split('_').pop(); // Removes prefixes, keeping only the last part
                     columns.push(`<div class="form-check">
-                                    <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${index < 6 ? 'checked' : ''}>
+                                    <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${index < 7 ? 'checked' : ''}>
                                     <label class="form-check-label">${colName}</label>
                                 </div>`);
                 }
@@ -317,16 +329,37 @@
                             
                             // Get cell text only when needed
                             if (!cellValues[colIndex]) {
-                                cellValues[colIndex] = row.find(`td:nth-child(${colIndex})`).text().trim()
-                                                        .split(',').map(value => value.trim());
+                                const cellText = row.find(`td:nth-child(${colIndex})`).text().trim();
+                                cellValues[colIndex] = cellText.split(',').map(val => val.trim());
                             }
                             
+                            // Special handling for parenthetical columns
+                            const isParentheticalColumn = parentheticalColumns.includes(colName);
+                            
                             if (filterState.isExclusive) {
-                                if (filterState.uncheckedValues.some(value => cellValues[colIndex].includes(value))) {
+                                // Exclusive filtering logic
+                                if (filterState.uncheckedValues.some(value => 
+                                    cellValues[colIndex].some(cellValue => {
+                                        if (isParentheticalColumn) {
+                                            // Extract the base value before any parentheses
+                                            const baseValue = cellValue.split('(')[0].trim();
+                                            return baseValue === value;
+                                        }
+                                        return cellValue === value;
+                                    }))) {
                                     showRow = false;
                                 }
                             } else {
-                                if (!cellValues[colIndex].some(value => filterState.values.includes(value))) {
+                                // Inclusive filtering logic
+                                if (!cellValues[colIndex].some(cellValue => 
+                                    filterState.values.some(value => {
+                                        if (isParentheticalColumn) {
+                                            // Extract the base value before any parentheses
+                                            const baseValue = cellValue.split('(')[0].trim();
+                                            return baseValue === value;
+                                        }
+                                        return cellValue === value;
+                                    }))) {
                                     showRow = false;
                                 }
                             }
@@ -741,6 +774,8 @@
         {% set _ = panels[prefix].append(col) %}
         {% endfor %}
 
+        {% set excluded_filter_columns = ['ID', 'Main Author', 'Gesture', 'Keywords', 'Abstract', 'Study Link'] %}
+        
         {% for panel, columns in panels.items() %}
         <div class="panel">
             <div class="d-flex justify-content-between align-items-center">
@@ -755,7 +790,20 @@
             </div>
             <hr/>
             <div class="filters">
-                {% for col in columns if col != 'Author' %}
+                
+                {% set parenthetical_columns = [
+                    'Interaction_PANEL_Accuracy of Interaction Recognition', 
+                    'Interaction_PANEL_Robustness of Interaction Detection', 
+                    'Study_PANEL_Elicitation Study', 
+                    'Study_PANEL_Usability Evaluations', 
+                    'Study_PANEL_Cognitive Ease Evaluations', 
+                    'Study_PANEL_Discreetness of Interactions Evaluations', 
+                    'Study_PANEL_Social Acceptability of Interactions Evaluations', 
+                    'Study_PANEL_Accuracy of Interactions Evaluations', 
+                    'Study_PANEL_Alternative Interaction Validity Evaluations'
+                ] %}
+
+                {% for col in columns if col not in excluded_filter_columns %}
                 {% if col == 'Year' or col == 'Interaction_PANEL_Number of Selected Gestures' %}
                 {% set min_value = data | map(attribute=col) | min %}
                 {% set max_value = data | map(attribute=col) | max %}
@@ -774,21 +822,26 @@
                 {% else %}
                 {% set unique_values = [] %}
                 {% for row in data %}
-                {% if row[col] is string %}
-                {% set cell_values = row[col].split(',') %}
-                {% else %}
-                {% set cell_values = [row[col]] %}
-                {% endif %}
-                {% for value in cell_values %}
-                {% if value is string %}
-                {% set trimmed_value = value.strip() %}
-                {% else %}
-                {% set trimmed_value = value %}
-                {% endif %}
-                {% if trimmed_value not in unique_values %}
-                {% set _ = unique_values.append(trimmed_value) %}
-                {% endif %}
-                {% endfor %}
+                    {% if row[col] is string %}
+                        {% set cell_values = row[col].split(',') %}
+                    {% else %}
+                        {% set cell_values = [row[col]] %}
+                    {% endif %}
+                    {% for value in cell_values %}
+                        {% if value is string %}
+                            {% set trimmed_value = value.strip() %}
+                            {% if col in parenthetical_columns %}
+                                {% set base_value = trimmed_value.split('(')[0].strip() %}
+                            {% else %}
+                                {% set base_value = trimmed_value %}
+                            {% endif %}
+                        {% else %}
+                            {% set base_value = value %}
+                        {% endif %}
+                        {% if base_value not in unique_values and base_value %}
+                            {% set _ = unique_values.append(base_value) %}
+                        {% endif %}
+                    {% endfor %}
                 {% endfor %}
                 {% set sorted_values = unique_values | custom_sort %}
                 <div class="filter-group mt-2" data-col="{{ col }}">

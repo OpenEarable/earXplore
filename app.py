@@ -4,8 +4,10 @@ import pandas as pd
 app = Flask(__name__)
 
 def custom_sort(values):
-    special_orders = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3}
-    sorted_values = sorted(values, key=lambda x: (special_orders.get(x, 0), str(x).lower() if isinstance(x, str) else str(x)))
+    special_orders = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 
+                     'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 'Yes (Performance Loss)': 2}  # Changed from 'nan' to 'N/A'
+    sorted_values = sorted(values, key=lambda x: (special_orders.get(x, 0), 
+                                               str(x).lower() if isinstance(x, str) else str(x)))
     return sorted_values
 
 app.jinja_env.filters['custom_sort'] = custom_sort
@@ -13,7 +15,10 @@ app.jinja_env.filters['custom_sort'] = custom_sort
 @app.route("/")
 def index():
     try:
-        data = pd.read_csv("data.csv").to_dict(orient="records")
+        df = pd.read_csv("data.csv")
+        df = df.fillna('N/A')  # Replace actual NaN values
+        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
+        data = df.to_dict(orient="records")    
     except FileNotFoundError:
         return "data.csv file not found", 500
     except pd.errors.EmptyDataError:
