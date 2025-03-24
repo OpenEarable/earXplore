@@ -774,9 +774,17 @@
                 {% else %}
                 {% set unique_values = [] %}
                 {% for row in data %}
+                {% if row[col] is string %}
                 {% set cell_values = row[col].split(',') %}
+                {% else %}
+                {% set cell_values = [row[col]] %}
+                {% endif %}
                 {% for value in cell_values %}
+                {% if value is string %}
                 {% set trimmed_value = value.strip() %}
+                {% else %}
+                {% set trimmed_value = value %}
+                {% endif %}
                 {% if trimmed_value not in unique_values %}
                 {% set _ = unique_values.append(trimmed_value) %}
                 {% endif %}
