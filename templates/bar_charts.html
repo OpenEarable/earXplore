@@ -246,13 +246,18 @@
         // Keep track of active columns
         const activeColumns = new Set();
         
+        // Define columns that should never be displayed as charts
+        const excludedChartColumns = ['ID', 'Main Author', 'Keywords', 'Abstract', 'Study Link'];
+        
         // Process which columns to display
         const columnsToProcess = [];
         const columns = {{ data[0].keys() | list | tojson }};
         const tableData = filteredData || {{ data | tojson }};
         
         columns.forEach(col => {
-            if (col !== 'Author' && selectedColumns.includes(col.split('_').pop())) {
+            // Check if the column should be excluded from charts
+            const colName = col.split('_').pop();
+            if (col !== 'Author' && selectedColumns.includes(colName) && !excludedChartColumns.includes(colName)) {
                 columnsToProcess.push(col);
                 activeColumns.add(col);
             }

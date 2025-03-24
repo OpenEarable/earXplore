@@ -195,16 +195,38 @@
                 applyFilters();
             });
 
-            // Add event listener to info icons
+            // Update the event listener for info icons
             $('table').on('click', '.bi-info-circle', function () {
                 let row = $(this).closest('tr');
                 let rowData = {};
+                let studyLink = '';
+                
                 row.find('td').each(function (index) {
                     let colName = $('table thead th').eq(index).data('col');
-                    rowData[colName] = $(this).text().trim();
+                    if (colName) {
+                        rowData[colName] = $(this).text().trim();
+                        
+                        // Extract study link if present
+                        if (colName === 'Study Link') {
+                            studyLink = $(this).text().trim();
+                        }
+                    }
                 });
 
                 delete rowData.INFO; // Remove the INFO column
+                
+                // Update the study link button
+                const $studyLinkButton = $('#studyLinkButton');
+                
+                if (studyLink && studyLink !== 'N/A' && studyLink.toLowerCase() !== 'nan') {
+                    $studyLinkButton.attr('href', studyLink);
+                    $studyLinkButton.removeClass('disabled');
+                    $studyLinkButton.show();
+                } else {
+                    $studyLinkButton.attr('href', '#');
+                    $studyLinkButton.addClass('disabled');
+                    $studyLinkButton.hide(); // Hide the button if no link is available
+                }
                 
                 // Use document fragment for efficient DOM manipulation
                 const fragment = document.createDocumentFragment();
@@ -225,12 +247,16 @@
                 // Process all columns
                 let colIndex = 0;
                 for (const colName in rowData) {
+                    // Skip displaying the Study Link in the details as we're using it for the button
+                    if (colName === 'Study Link') continue;
+                    
                     // Add section headings at appropriate positions
-                    if (colIndex === 5) addSectionHeading('Sensors');
-                    else if (colIndex === 7) addSectionHeading('Interaction');
-                    else if (colIndex === 15) addSectionHeading('Implementation');
+                    if (colIndex === 6) addSectionHeading('Sensors');
+                    else if (colIndex === 8) addSectionHeading('Interaction');
                     else if (colIndex === 18) addSectionHeading('Study');
-                    else if (colIndex === 27) addSectionHeading('Applications');
+                    else if (colIndex === 26) addSectionHeading('Device');
+                    else if (colIndex === 31) addSectionHeading('Applications');
+                    else if (colIndex === 32) addSectionHeading('Study Summary');
                     
                     // Create the row element
                     const rowDiv = document.createElement('div');
@@ -521,6 +547,15 @@
             });
             return fullData;
         }
+
+        // Replace the current event handlers with these simpler ones
+        $('#advancedFiltersCollapse').on('show.bs.collapse', function() {
+            $('#advancedFiltersToggleBtn').text('Collapse');
+        });
+
+        $('#advancedFiltersCollapse').on('hide.bs.collapse', function() {
+            $('#advancedFiltersToggleBtn').text('Show');
+        });
     </script>
     <style>
         body {
@@ -663,6 +698,12 @@
             padding: 0.1rem 0.2rem; /* Adjust the padding as needed */
         }
 
+        #advancedFiltersCollapse {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #dee2e6;
+        }
+
     </style>
 </head>
 
@@ -774,7 +815,7 @@
         {% set _ = panels[prefix].append(col) %}
         {% endfor %}
 
-        {% set excluded_filter_columns = ['ID', 'Main Author', 'Gesture', 'Keywords', 'Abstract', 'Study Link'] %}
+        {% set excluded_filter_columns = ['ID','Main Author', 'Gesture', 'Keywords', 'Abstract', 'Study Link'] %}
         
         {% for panel, columns in panels.items() %}
         <div class="panel">
@@ -877,6 +918,69 @@
             </div>
         </div>
         {% endfor %}
+        <!-- Advanced Filters Panel -->
+        <div class="panel">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3>Advanced Filters</h3>
+                <button id="advancedFiltersToggleBtn" class="btn btn-sm btn-warning" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#advancedFiltersCollapse" aria-expanded="false" aria-controls="advancedFiltersCollapse">
+                Show/Hide
+            </button>
+            </div>
+            <hr/>
+            
+            <div class="collapse" id="advancedFiltersCollapse">
+                <div class="filters">
+                    {% set advanced_filter_columns = ['Main Author', 'Gesture', 'Keywords'] %}
+                    
+                    {% for col in advanced_filter_columns %}
+                        {% set unique_values = [] %}
+                        {% for row in data %}
+                            {% if row[col] is string %}
+                                {% set cell_values = row[col].split(',') %}
+                            {% else %}
+                                {% set cell_values = [row[col]] %}
+                            {% endif %}
+                            {% for value in cell_values %}
+                                {% if value is string %}
+                                    {% set trimmed_value = value.strip() %}
+                                    {% set base_value = trimmed_value %}
+                                {% else %}
+                                    {% set base_value = value %}
+                                {% endif %}
+                                {% if base_value not in unique_values and base_value %}
+                                    {% set _ = unique_values.append(base_value) %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        {% set sorted_values = unique_values | custom_sort %}
+                        <div class="filter-group mt-2" data-col="{{ col }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ col.split('_')[-1] }}</strong>
+                                    {% if col in explanations %}
+                                    <span title="{{ explanations[col] }}" class="ms-1">
+                                        <i class="bi bi-question-circle-fill"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="button" class="btn btn-sm btn-primary select-all ms-2 small-button" data-col="{{ col }}">Select All</button>
+                                    <button type="button" class="btn btn-sm btn-secondary deselect-all ms-2 small-button" data-col="{{ col }}">Deselect All</button>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap flex-row">
+                                {% for value in sorted_values %}
+                                <label class="me-3 d-flex align-items-center">
+                                    <input class="me-1" type="checkbox" name="{{ col }}" value="{{ value }}" checked> {{ value }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
 <!-- Modal Structure -->
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
@@ -888,6 +992,7 @@
                 </div>
             </div>
             <div class="modal-footer">
+                <a id="studyLinkButton" href="#" target="_blank" class="btn btn-warning">Link to Study</a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
