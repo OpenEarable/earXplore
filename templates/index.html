@@ -197,7 +197,16 @@
 
             // Update the event listener for info icons
             $('table').on('click', '.bi-info-circle', function () {
-                let row = $(this).closest('tr');
+                const studyId = $(this).closest('tr').find('td:nth-child(2)').text().trim();
+                showStudyDetails(studyId);
+            });
+            
+            // Function to show study details modal
+            function showStudyDetails(studyId) {
+                // Find the row with the corresponding studyId
+                const row = $(`table tbody tr td:nth-child(2):contains('${studyId}')`).closest('tr');
+                if (!row.length) return;
+                
                 let rowData = {};
                 let studyLink = '';
                 
@@ -278,6 +287,12 @@
 
                 // Show the modal
                 $('#infoModal').modal('show');
+            }
+            
+            // Listen for custom event from bar_charts.html
+            document.addEventListener('showStudyDetailsRequest', function(e) {
+                const studyId = e.detail.studyId;
+                showStudyDetails(studyId);
             });
 
 
@@ -815,7 +830,7 @@
         {% set _ = panels[prefix].append(col) %}
         {% endfor %}
 
-        {% set excluded_filter_columns = ['ID','Main Author', 'Gesture', 'Keywords', 'Abstract', 'Study Link'] %}
+        {% set excluded_filter_columns = ['ID','First Author', 'Gesture', 'Keywords', 'Abstract', 'Study Link'] %}
         
         {% for panel, columns in panels.items() %}
         <div class="panel">
@@ -931,7 +946,7 @@
             
             <div class="collapse" id="advancedFiltersCollapse">
                 <div class="filters">
-                    {% set advanced_filter_columns = ['Main Author', 'Gesture', 'Keywords'] %}
+                    {% set advanced_filter_columns = ['First Author', 'Gesture', 'Keywords'] %}
                     
                     {% for col in advanced_filter_columns %}
                         {% set unique_values = [] %}
@@ -992,7 +1007,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <a id="studyLinkButton" href="#" target="_blank" class="btn btn-warning">Link to Study</a>
+                <a id="studyLinkButton" href="#" target="_blank" class="btn btn-warning">Open Online Source</a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>

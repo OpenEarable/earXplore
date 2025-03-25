@@ -164,7 +164,7 @@
                                 <tr>
                                     <th></th>
                                     <th>ID</th>
-                                    <th>Main Author</th>
+                                    <th>First Author</th>
                                     <th>Year</th>
                                     <th>Location</th>
                                     <th>Input Body Part</th>
@@ -189,7 +189,7 @@
                                         <tr>
                                             <td><i class="bi bi-info-circle view-details" title="View details" style="cursor: pointer;" data-id="${row["ID"]}"></i></td>
                                             <td>${row["ID"] || ''}</td>
-                                            <td>${row["Main Author"] || ''}</td>
+                                            <td>${row["First Author"] || ''}</td>
                                             <td>${row["Year"] || ''}</td>
                                             <td>${row["Location"] || ''}</td>
                                             <td>${row["Input Body Part"] || ''}</td>
@@ -202,6 +202,21 @@
                     `;
                                         
                     document.getElementById('rowDetailsContainerBarCharts').innerHTML = tableHTML;
+                    
+                    // Add event listeners to the info icons in the modal
+                    document.querySelectorAll('#rowDetailsContainerBarCharts .view-details').forEach(icon => {
+                        icon.addEventListener('click', function() {
+                            const studyId = this.getAttribute('data-id');
+                            // Don't close the current modal - remove this line
+                            // barChartInfoModal.hide();
+                            
+                            // Dispatch custom event that index.html can listen for
+                            const event = new CustomEvent('showStudyDetailsRequest', {
+                                detail: { studyId: studyId }
+                            });
+                            document.dispatchEvent(event);
+                        });
+                    });
                     
                     // Use cached modal instance
                     barChartInfoModal.show();
@@ -303,7 +318,7 @@
         const activeColumns = new Set();
         
         // Define columns that should never be displayed as charts
-        const excludedChartColumns = ['ID', 'Main Author', 'Abstract', 'Study Link'];
+        const excludedChartColumns = ['ID', 'First Author', 'Abstract', 'Study Link'];
         
         // Process which columns to display
         const columnsToProcess = [];
@@ -323,7 +338,6 @@
         const columnDataMap = {};
         
         columnsToProcess.forEach(col => {
-            // ...existing code...
             // Process data for this column efficiently
             const uniqueGroups = {};
             
@@ -380,13 +394,13 @@
             };
         });
         
-        // Create or update charts using the processed data
+        // Replace the current chart creation/removal logic in the columnsToProcess.forEach loop
         columnsToProcess.forEach(col => {
             const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
             
-            // Check if this chart has too many bars (25+)
-            if (labels.length > 25) {
-                // If the chart already exists, remove it
+            // Check if this chart has too many bars
+            if (labels.length > 50) {
+                // If the chart already exists, remove it - too many bars to display clearly
                 if (window.chartInstances[col] && window.chartInstances[col].chart) {
                     window.chartInstances[col].chart.destroy();
                     const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
@@ -397,8 +411,21 @@
                     delete window.chartInstances[col];
                 }
             } else {
-                // Only create/update charts with 25 or fewer bars
+                // Create or update chart
                 updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
+                
+                // Adjust chart width based on number of bars
+                const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+                const container = document.getElementById(containerId);
+                if (container) {
+                    if (labels.length > 20 && labels.length <= 50) {
+                        // Make charts with 26-50 bars take double width
+                        container.style.gridColumn = "span 2";
+                    } else {
+                        // Reset to default (in case it was previously expanded)
+                        container.style.gridColumn = "";
+                    }
+                }
             }
         });
         
