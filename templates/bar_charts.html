@@ -71,7 +71,7 @@
     const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
 
     // Special order for categorical values
-    const specialOrdersBarChart = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3};
+    const specialOrdersBarChart = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'Yes (Performance Loss)': 2};
 
     // Debounce function to limit frequent updates
     function debounce(func, wait) {
@@ -108,7 +108,7 @@
     }
     
     // Create chart options centrally to avoid duplication
-    function createChartOptions(col) {
+    function createChartOptions(col, labelCount) {
         return {
             responsive: true,
             maintainAspectRatio: false,
@@ -131,7 +131,16 @@
                         autoSkip: false,
                         callback: function(value, index, values) {
                             const label = this.getLabelForValue(value);
-                            return label.length > 15 ? label.substr(0, 15) + '...' : label;
+                            // Different truncation based on number of bars
+                            let charLimit = 15; // Default
+                            
+                            if (labelCount === 2) {
+                                charLimit = 25;
+                            } else if (labelCount === 3) {
+                                charLimit = 20;
+                            }
+                            
+                            return label.length > charLimit ? label.substr(0, charLimit) + '...' : label;
                         }
                     }
                 },
@@ -160,7 +169,6 @@
         };
     }
 
-    // Create or update a chart - extracted logic for better organization
     function updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness) {
         const explanations = {{ explanations | tojson }};
         const container = document.getElementById('chartsContainer');
@@ -180,6 +188,9 @@
             // Store updated data for click handler
             window.chartInstances[col].labels = labels;
             window.chartInstances[col].uniqueGroups = uniqueGroups;
+            
+            // Update options with new label count
+            chart.options = createChartOptions(col, labels.length);
             
             // Apply changes once
             chart.update();
@@ -217,7 +228,7 @@
             chartContainer.appendChild(fragment);
             container.appendChild(chartContainer);
 
-            // Create the chart
+            // Create the chart with label count
             const chart = new Chart(document.getElementById(chartId).getContext('2d'), {
                 type: 'bar',
                 data: {
@@ -229,7 +240,7 @@
                         barThickness: barThickness
                     }]
                 },
-                options: createChartOptions(col)
+                options: createChartOptions(col, labels.length)
             });
             
             // Track the chart instance
@@ -271,18 +282,41 @@
         const columnDataMap = {};
         
         columnsToProcess.forEach(col => {
+            // ...existing code...
             // Process data for this column efficiently
             const uniqueGroups = {};
+            
+            // List of columns with parenthetical content to clean
+            const parenthetical_columns = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Function to extract base value (before parentheses)
+            function extractBaseValue(value) {
+                return value.replace(/\s*\(.*\)$/, '').trim();
+            }
             
             tableData.forEach(row => {
                 const cellText = row[col] || "Unknown";
                 const cellValues = cellText.split(',').map(value => value.trim());
                 
                 cellValues.forEach(value => {
-                    if (!uniqueGroups[value]) {
-                        uniqueGroups[value] = [];
+                    // Clean parenthetical content if this is one of the specified columns
+                    const cleanValue = parenthetical_columns.includes(col) ? 
+                        extractBaseValue(value) : value;
+                    
+                    if (!uniqueGroups[cleanValue]) {
+                        uniqueGroups[cleanValue] = [];
                     }
-                    uniqueGroups[value].push(row);
+                    uniqueGroups[cleanValue].push(row);
                 });
             });
             
@@ -307,25 +341,25 @@
         
         // Create or update charts using the processed data
         columnsToProcess.forEach(col => {
-    const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
-    
-    // Check if this chart has too many bars (25+)
-    if (labels.length > 25) {
-        // If the chart already exists, remove it
-        if (window.chartInstances[col] && window.chartInstances[col].chart) {
-            window.chartInstances[col].chart.destroy();
-            const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.remove();
+            const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
+            
+            // Check if this chart has too many bars (25+)
+            if (labels.length > 25) {
+                // If the chart already exists, remove it
+                if (window.chartInstances[col] && window.chartInstances[col].chart) {
+                    window.chartInstances[col].chart.destroy();
+                    const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+                    const container = document.getElementById(containerId);
+                    if (container) {
+                        container.remove();
+                    }
+                    delete window.chartInstances[col];
+                }
+            } else {
+                // Only create/update charts with 25 or fewer bars
+                updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
             }
-            delete window.chartInstances[col];
-        }
-    } else {
-        // Only create/update charts with 25 or fewer bars
-        updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
-    }
-});
+        });
         
         // Clean up charts for columns that are no longer active
         Object.keys(window.chartInstances || {}).forEach(col => {
