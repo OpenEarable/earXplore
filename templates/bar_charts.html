@@ -155,12 +155,53 @@
                     const datasetIndex = activeElements[0].index;
                     const chartInfo = window.chartInstances[col];
                     const label = chartInfo.labels[datasetIndex];
-                    const studies = `<h5>${col.split('_').pop()}: ${label}</h5>` + 
-                        chartInfo.uniqueGroups[label]
-                        .sort((a, b) => a["Author"].localeCompare(b["Author"]))
-                        .map(row => `${row["Author"]}., (${row["Year"]})`)
-                        .join("<br>");
-                    document.getElementById('rowDetailsContainerBarCharts').innerHTML = studies;
+                    
+                    // Create a table with the requested columns
+                    const tableHTML = `
+                        <h5>${col.split('_').pop()}: ${label}</h5>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>ID</th>
+                                    <th>Main Author</th>
+                                    <th>Year</th>
+                                    <th>Location</th>
+                                    <th>Input Body Part</th>
+                                    <th>Gesture</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${chartInfo.uniqueGroups[label]
+                                    .sort((a, b) => {
+                                        // Extract numeric parts if IDs are like "P1", "P2" etc.
+                                        const numA = parseInt(a["ID"].replace(/^\D+/g, ''));
+                                        const numB = parseInt(b["ID"].replace(/^\D+/g, ''));
+                                        
+                                        // If we have valid numbers, sort numerically
+                                        if (!isNaN(numA) && !isNaN(numB)) {
+                                            return numA - numB;
+                                        }
+                                        // Fall back to string comparison
+                                        return a["ID"].localeCompare(b["ID"]);
+                                    })
+                                    .map(row => `
+                                        <tr>
+                                            <td><i class="bi bi-info-circle view-details" title="View details" style="cursor: pointer;" data-id="${row["ID"]}"></i></td>
+                                            <td>${row["ID"] || ''}</td>
+                                            <td>${row["Main Author"] || ''}</td>
+                                            <td>${row["Year"] || ''}</td>
+                                            <td>${row["Location"] || ''}</td>
+                                            <td>${row["Input Body Part"] || ''}</td>
+                                            <td>${row["Gesture"] || ''}</td>
+                                        </tr>
+                                    `).join('')
+                                }
+                            </tbody>
+                        </table>
+                    `;
+                                        
+                    document.getElementById('rowDetailsContainerBarCharts').innerHTML = tableHTML;
                     
                     // Use cached modal instance
                     barChartInfoModal.show();
