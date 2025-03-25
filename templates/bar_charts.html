@@ -247,7 +247,7 @@
         const activeColumns = new Set();
         
         // Define columns that should never be displayed as charts
-        const excludedChartColumns = ['ID', 'Main Author', 'Keywords', 'Abstract', 'Study Link'];
+        const excludedChartColumns = ['ID', 'Main Author', 'Abstract', 'Study Link'];
         
         // Process which columns to display
         const columnsToProcess = [];
@@ -303,9 +303,25 @@
         
         // Create or update charts using the processed data
         columnsToProcess.forEach(col => {
-            const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
-            updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
-        });
+    const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
+    
+    // Check if this chart has too many bars (25+)
+    if (labels.length > 25) {
+        // If the chart already exists, remove it
+        if (window.chartInstances[col] && window.chartInstances[col].chart) {
+            window.chartInstances[col].chart.destroy();
+            const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.remove();
+            }
+            delete window.chartInstances[col];
+        }
+    } else {
+        // Only create/update charts with 25 or fewer bars
+        updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
+    }
+});
         
         // Clean up charts for columns that are no longer active
         Object.keys(window.chartInstances || {}).forEach(col => {
