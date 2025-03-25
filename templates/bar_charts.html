@@ -230,6 +230,10 @@
         const container = document.getElementById('chartsContainer');
         const chartId = `chart-${col.replace(/\s+/g, '-')}`;
         
+        // Get the column index for ordering
+        const columns = {{ data[0].keys() | list | tojson }};
+        const columnIndex = columns.indexOf(col);
+        
         if (window.chartInstances[col]) {
             // Update existing chart
             const chart = window.chartInstances[col].chart;
@@ -256,6 +260,9 @@
             chartContainer.id = `chart-container-${col.replace(/\s+/g, '-')}`;
             chartContainer.classList.add("chart-wrapper");
             
+            // Store column index for ordering
+            chartContainer.dataset.columnIndex = columnIndex;
+            
             // Get explanation if available
             const explanation = explanations[col] || '';
             
@@ -278,11 +285,28 @@
             const canvas = document.createElement('canvas');
             canvas.id = chartId;
             
-            // Build the DOM structure with a single operation
+            // Build the DOM structure
             fragment.appendChild(heading);
             fragment.appendChild(canvas);
             chartContainer.appendChild(fragment);
-            container.appendChild(chartContainer);
+            
+            // Insert in the correct position based on column index
+            let inserted = false;
+            const existingCharts = Array.from(container.children);
+            
+            for (let i = 0; i < existingCharts.length; i++) {
+                const existingIndex = parseInt(existingCharts[i].dataset.columnIndex, 10);
+                if (columnIndex < existingIndex) {
+                    container.insertBefore(chartContainer, existingCharts[i]);
+                    inserted = true;
+                    break;
+                }
+            }
+            
+            // If not inserted (belongs at the end), append it
+            if (!inserted) {
+                container.appendChild(chartContainer);
+            }
 
             // Create the chart with label count
             const chart = new Chart(document.getElementById(chartId).getContext('2d'), {
