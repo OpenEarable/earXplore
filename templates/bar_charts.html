@@ -83,6 +83,10 @@
     }
 
     function customSortBarChart(a, b) {
+        // Special handling for N/A - always make it last
+        if (a === 'N/A') return 1;  // a is N/A, move to end
+        if (b === 'N/A') return -1; // b is N/A, move to end
+        
         const orderA = specialOrdersBarChart[a];
         const orderB = specialOrdersBarChart[b];
 

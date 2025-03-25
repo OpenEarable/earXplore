@@ -5,7 +5,7 @@ app = Flask(__name__)
 
 def custom_sort(values):
     special_orders = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 
-                     'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 'Yes (Performance Loss)': 2}  # Changed from 'nan' to 'N/A'
+                     'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 'Yes (Performance Loss)': 2, 'Visual Attention': 2}  # Changed from 'nan' to 'N/A'
     sorted_values = sorted(values, key=lambda x: (special_orders.get(x, 0), 
                                                str(x).lower() if isinstance(x, str) else str(x)))
     return sorted_values
