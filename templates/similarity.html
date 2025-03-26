@@ -1,147 +1,768 @@
-<!-- Include Cytoscape.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.21.0/cytoscape.min.js"></script>
+<!-- Include D3.js -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
 
 <style>
-    #networkGraph {
-        width: 100%;
-        height: 800px;
-        border: 1px solid #ddd;
+    #similarityContainer {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 20px 0;
     }
-
+    
     .controls {
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin: 10px;
+        gap: 15px;
     }
-
+    
+    .node {
+        cursor: pointer;
+    }
+    
+    .link {
+        stroke: #999;
+        stroke-opacity: 0.6;
+        fill: none;
+    }
+    
+    .node-label {
+        font-size: 10px;
+        pointer-events: none;
+    }
+    
     .tooltip {
         position: absolute;
-        background-color: rgba(0, 0, 0, 0.8);
-        color: #fff;
-        padding: 5px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px;
+        pointer-events: none;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+    
+    /* Match slider color with site theme */
+    .noUi-connect {
+        background: #B89491;
+    }
+    
+    /* Error message style */
+    .error-message {
+        color: #721c24;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        padding: 15px;
         border-radius: 5px;
-        font-size: 12px;
-        display: none;
-        z-index: 10;
+        margin-bottom: 20px;
+    }
+    
+    /* Loading indicator style */
+    .loading-indicator {
+        text-align: center;
+        padding: 20px;
+    }
+    
+    /* Important: Set minimum dimensions for the graph container */
+    #graphContainer {
+        min-height: 600px;
+        min-width: 100%;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
     }
 </style>
 
-<!-- Similarity slider -->
-<div class="controls">
-    <label>Similarity Threshold:</label>
-    <input type="range" id="similaritySlider" min="0" max="100" step="5" value="50">
-    <span id="similarityValue">50%</span>
+<div id="similarityContainer">
+    <div class="controls">
+        <div>
+            <label for="thresholdSlider">Similarity Threshold (σ): <span id="thresholdValue">0.0</span></label>            
+            <div id="thresholdSlider" class="similarity-slider" style="width: 200px; margin-top: 10px;"></div>
+        </div>
+        <div>
+            <button id="resetSimulationBtn" class="btn btn-sm btn-secondary small-button">Reset View</button>
+            <button id="downloadSimilarityCSV" class="btn btn-sm btn-warning small-button ms-2">Download Similarity Data</button>
+        </div>
+    </div>
+    
+    <!-- Status/error messages container -->
+    <div id="statusContainer"></div>
+    
+    <div id="graphContainer"></div>
+    
+    <!-- Debug information (shown by default for troubleshooting) -->
+    <div id="debugContainer" style="margin-top: 15px; display: block;">
+        <h5>Debug Information</h5>
+        <pre id="debugInfo" style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; max-height: 200px; overflow: auto;"></pre>
+        <button id="toggleDebugBtn" class="btn btn-sm btn-secondary">Hide Debug Info</button>
+    </div>
 </div>
 
-<!-- Graph Container -->
-<div id="networkGraph"></div>
-
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const rawData = {{ data | tojson }};
-        const totalAttributes = Object.keys(rawData[0]).length - 1; // Exclude "Author"
-        const colorPalette = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf"];
-        let similarityThreshold = 50; // Default similarity threshold
-
-        function calculateSimilarity(study1, study2) {
-            let matchingAttributes = 0;
-
-            for (let key in study1) {
-                if (key !== "Author" && study1[key] === study2[key]) {
-                    matchingAttributes++;
-                }
+    // Initialize global variables
+    let svg;
+    let width, height;
+    let zoom;
+    let tooltip;
+    let studyIds = [];
+    let similarityMatrix = [];
+    let isDebugMode = true; // Debug mode is on by default for troubleshooting
+    
+    // Helper function for debugging
+    function debug(message, obj = null) {
+        const debugInfo = document.getElementById('debugInfo');
+        let msg = `[${new Date().toISOString()}] ${message}`;
+        if (obj) {
+            try {
+                msg += `\n${JSON.stringify(obj, null, 2)}`;
+            } catch (e) {
+                msg += `\n[Object cannot be stringified]`;
             }
-
-            return (matchingAttributes / totalAttributes) * 100;
         }
-
-        function generateGraph() {
-            const nodes = rawData.map((study, index) => ({
-                data: {
-                    id: index.toString(),
-                    label: study["Author"] + " (" + study["Year"] + ")",
-                    cluster: -1 // Placeholder for clustering
-                }
-            }));
-
-            const edges = [];
-            for (let i = 0; i < nodes.length; i++) {
-                for (let j = i + 1; j < nodes.length; j++) {
-                    let similarity = calculateSimilarity(rawData[i], rawData[j]);
-                    if (similarity >= similarityThreshold) {
-                        edges.push({
-                            data: { source: nodes[i].data.id, target: nodes[j].data.id }
-                        });
-                    }
-                }
+        debugInfo.textContent = msg + '\n\n' + debugInfo.textContent;
+        
+        // Also log to console
+        console.log(message, obj || '');
+    }
+    
+    // Show status/error message
+    function showStatus(message, isError = false) {
+        const statusContainer = document.getElementById('statusContainer');
+        statusContainer.innerHTML = `<div class="${isError ? 'error-message' : 'alert alert-info'}">${message}</div>`;
+    }
+    
+    // Process the raw similarity data from CSV
+    function processSimilarityData() {
+        try {
+            // Get the raw data from the template
+            const rawData = {{ similarity_data | tojson }};
+            
+            debug("Raw similarity data received", rawData);
+            
+            if (!rawData || !rawData.study_ids || rawData.study_ids.length === 0) {
+                showStatus("No similarity data available. Please check if the data file exists and is properly formatted.", true);
+                return false;
             }
-
-            // Assign clusters
-            let clusterId = 0;
-            const visited = new Set();
-            function dfs(nodeId, cluster) {
-                if (visited.has(nodeId)) return;
-                visited.add(nodeId);
-                nodes[nodeId].data.cluster = cluster;
-                edges.forEach(edge => {
-                    if (edge.data.source === nodeId.toString()) dfs(parseInt(edge.data.target), cluster);
-                    if (edge.data.target === nodeId.toString()) dfs(parseInt(edge.data.source), cluster);
-                });
+            
+            // Extract study IDs from the provided data
+            studyIds = rawData.study_ids;
+            
+            // Store study details for tooltips if available
+            studyDetailsCache = rawData.study_details || {};
+            
+            debug("Extracted study IDs", { count: studyIds.length, first: studyIds[0], last: studyIds[studyIds.length-1] });
+            
+            if (studyIds.length === 0) {
+                showStatus("No study IDs found in the similarity data.", true);
+                return false;
             }
-
-            for (let i = 0; i < nodes.length; i++) {
-                if (!visited.has(i)) {
-                    dfs(i, clusterId);
-                    clusterId++;
-                }
+            
+            // Process the similarity matrix
+            similarityMatrix = rawData.matrix || [];
+            
+            debug("Processed similarity matrix", { rows: similarityMatrix.length });
+            
+            if (similarityMatrix.length === 0) {
+                showStatus("Could not process similarity data. Matrix is empty.", true);
+                return false;
             }
-
-            // Initialize Cytoscape.js
-            const cy = cytoscape({
-                container: document.getElementById("networkGraph"),
-                elements: { nodes, edges },
-                layout: { name: 'cose', animate: true },
-                style: [
-                    {
-                        selector: "node",
-                        style: {
-                            "background-color": (ele) => colorPalette[ele.data("cluster") % colorPalette.length],
-                            "label": "data(label)",
-                            "text-valign": "center",
-                            "text-halign": "center",
-                            "color": "#fff",
-                            "font-size": "10px",
-                            "width": "10px",
-                            "height": "10px"
-                        }
-                    },
-                    {
-                        selector: "edge",
-                        style: {
-                            "width": 1,
-                            "line-color": "#aaa",
-                            "curve-style": "haystack"
-                        }
-                    }
-                ]
-            });
-
-            // Node click interaction
-            cy.on("tap", "node", function (evt) {
-                const nodeData = evt.target.data();
-                alert(`Study: ${nodeData.label}`);
-            });
+            
+            return true;
+        } catch (error) {
+            console.error("Error processing similarity data:", error);
+            debug("Error processing similarity data", error.toString());
+            showStatus(`Error processing similarity data: ${error.message}`, true);
+            return false;
         }
-
-        // Initialize graph
-        generateGraph();
-
-        // Update graph on slider change
-        document.getElementById("similaritySlider").addEventListener("input", function () {
-            similarityThreshold = parseInt(this.value);
-            document.getElementById("similarityValue").textContent = similarityThreshold + "%";
-            generateGraph();
-        });
+    }
+    
+    // Wait for the page to fully load before initializing
+    window.addEventListener('load', function() {
+        initializeVisualization();
     });
+    
+    // Initialize the visualization when the tab becomes visible
+    document.addEventListener('DOMContentLoaded', function() {
+        debug("DOM loaded");
+        
+        // Setup toggle for debug info
+        document.getElementById('toggleDebugBtn').addEventListener('click', function() {
+            isDebugMode = !isDebugMode;
+            document.getElementById('debugInfo').style.display = isDebugMode ? 'block' : 'none';
+            this.textContent = isDebugMode ? 'Hide Debug Info' : 'Show Debug Info';
+        });
+        
+        // Show loading indicator
+        showStatus("Loading similarity data...");
+        
+        // Process data
+        if (!processSimilarityData()) {
+            return; // Exit if data processing failed
+        }
+        
+        // Create slider
+        try {
+            const sliderElement = document.getElementById('thresholdSlider');
+            
+            noUiSlider.create(sliderElement, {
+                start: [0], // Default to mean (0 standard deviations)
+                connect: true,
+                range: {
+                    'min': -3, // Typically -3 standard deviations
+                    'max': 3   // Typically +3 standard deviations
+                },
+                step: 0.1,
+                format: {
+                    to: function (value) {
+                        return value.toFixed(1);
+                    },
+                    from: function (value) {
+                        return parseFloat(value);
+                    }
+                }
+            });
+            
+            // Update visualization when slider changes
+            sliderElement.noUiSlider.on('update', function (values, handle) {
+                const threshold = parseFloat(values[handle]);
+                document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
+                
+                // Only update visualization if it's been initialized
+                if (svg) {
+                    updateVisualization(threshold);
+                }
+            });
+        } catch (error) {
+            console.error("Error creating slider:", error);
+            debug("Error creating slider", error.toString());
+            showStatus(`Error initializing controls: ${error.message}`, true);
+        }
+        
+        // Setup tooltip
+        tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+        
+        // Add visibility change detection - important for tabs
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        
+        // Add event listeners for tab switching in the parent page
+        document.querySelectorAll('.navbar-item').forEach(navItem => {
+            navItem.addEventListener('click', function() {
+                // If this is the similarity view tab
+                if (this.getAttribute('data-section') === 'similarityView') {
+                    // Check if we need to initialize
+                    if (!svg || width === 0) {
+                        setTimeout(initializeVisualization, 200);
+                    }
+                }
+            });
+        });
+        
+        // Reset button
+        document.getElementById('resetSimulationBtn').addEventListener('click', function() {
+            resetView();
+        });
+        
+        // Download button
+        document.getElementById('downloadSimilarityCSV').addEventListener('click', function() {
+            downloadSimilarityData();
+        });
+        
+        // Listen for window resize events
+        window.addEventListener('resize', debounce(function() {
+            initializeVisualization();
+        }, 250));
+    });
+    
+    // Handle visibility changes (for tab switching)
+    function handleVisibilityChange() {
+        if (document.visibilityState === 'visible') {
+            // If the document becomes visible and the container is visible
+            if (document.getElementById('similarityView').style.display !== 'none') {
+                // Re-initialize if needed
+                setTimeout(function() {
+                    const container = document.getElementById('graphContainer');
+                    if (container.clientWidth > 0 && (!svg || width === 0)) {
+                        initializeVisualization();
+                    }
+                }, 200);
+            }
+        }
+    }
+    
+    // Debounce function to limit frequent updates
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                func.apply(context, args);
+            }, wait);
+        };
+    }
+    
+    // Initialize the visualization container
+    function initializeVisualization() {
+        debug("Initializing visualization container");
+        
+        const container = document.getElementById('graphContainer');
+        
+        // Force minimum dimensions
+        if (container.clientWidth === 0) {
+            debug("Container has zero width, setting fixed width");
+            container.style.width = '800px';
+        }
+        
+        // Get dimensions after potential style changes
+        width = container.clientWidth || 800;  // Fallback to 800px if still zero
+        height = container.clientHeight || 600;  // Fallback to 600px if zero
+        
+        debug("Container dimensions", { width, height });
+        
+        // Clear container and create SVG
+        d3.select("#graphContainer").html("");
+        
+        svg = d3.select("#graphContainer").append("svg")
+            .attr("width", "100%")
+            .attr("height", "100%")
+            .attr("viewBox", [0, 0, width, height]);
+            
+        // Add zoom behavior
+        zoom = d3.zoom()
+            .scaleExtent([0.5, 5])
+            .on("zoom", zoomed);
+            
+        svg.call(zoom);
+        
+        // Create a container group that will be transformed on zoom
+        svg.append("g")
+            .attr("class", "zoom-layer");
+            
+        function zoomed(event) {
+            d3.select(".zoom-layer").attr("transform", event.transform);
+        }
+        
+        // Clear status once everything is loaded
+        showStatus("");
+        
+        // Initialize with threshold 0.5
+        updateVisualization(0);
+    }
+    
+    // Generate graph data from the similarity matrix
+    function generateGraphData(threshold) {
+        debug(`Generating graph data with threshold: ${threshold}`);
+        
+        if (!studyIds.length || !similarityMatrix.length) {
+            debug("No data available for graph generation");
+            return { nodes: [], links: [] };
+        }
+        
+        const nodes = studyIds.map((id, index) => ({ id, index }));
+        const links = [];
+        
+        let connectionCount = 0;
+        
+        for (let i = 0; i < studyIds.length; i++) {
+            for (let j = i + 1; j < studyIds.length; j++) {
+                // Make sure we have data for this cell
+                if (i < similarityMatrix.length && j < similarityMatrix[i].length) {
+                    const similarity = similarityMatrix[i][j];
+                    if (similarity && similarity >= threshold) {
+                        links.push({
+                            source: i,
+                            target: j,
+                            sourceId: studyIds[i],
+                            targetId: studyIds[j],
+                            value: similarity
+                        });
+                        connectionCount++;
+                    }
+                }
+            }
+        }
+        
+        debug("Graph data generated", { 
+            nodeCount: nodes.length,
+            linkCount: links.length,
+            threshold: threshold,
+            connectionCount: connectionCount
+        });
+        
+        return { nodes, links };
+    }
+    
+    // Update the visualization based on the threshold
+    function updateVisualization(threshold) {
+        try {
+            debug(`Updating visualization with threshold: ${threshold}`);
+            
+            if (!svg || width === 0) {
+                debug("SVG not initialized or has zero width, aborting update");
+                return;
+            }
+            
+            // Generate graph data
+            const graphData = generateGraphData(threshold);
+            
+            if (graphData.nodes.length === 0) {
+                showStatus("No nodes available to visualize.", true);
+                return;
+            }
+            
+            // Clear previous visualization
+            d3.select(".zoom-layer").html("");
+            
+            const container = d3.select(".zoom-layer");
+            
+            // Set the horizontal line parameters
+            const lineY = height / 2;
+            const nodeRadius = 8;
+            const padding = 40;
+            const lineWidth = Math.max(width - (padding * 2), 1); // Ensure positive width
+            
+            // Draw a horizontal line
+            container.append("line")
+                .attr("x1", padding)
+                .attr("y1", lineY)
+                .attr("x2", width - padding)
+                .attr("y2", lineY)
+                .style("stroke", "#ccc")
+                .style("stroke-width", 2);
+            
+            // Calculate node positions along the line
+            const nodeStep = graphData.nodes.length <= 1 ? 0 : lineWidth / (graphData.nodes.length - 1);
+            
+            debug("Layout calculation", {
+                lineY,
+                nodeStep,
+                nodeCount: studyIds.length,
+                lineWidth,
+                containerWidth: width,
+                containerHeight: height
+            });
+            
+            // Create a group for curves (arcs/links) to be drawn below nodes
+            const linkGroup = container.append("g").attr("class", "links");
+            
+            // Create links as curved lines (arcs)
+            linkGroup.selectAll("path")
+                .data(graphData.links)
+                .enter().append("path")
+                .attr("class", "link")
+                .style("stroke", "#999")
+                .style("stroke-width", d => Math.max(d.value * 2, 1))
+                .style("stroke-opacity", 0.6)
+                .attr("d", d => {
+                    const sourceX = padding + d.source * nodeStep;
+                    const targetX = padding + d.target * nodeStep;
+                    const arcHeight = Math.min(Math.abs(d.source - d.target) * 15, height / 3);
+                    
+                    // Create arc path
+                    return `M ${sourceX},${lineY} Q ${(sourceX + targetX) / 2},${lineY - arcHeight} ${targetX},${lineY}`;
+                })
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .style("stroke", "#B89491")
+                        .style("stroke-opacity", 1)
+                        .style("stroke-width", Math.max(d.value * 2, 1) + 1);
+                        
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                    tooltip.html(`Similarity between ${d.sourceId} and ${d.targetId}: ${d.value.toFixed(2)}`)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function(event, d) {
+                    d3.select(this)
+                        .style("stroke", "#999")
+                        .style("stroke-opacity", 0.6)
+                        .style("stroke-width", Math.max(d.value * 2, 1));
+                        
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                });
+            
+            // Create node group to ensure nodes are drawn on top of links
+            const nodeGroup = container.append("g").attr("class", "nodes");
+            
+            // Draw nodes
+            nodeGroup.selectAll("circle")
+                .data(graphData.nodes)
+                .enter().append("circle")
+                .attr("class", "node")
+                .attr("r", nodeRadius)
+                .attr("cx", (d, i) => padding + i * nodeStep)
+                .attr("cy", lineY)
+                .style("fill", "#B89491")
+                .style("stroke", "#fff")
+                .style("stroke-width", 2)
+                .on("mouseover", function(event, d) {
+                    d3.select(this)
+                        .attr("r", nodeRadius + 2)
+                        .style("fill", "#a37c79");
+                        
+                    // Highlight connected links and nodes using the current graphData
+                    highlightConnections(d, graphData);
+                    
+                    // Get study details from cache
+                    let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
+                    
+                    // Format study info for display
+                    let studyInfo = `<strong>${study.title}</strong>`;
+                    if (study.authors) studyInfo += `<br>${study.authors}`;
+                    if (study.year) studyInfo += `<br>(${study.year})`;
+                    
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                    tooltip.html(studyInfo)
+                        .style("left", (event.pageX + 10) + "px")
+                        .style("top", (event.pageY - 28) + "px");
+                })
+                .on("mouseout", function() {
+                    d3.select(this)
+                        .attr("r", nodeRadius)
+                        .style("fill", "#B89491");
+                        
+                    // Reset links
+                    linkGroup.selectAll("path")
+                        .style("stroke", "#999")
+                        .style("stroke-opacity", 0.6);
+                    
+                    // Reset nodes
+                    nodeGroup.selectAll("circle").style("opacity", 1);
+                    
+                    // Reset labels
+                    nodeGroup.selectAll("text").style("opacity", 1);
+                        
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                })
+                .on("click", function(event, d) {
+                    // Show study details
+                    const customEvent = new CustomEvent('showStudyDetailsRequest', {
+                        detail: { studyId: d.id }
+                    });
+                    document.dispatchEvent(customEvent);
+                });
+            
+            // Draw labels
+            nodeGroup.selectAll("text")
+                .data(graphData.nodes)
+                .enter().append("text")
+                .attr("class", "node-label")
+                .text(d => {
+                    // Get study details from cache
+                    let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
+                    
+                    // Add info icon at the beginning using Unicode info symbol
+                    let labelText = `ⓘ [${d.id}]`;
+                    
+                    if (study.authors) {
+                        // Get just the last name if there are multiple authors
+                        const authorName = study.authors.split(',')[0].trim();
+                        labelText += ` ${authorName}`;
+                    }
+                    if (study.year) {
+                        labelText += ` (${study.year})`;
+                    }
+                    return labelText;
+                })
+                .attr("x", (d, i) => padding + i * nodeStep)
+                .attr("y", lineY + nodeRadius + 15)  // Position text 15px below the node
+                .attr("transform", (d, i) => `rotate(270, ${padding + i * nodeStep}, ${lineY + nodeRadius + 15})`) // Adjust rotation point
+                .style("font-size", "10px")
+                .style("text-anchor", "end") // Change from "start" to "end" to align bottom of text with nodes
+                .style("dominant-baseline", "middle") // Keep this the same
+            
+            // Show a message if there are no connections at this threshold
+            if (graphData.links.length === 0) {
+                container.append("text")
+                    .attr("x", width / 2)
+                    .attr("y", height / 2 + 40)
+                    .style("text-anchor", "middle")
+                    .style("font-size", "14px")
+                    .style("fill", "#721c24")
+                    .text("No connections found at the current threshold. Try lowering the threshold value.");
+            }
+            
+            debug("Visualization updated", {
+                nodeCount: graphData.nodes.length,
+                linkCount: graphData.links.length,
+                threshold: threshold
+            });
+        
+        } catch (error) {
+            console.error("Error updating visualization:", error);
+            debug("Error updating visualization", error.toString());
+            showStatus(`Error updating visualization: ${error.message}`, true);
+        }
+        
+        // Helper function to highlight connections
+        function highlightConnections(node, data) {
+            // Highlight connected links
+            d3.selectAll(".link").style("stroke", function(l) {
+                if (l.source === node.index || l.target === node.index) {
+                    return "#B89491";
+                } else {
+                    return "#ddd";
+                }
+            }).style("stroke-opacity", function(l) {
+                if (l.source === node.index || l.target === node.index) {
+                    return 1;
+                } else {
+                    return 0.2;
+                }
+            });
+            
+            // Highlight connected nodes
+            d3.selectAll(".node").style("opacity", function(n) {
+                return isConnected(node, n, data) ? 1 : 0.4;
+            });
+            
+            // Highlight connected labels
+            d3.selectAll(".node-label").style("opacity", function(n) {
+                return isConnected(node, n, data) ? 1 : 0.4;
+            });
+        }
+    }
+    
+    // Helper function to check if two nodes are connected
+    function isConnected(a, b, data) {
+        if (a.index === b.index) return true;
+        return data.links.some(l => 
+            (l.source === a.index && l.target === b.index) || 
+            (l.source === b.index && l.target === a.index)
+        );
+    }
+    
+    // Reset the view
+    function resetView() {
+        if (svg && zoom) {
+            // Reset zoom
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+            
+            debug("View reset");
+        }
+    }
+    
+    // Download similarity data
+    function downloadSimilarityData() {
+        try {
+            let csvContent = "data:text/csv;charset=utf-8,Study ID";
+            
+            // Add header row
+            studyIds.forEach(id => {
+                csvContent += "," + id;
+            });
+            csvContent += "\n";
+            
+            // Add data rows
+            studyIds.forEach((id, rowIndex) => {
+                csvContent += id;
+                
+                // Ensure the similarityMatrix has data for this row
+                if (rowIndex < similarityMatrix.length) {
+                    similarityMatrix[rowIndex].forEach(value => {
+                        csvContent += "," + value;
+                    });
+                }
+                csvContent += "\n";
+            });
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "similarity_matrix.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            debug("Similarity data downloaded");
+        } catch (error) {
+            console.error("Error downloading similarity data:", error);
+            debug("Error downloading similarity data", error.toString());
+            showStatus(`Error downloading similarity data: ${error.message}`, true);
+        }
+    }
+    
+    // Filter visualization based on filtered data from main interface
+    function filterSimilarityVisualization(filteredData) {
+        try {
+            if (!filteredData || filteredData.length === 0) {
+                debug("No filtered data provided");
+                return;
+            }
+            
+            debug("Filtering visualization", { filteredDataCount: filteredData.length });
+            
+            // Extract IDs from the filtered data
+            const filteredIds = filteredData.map(row => row.ID);
+            
+            // Filter studyIds and similarityMatrix to only include filtered studies
+            const filteredIndices = [];
+            const newStudyIds = [];
+            
+            studyIds.forEach((id, index) => {
+                if (filteredIds.includes(id)) {
+                    filteredIndices.push(index);
+                    newStudyIds.push(id);
+                }
+            });
+            
+            debug("Filtered studies", { 
+                originalCount: studyIds.length, 
+                filteredCount: newStudyIds.length 
+            });
+            
+            // Create a new similarity matrix with only the filtered studies
+            const newMatrix = [];
+            filteredIndices.forEach(i => {
+                if (i >= similarityMatrix.length) return; // Skip if out of bounds
+                
+                const row = [];
+                filteredIndices.forEach(j => {
+                    if (j >= similarityMatrix[i].length) return; // Skip if out of bounds
+                    row.push(similarityMatrix[i][j]);
+                });
+                
+                if (row.length > 0) {
+                    newMatrix.push(row);
+                }
+            });
+            
+            // Update global variables
+            studyIds = newStudyIds;
+            similarityMatrix = newMatrix;
+            
+            debug("Matrix filtered", { 
+                rowCount: similarityMatrix.length,
+                studyIdCount: studyIds.length 
+            });
+            
+            // Redraw visualization with current threshold
+            const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
+            updateVisualization(threshold);
+        } catch (error) {
+            console.error("Error filtering visualization:", error);
+            debug("Error filtering visualization", error.toString());
+            showStatus(`Error filtering visualization: ${error.message}`, true);
+        }
+    }
+    
+    // Expose filter function to parent
+    window.filterSimilarityVisualization = filterSimilarityVisualization;
 </script>
+

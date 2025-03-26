@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 import pandas as pd
 
 app = Flask(__name__)
@@ -37,9 +37,40 @@ def index():
         return "explanations.csv file is missing required columns", 500
     except Exception as e:
         return f"Error loading explanations.csv: {e}", 500
+    
+    # Load similarity data
+    try:
+        # Read the similarity matrix with the first column as index
+        similarity_df = pd.read_csv("abstract_similarity_datasets/normalized_similarity.csv", index_col=0)
+        
+        # Prepare data structure that preserves row/column information
+        similarity_data = {
+            'study_ids': similarity_df.columns.tolist(),
+            'matrix': similarity_df.values.tolist(),
+            'index_ids': similarity_df.index.tolist()
+        }
+        
+        # Also prepare a mapping of study IDs to their metadata for tooltips
+        if 'data' in locals():
+            # Create a dictionary mapping IDs to study information
+            study_dict = {}
+            for study in data:
+                try:
+                    study_id = str(study['ID'])  # Assuming 'ID' is the column name in data.csv
+                    study_dict[study_id] = {
+                        'title': study.get('Title', f"Study {study_id}"),
+                        'authors': study.get('First Author', 'Unknown'),
+                        'year': study.get('Year', 'N/A'),
+                        'id': study_id
+                    }
+                except (KeyError, TypeError):
+                    continue
+            similarity_data['study_details'] = study_dict
+    except Exception as e:
+        similarity_data = {'study_ids': [], 'matrix': [], 'index_ids': [], 'study_details': {}}
+        print(f"Error loading similarity data: {e}")
 
-    print(explanations)
-    return render_template("index.html", data=data, explanations=explanations)
+    return render_template("index.html", data=data, explanations=explanations, similarity_data=similarity_data)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
