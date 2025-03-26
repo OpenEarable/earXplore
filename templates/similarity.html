@@ -186,7 +186,21 @@
     
     // Wait for the page to fully load before initializing
     window.addEventListener('load', function() {
-        initializeVisualization();
+        // Short delay to ensure DOM is fully laid out
+        setTimeout(function() {
+            const container = document.getElementById('graphContainer');
+            
+            // Force layout recalculation
+            container.style.width = '100%';
+            container.style.display = 'block';
+            
+            // Force the browser to calculate the layout by accessing offsetWidth
+            const forceReflow = container.offsetWidth;
+            debug("Initial load - forcing container width calculation:", forceReflow);
+            
+            // Now initialize
+            initializeVisualization();
+        }, 500); // Longer delay to ensure DOM is fully rendered
     });
     
     // Initialize the visualization when the tab becomes visible
@@ -259,32 +273,43 @@
             navItem.addEventListener('click', function() {
                 // If this is the similarity view tab
                 if (this.getAttribute('data-section') === 'similarityView') {
-                    // Check if we need to initialize
-                    if (!svg || width === 0) {
-                        setTimeout(initializeVisualization, 200);
-                    }
+                    // Force layout calculation and initialize visualization
+                    setTimeout(function() {
+                        const container = document.getElementById('graphContainer');
+                        container.style.width = '100%';
+                        const forceReflow = container.offsetWidth;
+                        debug("Tab switch - forcing container width calculation:", forceReflow);
+                        initializeVisualization();
+                    }, 300);
                 }
             });
         });
         
-        // Listen for window resize events
+        // Listen for window resize events with a proper debounce
         window.addEventListener('resize', debounce(function() {
-            initializeVisualization();
+            const container = document.getElementById('graphContainer');
+            // Only reinitialize if the graph container is visible
+            if (container.offsetParent !== null) {
+                debug("Window resize - reinitializing visualization");
+                initializeVisualization();
+            }
         }, 250));
     });
     
-    // Handle visibility changes (for tab switching)
+    // Also update the handleVisibilityChange function to be more aggressive
     function handleVisibilityChange() {
         if (document.visibilityState === 'visible') {
             // If the document becomes visible and the container is visible
-            if (document.getElementById('similarityView').style.display !== 'none') {
-                // Re-initialize if needed
+            const similarityView = document.getElementById('similarityView');
+            if (similarityView && similarityView.style.display !== 'none') {
+                // Force layout calculation and initialize visualization
                 setTimeout(function() {
                     const container = document.getElementById('graphContainer');
-                    if (container.clientWidth > 0 && (!svg || width === 0)) {
-                        initializeVisualization();
-                    }
-                }, 200);
+                    container.style.width = '100%';
+                    const forceReflow = container.offsetWidth;
+                    debug("Visibility change - forcing container width calculation:", forceReflow);
+                    initializeVisualization();
+                }, 300);
             }
         }
     }
@@ -308,35 +333,53 @@
         
         const container = document.getElementById('graphContainer');
         
-        // Force minimum dimensions
-        if (container.clientWidth === 0) {
-            debug("Container has zero width, setting fixed width");
-            container.style.width = '800px';
+        // Force the container to be visible and take full width
+        container.style.display = 'block';
+        container.style.width = '100%';
+        
+        // Force a layout recalculation by accessing offsetWidth
+        const forceReflow = container.offsetWidth;
+        
+        // Get dimensions after forcing layout
+        width = container.offsetWidth;  // Use offsetWidth instead of clientWidth
+        height = container.offsetHeight || 600;  // Fallback to 600px if zero
+        
+        debug("Container dimensions measured", { width, height });
+        
+        // If width is still small or zero, try using parent container width or a minimum width
+        if (width < 200) {
+            debug("Container width is too small, using parent width or minimum");
+            width = container.parentElement ? 
+                Math.max(container.parentElement.offsetWidth - 40, 800) : 800;
+            debug("Adjusted width to", width);
         }
-        
-        // Get dimensions after potential style changes
-        width = container.clientWidth || 800;  // Fallback to 800px if still zero
-        height = container.clientHeight || 600;  // Fallback to 600px if zero
-        
-        debug("Container dimensions", { width, height });
         
         // Clear container and create SVG
         d3.select("#graphContainer").html("");
         
         svg = d3.select("#graphContainer").append("svg")
-            .attr("width", "100%")
+            .attr("width", "100%") 
             .attr("height", "100%")
-            .attr("viewBox", [0, 0, width, height]);
+            .attr("viewBox", `0 0 ${width} ${height}`)
+            .attr("preserveAspectRatio", "xMidYMid meet");
             
-        // Create a container group without zoom transformation
+        // Create a container group - no transform applied here to use full width
         svg.append("g")
             .attr("class", "viz-layer");
             
         // Clear status once everything is loaded
         showStatus("");
         
-        // Initialize with threshold 0.5
-        updateVisualization(0);
+        // Initialize with current threshold
+        const threshold = parseFloat(document.getElementById('thresholdValue').textContent || "0");
+        updateVisualization(threshold);
+        
+        debug("Visualization initialized with dimensions", { 
+            width, 
+            height, 
+            containerWidth: container.offsetWidth,
+            threshold 
+        });
     }
     
     // Generate graph data from the similarity matrix
@@ -405,10 +448,10 @@
             
             const container = d3.select(".viz-layer");
             
-            // Set the horizontal line parameters
+            // Set the horizontal line parameters - use more of the width
             const lineY = height / 2;
             const nodeRadius = 8;
-            const padding = 40;
+            const padding = width * 0.05; // Use 5% padding on each side instead of fixed 40px
             const lineWidth = Math.max(width - (padding * 2), 1); // Ensure positive width
             
             // Draw a horizontal line
@@ -429,7 +472,8 @@
                 nodeCount: studyIds.length,
                 lineWidth,
                 containerWidth: width,
-                containerHeight: height
+                containerHeight: height,
+                padding: padding
             });
             
             // Create a group for curves (arcs/links) to be drawn below nodes
@@ -573,7 +617,7 @@
             if (graphData.links.length === 0) {
                 container.append("text")
                     .attr("x", width / 2)
-                    .attr("y", height / 2 + 40)
+                    .attr("y", height / 2 - 100)
                     .style("text-anchor", "middle")
                     .style("font-size", "14px")
                     .style("fill", "#721c24")
