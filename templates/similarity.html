@@ -273,7 +273,7 @@
             const sliderElement = document.getElementById('thresholdSlider');
             
             noUiSlider.create(sliderElement, {
-                start: [0], // Default to mean (0 standard deviations)
+                start: [1], // Default to 1 steddev
                 connect: true,
                 range: {
                     'min': -3, // Typically -3 standard deviations
@@ -489,34 +489,39 @@
         return { nodes, links };
     }
     
-    // Update the visualization based on the threshold
     function updateVisualization(threshold) {
-        try {
-            debug(`Updating visualization with threshold: ${threshold}`);
-            
-            if (!svg || width === 0) {
-                debug("SVG not initialized or has zero width, aborting update");
-                return;
-            }
-            
-            // Generate graph data
-            const graphData = generateGraphData(threshold);
-            
-            if (graphData.nodes.length === 0) {
-                showStatus("No nodes available to visualize.", true);
-                return;
-            }
-            
-            // Clear previous visualization
-            d3.select(".viz-layer").html("");
-            
-            const container = d3.select(".viz-layer");
-            
-            // Set the horizontal line parameters - use more of the width
+    try {
+        debug(`Updating visualization with threshold: ${threshold}`);
+        
+        if (!svg || width === 0) {
+            debug("SVG not initialized or has zero width, aborting update");
+            return;
+        }
+        
+        // Generate graph data
+        const graphData = generateGraphData(threshold);
+        
+        if (graphData.nodes.length === 0) {
+            showStatus("No nodes available to visualize.", true);
+            return;
+        }
+        
+        // Clear previous visualization
+        d3.select(".viz-layer").html("");
+        
+        const container = d3.select(".viz-layer");
+        
+        // Determine if we should use the U-shaped layout (when node count > 50)
+        const useULayout = graphData.nodes.length > 50;
+        
+        // Set layout parameters based on layout type
+        const nodeRadius = 8;
+        const padding = width * 0.05; // 5% padding on each side
+        const lineWidth = Math.max(width - (padding * 2), 1); // Ensure positive width
+        
+        if (!useULayout) {
+            // Standard horizontal line layout
             const lineY = height / 2;
-            const nodeRadius = 8;
-            const padding = width * 0.05; // Use 5% padding on each side instead of fixed 40px
-            const lineWidth = Math.max(width - (padding * 2), 1); // Ensure positive width
             
             // Draw a horizontal line
             container.append("line")
@@ -530,118 +535,456 @@
             // Calculate node positions along the line
             const nodeStep = graphData.nodes.length <= 1 ? 0 : lineWidth / (graphData.nodes.length - 1);
             
-            debug("Layout calculation", {
-                lineY,
-                nodeStep,
-                nodeCount: studyIds.length,
-                lineWidth,
-                containerWidth: width,
-                containerHeight: height,
-                padding: padding
-            });
+            // Draw links, nodes, and labels for standard layout
+            drawStandardLayout(container, graphData, lineY, nodeStep, padding, nodeRadius);
             
-            // Create a group for curves (arcs/links) to be drawn below nodes
-            const linkGroup = container.append("g").attr("class", "links");
+        } else {
+            // U-shaped layout for large datasets
+            const topLineY = height * 0.25; // Top line at 1/4 of the height
+            const bottomLineY = height * 0.75; // Bottom line at 3/4 of the height
+            const halfNodeCount = Math.ceil(graphData.nodes.length / 2);
             
-            // Create links as curved lines (arcs)
-            linkGroup.selectAll("path")
-                .data(graphData.links)
-                .enter().append("path")
-                .attr("class", "link")
+            // Draw top horizontal line
+            container.append("line")
+                .attr("x1", padding)
+                .attr("y1", topLineY)
+                .attr("x2", width - padding)
+                .attr("y2", topLineY)
+                .style("stroke", "#ccc")
+                .style("stroke-width", 2);
+                
+            // Draw bottom horizontal line
+            container.append("line")
+                .attr("x1", padding)
+                .attr("y1", bottomLineY)
+                .attr("x2", width - padding)
+                .attr("y2", bottomLineY)
+                .style("stroke", "#ccc")
+                .style("stroke-width", 2);
+                
+            // Draw connecting curves on the sides
+            /*
+            container.append("path")
+                .attr("d", `M ${padding},${topLineY} Q ${padding - width * 0.05},${height/2} ${padding},${bottomLineY}`)
+                .style("stroke", "#ccc")
+                .style("fill", "none")
+                .style("stroke-width", 2);
+                
+            container.append("path")
+                .attr("d", `M ${width - padding},${topLineY} Q ${width - padding + width * 0.05},${height/2} ${width - padding},${bottomLineY}`)
+                .style("stroke", "#ccc")
+                .style("fill", "none")
+                .style("stroke-width", 2); */
+                
+            // Calculate node steps for top and bottom
+            const nodeStep = lineWidth / (Math.max(halfNodeCount, 1) - 1);
+            
+            // Draw links, nodes, and labels for U layout
+            drawUShapedLayout(container, graphData, topLineY, bottomLineY, nodeStep, padding, nodeRadius, halfNodeCount);
+        }
+        
+        // Show a message if there are no connections at this threshold
+        if (graphData.links.length === 0) {
+            container.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2 - 100)
+                .style("text-anchor", "middle")
+                .style("font-size", "14px")
+                .style("fill", "#721c24")
+                .text("No connections found at the current threshold. Try lowering the threshold value.");
+        }
+        
+        debug("Visualization updated", {
+            nodeCount: graphData.nodes.length,
+            linkCount: graphData.links.length,
+            threshold: threshold,
+            layout: useULayout ? "U-shaped" : "Standard"
+        });
+    
+    } catch (error) {
+        console.error("Error updating visualization:", error);
+        debug("Error updating visualization", error.toString());
+        showStatus(`Error updating visualization: ${error.message}`, true);
+    }
+}
+
+// Helper function to draw standard horizontal layout
+function drawStandardLayout(container, graphData, lineY, nodeStep, padding, nodeRadius) {
+    // Create a group for curves (arcs/links) to be drawn below nodes
+    const linkGroup = container.append("g").attr("class", "links");
+    
+    // Draw links
+    linkGroup.selectAll("path")
+        .data(graphData.links)
+        .enter().append("path")
+        .attr("class", "link")
+        .style("stroke", "#999")
+        .style("stroke-width", 1)
+        .style("stroke-opacity", 0.6)
+        .attr("d", d => {
+            const sourceX = padding + d.source * nodeStep;
+            const targetX = padding + d.target * nodeStep;
+            const arcHeight = Math.min(Math.abs(d.source - d.target) * 15, height / 3);
+            
+            // Create arc path
+            return `M ${sourceX},${lineY} Q ${(sourceX + targetX) / 2},${lineY - arcHeight} ${targetX},${lineY}`;
+        })
+        .on("mouseover", function(event, d) {
+            d3.select(this)
+                .style("stroke", "#B89491")
+                .style("stroke-opacity", 1)
+                .style("stroke-width", 1.5);
+                
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", 0.9);
+            tooltip.html(`Similarity between ${d.sourceId} and ${d.targetId}: ${d.value.toFixed(2)}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(event, d) {
+            d3.select(this)
                 .style("stroke", "#999")
-                .style("stroke-width", 1)
                 .style("stroke-opacity", 0.6)
-                .attr("d", d => {
-                    const sourceX = padding + d.source * nodeStep;
-                    const targetX = padding + d.target * nodeStep;
-                    const arcHeight = Math.min(Math.abs(d.source - d.target) * 15, height / 3);
-                    
-                    // Create arc path
-                    return `M ${sourceX},${lineY} Q ${(sourceX + targetX) / 2},${lineY - arcHeight} ${targetX},${lineY}`;
-                })
-                .on("mouseover", function(event, d) {
-                    d3.select(this)
-                        .style("stroke", "#B89491")
-                        .style("stroke-opacity", 1)
-                        .style("stroke-width", 1.5);
-                        
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", 0.9);
-                    tooltip.html(`Similarity between ${d.sourceId} and ${d.targetId}: ${d.value.toFixed(2)}`)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
-                })
-                .on("mouseout", function(event, d) {
-                    d3.select(this)
-                        .style("stroke", "#999")
-                        .style("stroke-opacity", 0.6)
-                        .style("stroke-width", 1);
-                        
-                    tooltip.transition()
-                        .duration(500)
-                        .style("opacity", 0);
-                });
+                .style("stroke-width", 1);
+                
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+    
+    // Create node group to ensure nodes are drawn on top of links
+    const nodeGroup = container.append("g").attr("class", "nodes");
+    
+    // Draw nodes (existing code)
+    const nodes = nodeGroup.selectAll("circle")
+        .data(graphData.nodes)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", nodeRadius)
+        .attr("cx", (d, i) => padding + i * nodeStep)
+        .attr("cy", lineY)
+        .style("fill", "#B89491")
+        .style("stroke", "#fff")
+        .style("stroke-width", 2);
+    
+    // Add event handlers to nodes (mouseover, mouseout, click)
+    addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius);
+    
+    // Draw labels (same as before)
+    nodeGroup.selectAll("text")
+        .data(graphData.nodes)
+        .enter().append("text")
+        .attr("class", "node-label")
+        .each(function(d, i) {
+            // Add labels with the info icon, etc.
+            addNodeLabel(d3.select(this), d);
+        })
+        .attr("x", (d, i) => padding + i * nodeStep)
+        .attr("y", lineY + nodeRadius + 15)  // Position text 15px below the node
+        .attr("transform", (d, i) => `rotate(270, ${padding + i * nodeStep}, ${lineY + nodeRadius + 15})`)
+        .style("font-size", "10px")
+        .style("text-anchor", "end")
+        .style("dominant-baseline", "middle")
+        .style("pointer-events", "all");
+    
+    // Add click handlers to info icons
+    addInfoIconClickHandlers();
+}
+
+// Helper function to highlight connections when hovering over a node
+function highlightConnections(node, graphData) {
+    try {
+        // Step 1: Find all connected links and nodes
+        const connectedNodeIndices = new Set();
+        const connectedLinkIndices = new Set();
+
+        // Add the current node to the set of highlighted nodes
+        connectedNodeIndices.add(node.index);
+        
+        // Find all links and connected nodes
+        graphData.links.forEach((link, linkIndex) => {
+            // Handle both possible D3 representations (direct indices or objects)
+            const sourceIndex = typeof link.source === 'object' ? link.source.index : link.source;
+            const targetIndex = typeof link.target === 'object' ? link.target.index : link.target;
             
-            // Create node group to ensure nodes are drawn on top of links
-            const nodeGroup = container.append("g").attr("class", "nodes");
+            // Check if this node is part of the link
+            if (sourceIndex === node.index) {
+                // This node is the source
+                connectedNodeIndices.add(targetIndex);
+                connectedLinkIndices.add(linkIndex);
+            } else if (targetIndex === node.index) {
+                // This node is the target
+                connectedNodeIndices.add(sourceIndex);
+                connectedLinkIndices.add(linkIndex);
+            }
+        });
+
+        // Step 2: Apply highlighting to links
+        d3.selectAll(".link")
+            .style("stroke", (_, i) => connectedLinkIndices.has(i) ? "#B89491" : "#999")
+            .style("stroke-opacity", (_, i) => connectedLinkIndices.has(i) ? 1 : 0.3)
+            .style("stroke-width", (_, i) => connectedLinkIndices.has(i) ? 1.5 : 1);
+        
+        // Step 3: Apply highlighting to nodes
+        d3.selectAll(".node")
+            .style("opacity", (d) => connectedNodeIndices.has(d.index) ? 1 : 0.3);
+        
+        // Step 4: Apply highlighting to labels
+        d3.selectAll(".node-label")
+            .style("opacity", (d) => connectedNodeIndices.has(d.index) ? 1 : 0.3);
             
-            // Draw nodes
-            nodeGroup.selectAll("circle")
-                .data(graphData.nodes)
-                .enter().append("circle")
-                .attr("class", "node")
-                .attr("r", nodeRadius)
-                .attr("cx", (d, i) => padding + i * nodeStep)
-                .attr("cy", lineY)
-                .style("fill", "#B89491")
-                .style("stroke", "#fff")
-                .style("stroke-width", 2)
-                .on("mouseover", function(event, d) {
+    } catch (error) {
+        console.error("Error in highlightConnections:", error);
+        // In case of error, reset everything to visible
+        d3.selectAll(".link").style("stroke", "#999").style("stroke-opacity", 0.6).style("stroke-width", 1);
+        d3.selectAll(".node").style("opacity", 1);
+        d3.selectAll(".node-label").style("opacity", 1);
+    }
+}
+
+// Helper function to check if two nodes are connected - use this with caution as we now use the index-based approach above
+function isConnected(a, b, data) {
+    if (a.index === b.index) return true;
+    
+    return data.links.some(l => {
+        // Handle both possible representations of source/target
+        const sourceIndex = typeof l.source === 'object' ? l.source.index : l.source;
+        const targetIndex = typeof l.target === 'object' ? l.target.index : l.target;
+        
+        return (sourceIndex === a.index && targetIndex === b.index) || 
+               (sourceIndex === b.index && targetIndex === a.index);
+    });
+}
+
+
+// Helper function to draw U-shaped layout
+function drawUShapedLayout(container, graphData, topLineY, bottomLineY, nodeStep, padding, nodeRadius, halfNodeCount) {
+    // Create a group for curves (arcs/links) to be drawn below nodes
+    const linkGroup = container.append("g").attr("class", "links");
+    
+    // Draw links with updated path calculations for U layout
+    linkGroup.selectAll("path")
+        .data(graphData.links)
+        .enter().append("path")
+        .attr("class", "link")
+        .style("stroke", "#999")
+        .style("stroke-width", 1) 
+        .style("stroke-opacity", 0.6)
+        .attr("d", d => {
+            let sourceX, sourceY, targetX, targetY;
+            
+            // Calculate source position (top or bottom)
+            if (d.source < halfNodeCount) {
+                // Source is on top line
+                sourceX = padding + d.source * nodeStep;
+                sourceY = topLineY;
+            } else {
+                // Source is on bottom line
+                sourceX = padding + (d.source - halfNodeCount) * nodeStep;
+                sourceY = bottomLineY;
+            }
+            
+            // Calculate target position (top or bottom)
+            if (d.target < halfNodeCount) {
+                // Target is on top line
+                targetX = padding + d.target * nodeStep;
+                targetY = topLineY;
+            } else {
+                // Target is on bottom line
+                targetX = padding + (d.target - halfNodeCount) * nodeStep;
+                targetY = bottomLineY;
+            }
+            
+                // Create different arc paths based on whether nodes are on same or different lines
+                if (sourceY === targetY) {
+                    // Both nodes on same line
+                    const arcHeight = Math.min(Math.abs(sourceX - targetX) * 0.3, height / 5);
+                    const arcDirection = sourceY === topLineY ? 1 : -1; // Down for top line, up for bottom (inner side)
+                    return `M ${sourceX},${sourceY} Q ${(sourceX + targetX) / 2},${sourceY + arcHeight * arcDirection} ${targetX},${targetY}`;
+                } else {
+                    // Nodes on different lines (top to bottom) - use a more curved path to keep them inside
+                    const midY = (sourceY + targetY) / 2;
+                    const controlX1 = sourceX + (targetX - sourceX) / 4;
+                    const controlX2 = sourceX + (targetX - sourceX) * 3/4;
+                    return `M ${sourceX},${sourceY} C ${controlX1},${midY} ${controlX2},${midY} ${targetX},${targetY}`;
+                }
+            })
+        .on("mouseover", function(event, d) {
+            d3.select(this)
+                .style("stroke", "#B89491")
+                .style("stroke-opacity", 1)
+                .style("stroke-width", 1.5);
+                
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", 0.9);
+            tooltip.html(`Similarity between ${d.sourceId} and ${d.targetId}: ${d.value.toFixed(2)}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", function(event, d) {
+            d3.select(this)
+                .style("stroke", "#999")
+                .style("stroke-opacity", 0.6)
+                .style("stroke-width", 1);
+                
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        });
+    
+    // Create node group to ensure nodes are drawn on top of links
+    const nodeGroup = container.append("g").attr("class", "nodes");
+    
+    // Draw nodes with updated positions for U layout
+    const nodes = nodeGroup.selectAll("circle")
+        .data(graphData.nodes)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", nodeRadius)
+        .attr("cx", (d, i) => {
+            if (i < halfNodeCount) {
+                // First half goes on top line
+                return padding + i * nodeStep;
+            } else {
+                // Second half goes on bottom line
+                return padding + (i - halfNodeCount) * nodeStep;
+            }
+        })
+        .attr("cy", (d, i) => i < halfNodeCount ? topLineY : bottomLineY)
+        .style("fill", "#B89491")
+        .style("stroke", "#fff")
+        .style("stroke-width", 2);
+    
+    // Add event handlers to nodes
+    addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius);
+        
+    // Draw labels with different placement for top and bottom nodes
+    nodeGroup.selectAll("text")
+        .data(graphData.nodes)
+        .enter().append("text")
+        .attr("class", "node-label")
+        .each(function(d, i) {
+            // Add labels with the info icon
+            addNodeLabel(d3.select(this), d);
+        })
+        .attr("x", (d, i) => {
+            if (i < halfNodeCount) {
+                // First half on top
+                return padding + i * nodeStep;
+            } else {
+                // Second half on bottom
+                return padding + (i - halfNodeCount) * nodeStep;
+            }
+        })
+        .attr("y", (d, i) => {
+            if (i < halfNodeCount) {
+                // Labels ABOVE top nodes
+                return topLineY - nodeRadius - 15;
+            } else {
+                // Labels BELOW bottom nodes
+                return bottomLineY + nodeRadius + 15;
+            }
+        })
+        .attr("transform", (d, i) => {
+            const x = i < halfNodeCount 
+                ? padding + i * nodeStep 
+                : padding + (i - halfNodeCount) * nodeStep;
+                
+            const y = i < halfNodeCount 
+                ? topLineY - nodeRadius - 15 // Above top line
+                : bottomLineY + nodeRadius + 15; // Below bottom line
+                
+            // Rotate labels differently based on position
+            return i < halfNodeCount 
+                ? `rotate(270, ${x}, ${y})` // Top line rotation
+                : `rotate(270, ${x}, ${y})`; // Bottom line rotation
+        })
+        .style("font-size", "10px")
+        .style("text-anchor", (d, i) => i < halfNodeCount ? "start" : "end")
+        .style("dominant-baseline", "middle")
+        .style("pointer-events", "all");
+        
+    // Add click handlers to info icons
+    addInfoIconClickHandlers();
+}
+
+// Helper function to add node label with info icon
+function addNodeLabel(textElement, d) {
+    // Get study details from cache
+    let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
+    
+    // First tspan for the info icon
+    const infoIcon = textElement.append("tspan")
+        .attr("class", "info-icon")
+        .text("ⓘ ")
+        .style("cursor", "pointer")
+        .style("font-weight", "bold")
+        .style("fill", "#B89491");
+    
+    // Add the rest of the text in a second tspan
+    let labelText = `[${d.id}]`;
+    if (study.authors) {
+        // Get just the last name if there are multiple authors
+        const authorName = study.authors.split(',')[0].trim();
+        labelText += ` ${authorName}`;
+    }
+    if (study.year) {
+        labelText += ` (${study.year})`;
+    }
+    
+    textElement.append("tspan")
+        .text(labelText);
+}
+
+// Helper function to add click handlers to info icons
+function addInfoIconClickHandlers() {
+    // Add click handlers to info icons after they're in the DOM
+    d3.selectAll(".info-icon").on("click", function(event, d) {
+        event.stopPropagation();
+        // Get the data from the parent
+        const parentData = d3.select(this.parentNode).datum();
+        // Show study details
+        const customEvent = new CustomEvent('showStudyDetailsRequest', {
+            detail: { studyId: parentData.id }
+        });
+        document.dispatchEvent(customEvent);
+    });
+}
+
+        // Helper function to add event handlers to nodes
+        function addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius) {
+            nodes.on("mouseover", function(event, d) {
                     d3.select(this)
                         .attr("r", nodeRadius + 2)
                         .style("fill", "#a37c79");
                         
                     // Highlight connected links and nodes using the current graphData
                     highlightConnections(d, graphData);
-                    
-                    // Get study details from cache
-                    let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
-                    
-                    // Format study info for display
-                    let studyInfo = `<strong>${study.title}</strong>`;
-                    if (study.authors) studyInfo += `<br>${study.authors}`;
-                    if (study.year) studyInfo += `<br>(${study.year})`;
-                    
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", 0.9);
-                    tooltip.html(studyInfo)
-                        .style("left", (event.pageX + 10) + "px")
-                        .style("top", (event.pageY - 28) + "px");
+
                 })
                 .on("mouseout", function() {
                     d3.select(this)
-                        .attr("r", nodeRadius)
+                        .attr("r", nodeRadius)  // Now this will work correctly
                         .style("fill", "#B89491");
                         
                     // Reset links
-                    linkGroup.selectAll("path")
+                    d3.selectAll(".link")
                         .style("stroke", "#999")
-                        .style("stroke-opacity", 0.6);
+                        .style("stroke-opacity", 0.6)
+                        .style("stroke-width", 1);
                     
                     // Reset nodes
-                    nodeGroup.selectAll("circle").style("opacity", 1);
+                    d3.selectAll(".node").style("opacity", 1);
                     
                     // Reset labels
-                    nodeGroup.selectAll("text").style("opacity", 1);
+                    d3.selectAll(".node-label").style("opacity", 1);
                         
                     tooltip.transition()
                         .duration(500)
                         .style("opacity", 0);
                 })
-
-                // Replace the existing .on("click", function(event, d) {...}) handler with this:
                 .on("click", function(event, d) {
                     // Find all connections above the threshold for this node
                     const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
@@ -757,123 +1100,9 @@
                     
                     // Show the modal using Bootstrap
                     connectionsModal.show();
-                })
-            
-            // Draw labels
-            nodeGroup.selectAll("text")
-                .data(graphData.nodes)
-                .enter().append("text")
-                .attr("class", "node-label")
-                .each(function(d, i) {
-                    // Get study details from cache
-                    let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
-                    
-                    // Reference to the current text element
-                    const textElement = d3.select(this);
-                    
-                    // Create tspan elements for better control
-                    // First tspan for the info icon
-                    const infoIcon = textElement.append("tspan")
-                        .attr("class", "info-icon")
-                        .text("ⓘ ")
-                        .style("cursor", "pointer")
-                        .style("font-weight", "bold")
-                        .style("fill", "#B89491");
-                    
-                    // Add the rest of the text in a second tspan
-                    let labelText = `[${d.id}]`;
-                    if (study.authors) {
-                        // Get just the last name if there are multiple authors
-                        const authorName = study.authors.split(',')[0].trim();
-                        labelText += ` ${authorName}`;
-                    }
-                    if (study.year) {
-                        labelText += ` (${study.year})`;
-                    }
-                    
-                    textElement.append("tspan")
-                        .text(labelText);
-                })
-                .attr("x", (d, i) => padding + i * nodeStep)
-                .attr("y", lineY + nodeRadius + 15)  // Position text 15px below the node
-                .attr("transform", (d, i) => `rotate(270, ${padding + i * nodeStep}, ${lineY + nodeRadius + 15})`)
-                .style("font-size", "10px")
-                .style("text-anchor", "end")
-                .style("dominant-baseline", "middle")
-                .style("pointer-events", "all"); // Enable pointer events on text
-
-            // Add click handlers to info icons after they're in the DOM
-            d3.selectAll(".info-icon").on("click", function(event, d) {
-                event.stopPropagation();
-                // Get the data from the parent
-                const parentData = d3.select(this.parentNode).datum();
-                // Show study details
-                const customEvent = new CustomEvent('showStudyDetailsRequest', {
-                    detail: { studyId: parentData.id }
                 });
-                document.dispatchEvent(customEvent);
-            });
-            
-            // Show a message if there are no connections at this threshold
-            if (graphData.links.length === 0) {
-                container.append("text")
-                    .attr("x", width / 2)
-                    .attr("y", height / 2 - 100)
-                    .style("text-anchor", "middle")
-                    .style("font-size", "14px")
-                    .style("fill", "#721c24")
-                    .text("No connections found at the current threshold. Try lowering the threshold value.");
-            }
-            
-            debug("Visualization updated", {
-                nodeCount: graphData.nodes.length,
-                linkCount: graphData.links.length,
-                threshold: threshold
-            });
-        
-        } catch (error) {
-            console.error("Error updating visualization:", error);
-            debug("Error updating visualization", error.toString());
-            showStatus(`Error updating visualization: ${error.message}`, true);
         }
-        
-        // Helper function to highlight connections
-        function highlightConnections(node, data) {
-            // Highlight connected links
-            d3.selectAll(".link").style("stroke", function(l) {
-                if (l.source === node.index || l.target === node.index) {
-                    return "#B89491";
-                } else {
-                    return "#ddd";
-                }
-            }).style("stroke-opacity", function(l) {
-                if (l.source === node.index || l.target === node.index) {
-                    return 1;
-                } else {
-                    return 0.2;
-                }
-            });
-            
-            // Highlight connected nodes
-            d3.selectAll(".node").style("opacity", function(n) {
-                return isConnected(node, n, data) ? 1 : 0.4;
-            });
-            
-            // Highlight connected labels
-            d3.selectAll(".node-label").style("opacity", function(n) {
-                return isConnected(node, n, data) ? 1 : 0.4;
-            });
-        }
-    }
-    
-    // Helper function to check if two nodes are connected
-    function isConnected(a, b, data) {
-        if (a.index === b.index) return true;
-        return data.links.some(l => 
-            (l.source === a.index && l.target === b.index) || 
-            (l.source === b.index && l.target === a.index)
-        );
-    }
+
     
     // Reset the view
     function resetView() {
