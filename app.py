@@ -57,13 +57,29 @@ def index():
             for study in data:
                 try:
                     study_id = str(study['ID'])  # Assuming 'ID' is the column name in data.csv
-                    study_dict[study_id] = {
+                    
+                    # Create a copy of the entire study data for this ID
+                    study_details = {
+                        # Include all fields from the study
+                        **study,
+                        # Ensure these critical fields are always present with defaults
                         'title': study.get('Title', f"Study {study_id}"),
                         'authors': study.get('First Author', 'Unknown'),
                         'year': study.get('Year', 'N/A'),
                         'id': study_id
                     }
-                except (KeyError, TypeError):
+                    
+                    # Convert all values to strings to avoid JSON serialization issues
+                    for key, value in study_details.items():
+                        if pd.isna(value):
+                            study_details[key] = 'N/A'
+                        else:
+                            study_details[key] = str(value) if not isinstance(value, (int, float, bool, str, list, dict)) else value
+                    
+                    study_dict[study_id] = study_details
+                    
+                except (KeyError, TypeError) as e:
+                    print(f"Error processing study ID {study.get('ID', 'unknown')}: {e}")
                     continue
             similarity_data['study_details'] = study_dict
     except Exception as e:
