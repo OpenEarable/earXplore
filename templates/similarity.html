@@ -131,7 +131,11 @@
         statusContainer.innerHTML = `<div class="${isError ? 'error-message' : 'alert alert-info'}">${message}</div>`;
     }
     
-    // Process the raw similarity data from CSV
+    // Add these variables at the top of the script section, with your other global variables
+    let originalStudyIds = []; // To store the original study IDs
+    let originalSimilarityMatrix = []; // To store the original similarity matrix
+
+    // Modify the processSimilarityData function to cache the original data
     function processSimilarityData() {
         try {
             // Get the raw data from the template
@@ -146,6 +150,8 @@
             
             // Extract study IDs from the provided data
             studyIds = rawData.study_ids;
+            // Cache original study IDs
+            originalStudyIds = [...studyIds];
             
             // Store study details for tooltips if available
             studyDetailsCache = rawData.study_details || {};
@@ -159,6 +165,8 @@
             
             // Process the similarity matrix
             similarityMatrix = rawData.matrix || [];
+            // Cache original similarity matrix (deep copy)
+            originalSimilarityMatrix = similarityMatrix.map(row => [...row]);
             
             debug("Processed similarity matrix", { rows: similarityMatrix.length });
             
@@ -679,8 +687,15 @@
     // Filter visualization based on filtered data from main interface
     function filterSimilarityVisualization(filteredData) {
         try {
+            // First, reset to original data
+            studyIds = [...originalStudyIds];
+            similarityMatrix = originalSimilarityMatrix.map(row => [...row]);
+            
             if (!filteredData || filteredData.length === 0) {
-                debug("No filtered data provided");
+                debug("No filtered data provided or empty filter - showing all studies");
+                // Just use the original data
+                const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
+                updateVisualization(threshold);
                 return;
             }
             

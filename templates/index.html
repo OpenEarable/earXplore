@@ -453,6 +453,11 @@
 
                 // Generate bar charts with the filtered data
                 generateBarCharts(filteredData, selectedColumns);
+
+                // Filter similarity visualization if it exists
+                if (window.filterSimilarityVisualization) {
+                    window.filterSimilarityVisualization(filteredData);
+                }
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
@@ -810,19 +815,38 @@
         document.addEventListener("DOMContentLoaded", function() {
             const navbarItems = document.querySelectorAll(".navbar-item");
             const sections = document.querySelectorAll(".content-section");
-    
+
             navbarItems.forEach(item => {
                 item.addEventListener("click", function() {
                     // Remove selected class from all items
                     navbarItems.forEach(nav => nav.classList.remove("navbar-item-selected"));
                     // Add selected class to clicked item
                     this.classList.add("navbar-item-selected");
-    
+
                     // Hide all sections
                     sections.forEach(section => section.style.display = "none");
                     // Show selected section
                     const sectionId = this.getAttribute("data-section");
                     document.getElementById(sectionId).style.display = "block";
+                    
+                    // If switching to similarity view, apply current filters
+                    if (sectionId === "similarityView" && window.filterSimilarityVisualization) {
+                        // Get currently filtered data (visible rows)
+                        const filteredData = [];
+                        $('tbody tr:visible').each(function() {
+                            const rowData = {};
+                            $(this).find('td').each(function(index) {
+                                const colName = $('table thead th').eq(index).data('col');
+                                if (colName) {
+                                    rowData[colName] = $(this).text().trim();
+                                }
+                            });
+                            filteredData.push(rowData);
+                        });
+                        
+                        // Apply filters to similarity visualization
+                        window.filterSimilarityVisualization(filteredData);
+                    }
                 });
             });
         });
