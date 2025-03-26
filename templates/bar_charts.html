@@ -40,6 +40,16 @@
         width: 100% !important;
         height: 250px !important;
     }
+
+    /* Style for transparent modal when another modal is on top */
+    .transparent-background-modal {
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    
+    .transparent-background-modal .modal-backdrop {
+        opacity: 0 !important;
+    }
 </style>
 
 <div id="chartsContainer"></div>
@@ -62,9 +72,27 @@
 
 <script>
     // Cache modal instance - avoids creating a new one for each click
-    let barChartInfoModal;
     document.addEventListener('DOMContentLoaded', function() {
         barChartInfoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
+        
+        // Add event listeners for the main info modal from index.html
+        const mainInfoModal = document.getElementById('infoModal');
+        
+        // When the main info modal opens, make the bar chart modal transparent
+        mainInfoModal.addEventListener('show.bs.modal', function() {
+            const barChartModalElement = document.getElementById('infoModalBarCharts');
+            if (barChartModalElement && barChartModalElement.classList.contains('show')) {
+                barChartModalElement.classList.add('transparent-background-modal');
+            }
+        });
+        
+        // When the main info modal closes, restore the bar chart modal
+        mainInfoModal.addEventListener('hidden.bs.modal', function() {
+            const barChartModalElement = document.getElementById('infoModalBarCharts');
+            if (barChartModalElement) {
+                barChartModalElement.classList.remove('transparent-background-modal');
+            }
+        });
     });
 
     // Shared color palette - consider moving to a separate file
