@@ -72,6 +72,16 @@
         border: 1px solid #ddd;
         border-radius: 5px;
     }
+
+    .info-icon {
+        cursor: pointer;
+        transition: transform 0.2s ease, fill 0.2s ease;
+    }
+
+    .info-icon:hover {
+        fill: #a37c79 !important;
+        transform: scale(1.2);
+    }
 </style>
 
 <div id="similarityContainer">
@@ -589,13 +599,24 @@
                 .data(graphData.nodes)
                 .enter().append("text")
                 .attr("class", "node-label")
-                .text(d => {
+                .each(function(d, i) {
                     // Get study details from cache
                     let study = studyDetailsCache[d.id] || { title: `Study #${d.id}`, id: d.id };
                     
-                    // Add info icon at the beginning using Unicode info symbol
-                    let labelText = `ⓘ [${d.id}]`;
+                    // Reference to the current text element
+                    const textElement = d3.select(this);
                     
+                    // Create tspan elements for better control
+                    // First tspan for the info icon
+                    const infoIcon = textElement.append("tspan")
+                        .attr("class", "info-icon")
+                        .text("ⓘ ")
+                        .style("cursor", "pointer")
+                        .style("font-weight", "bold")
+                        .style("fill", "#B89491");
+                    
+                    // Add the rest of the text in a second tspan
+                    let labelText = `[${d.id}]`;
                     if (study.authors) {
                         // Get just the last name if there are multiple authors
                         const authorName = study.authors.split(',')[0].trim();
@@ -604,14 +625,29 @@
                     if (study.year) {
                         labelText += ` (${study.year})`;
                     }
-                    return labelText;
+                    
+                    textElement.append("tspan")
+                        .text(labelText);
                 })
                 .attr("x", (d, i) => padding + i * nodeStep)
                 .attr("y", lineY + nodeRadius + 15)  // Position text 15px below the node
-                .attr("transform", (d, i) => `rotate(270, ${padding + i * nodeStep}, ${lineY + nodeRadius + 15})`) // Adjust rotation point
+                .attr("transform", (d, i) => `rotate(270, ${padding + i * nodeStep}, ${lineY + nodeRadius + 15})`)
                 .style("font-size", "10px")
-                .style("text-anchor", "end") // Change from "start" to "end" to align bottom of text with nodes
-                .style("dominant-baseline", "middle") // Keep this the same
+                .style("text-anchor", "end")
+                .style("dominant-baseline", "middle")
+                .style("pointer-events", "all"); // Enable pointer events on text
+
+            // Add click handlers to info icons after they're in the DOM
+            d3.selectAll(".info-icon").on("click", function(event, d) {
+                event.stopPropagation();
+                // Get the data from the parent
+                const parentData = d3.select(this.parentNode).datum();
+                // Show study details
+                const customEvent = new CustomEvent('showStudyDetailsRequest', {
+                    detail: { studyId: parentData.id }
+                });
+                document.dispatchEvent(customEvent);
+            });
             
             // Show a message if there are no connections at this threshold
             if (graphData.links.length === 0) {
