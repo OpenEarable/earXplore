@@ -66,12 +66,14 @@
     
     /* Important: Set minimum dimensions for the graph container */
     #graphContainer {
-        min-height: 600px;
-        min-width: 100%;
-        height: 600px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-    }
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: visible;
+    margin-bottom: 20px; /* Add some space below the visualization */
+    padding: 40px 0px 40px 0px; /* Top, Right, Bottom, Left padding */
+
+}
 
     .info-icon {
         cursor: pointer;
@@ -102,6 +104,7 @@
         opacity: 0 !important;
         pointer-events: none !important;
     }
+
 </style>
 
 <div id="similarityContainer">
@@ -401,33 +404,39 @@
         container.style.display = 'block';
         container.style.width = '100%';
         
-        // Force a layout recalculation by accessing offsetWidth
-        const forceReflow = container.offsetWidth;
+        // Get width from container
+        width = container.offsetWidth || 800;
         
-        // Get dimensions after forcing layout
-        width = container.offsetWidth;  // Use offsetWidth instead of clientWidth
-        height = container.offsetHeight || 600;  // Fallback to 600px if zero
+        debug("Container width measured", { width });
         
-        debug("Container dimensions measured", { width, height });
+        // Calculate dynamic height based on number of studies
+        // Higher threshold for U-shape layout (>50 studies)
+        const useULayout = studyIds.length > 50;
         
-        // If width is still small or zero, try using parent container width or a minimum width
-        if (width < 200) {
-            debug("Container width is too small, using parent width or minimum");
-            width = container.parentElement ? 
-                Math.max(container.parentElement.offsetWidth - 40, 800) : 800;
-            debug("Adjusted width to", width);
+        // Calculate appropriate height based on number of studies and layout type
+        let calculatedHeight;
+        if (useULayout) {
+            // For U-shape, calculate based on number of studies and spacing
+            calculatedHeight = Math.max(500, Math.min(800, studyIds.length * 12));
+        } else {
+            // For standard layout, less height needed
+            calculatedHeight = Math.max(400, Math.min(600, studyIds.length * 8));
         }
         
-        // Clear container and create SVG
+        // Set height for this visualization
+        height = calculatedHeight;
+        debug("Dynamic height calculated", { height });
+        
+        // Clear container
         d3.select("#graphContainer").html("");
         
+        // Create SVG with calculated dimensions
         svg = d3.select("#graphContainer").append("svg")
-            .attr("width", "100%") 
-            .attr("height", "100%")
-            .attr("viewBox", `0 0 ${width} ${height}`)
-            .attr("preserveAspectRatio", "xMidYMid meet");
+            .attr("width", width)
+            .attr("height", height)
+            .style("display", "block"); // Ensure block display
             
-        // Create a container group - no transform applied here to use full width
+        // Create a container group
         svg.append("g")
             .attr("class", "viz-layer");
             
@@ -440,8 +449,7 @@
         
         debug("Visualization initialized with dimensions", { 
             width, 
-            height, 
-            containerWidth: container.offsetWidth,
+            height,
             threshold 
         });
     }
@@ -488,6 +496,33 @@
         
         return { nodes, links };
     }
+
+    // Line spacing based on screen width
+let lineSpacingRatio = 0.25; // Default spacing
+
+// Add a function to determine line spacing based on screen size
+function getLineSpacingRatio() {
+    // Use window width to determine spacing
+    const windowWidth = window.innerWidth;
+    
+    if (windowWidth < 600) {
+        return 0.15; // Very small spacing for small screens
+    } else if (windowWidth < 800) {
+        return 0.2;  // Small spacing for medium screens
+    } else if (windowWidth < 1000) {
+        return 0.25; // Medium spacing for larger screens
+    } else if (windowWidth < 1200) {
+        return 0.3;  // Larger spacing for wide screens
+    } else if (windowWidth < 1400) {
+        return 0.35;  // Larger spacing for wide screens
+    } else if (windowWidth < 1600) {
+        return 0.4;  // Larger spacing for wide screens
+    } else if (windowWidth < 1800) {
+        return 0.45;  // Larger spacing for wide screens
+    } else {
+        return 0.5; // Maximum spacing for extra wide screens
+    }
+}
     
     function updateVisualization(threshold) {
     try {
@@ -539,9 +574,10 @@
             drawStandardLayout(container, graphData, lineY, nodeStep, padding, nodeRadius);
             
         } else {
-            // U-shaped layout for large datasets
-            const topLineY = height * 0.25; // Top line at 1/4 of the height
-            const bottomLineY = height * 0.75; // Bottom line at 3/4 of the height
+            // Adjust the spacing based on available height
+            const lineSpacing = getLineSpacingRatio();            const topLineY = height * (0.5 - lineSpacing/2); // Dynamic positioning
+            const bottomLineY = height * (0.5 + lineSpacing/2); // Dynamic positioning
+            
             const halfNodeCount = Math.ceil(graphData.nodes.length / 2);
             
             // Draw top horizontal line
