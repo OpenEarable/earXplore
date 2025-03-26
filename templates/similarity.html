@@ -118,17 +118,7 @@
         </div>
     </div>
     
-    <!-- Status/error messages container -->
-    <div id="statusContainer"></div>
-    
     <div id="graphContainer"></div>
-    
-    <!-- Debug information (shown by default for troubleshooting) -->
-    <div id="debugContainer" style="margin-top: 15px; display: block;">
-        <h5>Debug Information</h5>
-        <pre id="debugInfo" style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; max-height: 200px; overflow: auto;"></pre>
-        <button id="toggleDebugBtn" class="btn btn-sm btn-secondary">Hide Debug Info</button>
-    </div>
 
     <div class="modal fade" id="connectionsModal" tabindex="-1" aria-labelledby="connectionsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -155,29 +145,16 @@
     let tooltip;
     let studyIds = [];
     let similarityMatrix = [];
-    let isDebugMode = true; // Debug mode is on by default for troubleshooting
     
     // Helper function for debugging
     function debug(message, obj = null) {
-        const debugInfo = document.getElementById('debugInfo');
-        let msg = `[${new Date().toISOString()}] ${message}`;
-        if (obj) {
-            try {
-                msg += `\n${JSON.stringify(obj, null, 2)}`;
-            } catch (e) {
-                msg += `\n[Object cannot be stringified]`;
-            }
-        }
-        debugInfo.textContent = msg + '\n\n' + debugInfo.textContent;
-        
-        // Also log to console
-        console.log(message, obj || '');
     }
     
     // Show status/error message
     function showStatus(message, isError = false) {
-        const statusContainer = document.getElementById('statusContainer');
-        statusContainer.innerHTML = `<div class="${isError ? 'error-message' : 'alert alert-info'}">${message}</div>`;
+        if (isError) {
+        console.error(message);
+        }
     }
     
     // Add these variables at the top of the script section, with your other global variables
@@ -255,16 +232,6 @@
     // Initialize the visualization when the tab becomes visible
     document.addEventListener('DOMContentLoaded', function() {
         debug("DOM loaded");
-        
-        // Setup toggle for debug info
-        document.getElementById('toggleDebugBtn').addEventListener('click', function() {
-            isDebugMode = !isDebugMode;
-            document.getElementById('debugInfo').style.display = isDebugMode ? 'block' : 'none';
-            this.textContent = isDebugMode ? 'Hide Debug Info' : 'Show Debug Info';
-        });
-        
-        // Show loading indicator
-        showStatus("Loading similarity data...");
         
         // Process data
         if (!processSimilarityData()) {
@@ -439,9 +406,6 @@
         // Create a container group
         svg.append("g")
             .attr("class", "viz-layer");
-            
-        // Clear status once everything is loaded
-        showStatus("");
         
         // Initialize with current threshold
         const threshold = parseFloat(document.getElementById('thresholdValue').textContent || "0");
