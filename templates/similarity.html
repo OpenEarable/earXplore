@@ -81,8 +81,7 @@
             <div id="thresholdSlider" class="similarity-slider" style="width: 200px; margin-top: 10px;"></div>
         </div>
         <div>
-            <button id="resetSimulationBtn" class="btn btn-sm btn-secondary small-button">Reset View</button>
-            <button id="downloadSimilarityCSV" class="btn btn-sm btn-warning small-button ms-2">Download Similarity Data</button>
+            <i class="bi bi-question-circle-fill" title="This icon provides additional help or explanations for this section."></i>
         </div>
     </div>
     
@@ -260,16 +259,6 @@
             });
         });
         
-        // Reset button
-        document.getElementById('resetSimulationBtn').addEventListener('click', function() {
-            resetView();
-        });
-        
-        // Download button
-        document.getElementById('downloadSimilarityCSV').addEventListener('click', function() {
-            downloadSimilarityData();
-        });
-        
         // Listen for window resize events
         window.addEventListener('resize', debounce(function() {
             initializeVisualization();
@@ -331,21 +320,10 @@
             .attr("height", "100%")
             .attr("viewBox", [0, 0, width, height]);
             
-        // Add zoom behavior
-        zoom = d3.zoom()
-            .scaleExtent([0.5, 5])
-            .on("zoom", zoomed);
-            
-        svg.call(zoom);
-        
-        // Create a container group that will be transformed on zoom
+        // Create a container group without zoom transformation
         svg.append("g")
-            .attr("class", "zoom-layer");
+            .attr("class", "viz-layer");
             
-        function zoomed(event) {
-            d3.select(".zoom-layer").attr("transform", event.transform);
-        }
-        
         // Clear status once everything is loaded
         showStatus("");
         
@@ -415,9 +393,9 @@
             }
             
             // Clear previous visualization
-            d3.select(".zoom-layer").html("");
+            d3.select(".viz-layer").html("");
             
-            const container = d3.select(".zoom-layer");
+            const container = d3.select(".viz-layer");
             
             // Set the horizontal line parameters
             const lineY = height / 2;
