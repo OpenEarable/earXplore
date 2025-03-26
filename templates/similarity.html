@@ -105,16 +105,41 @@
         pointer-events: none !important;
     }
 
+    /* Add these styles to your existing style section */
+    .slider-container {
+        padding: 0 20px; /* Adjust the padding as needed */
+        margin-top: 5px; /* Add extra space underneath the slider */
+        margin-bottom: 30px; /* Add extra space underneath the slider */
+    }
+
+    .slider-container .noUi-tooltip {
+        bottom: -25px; /* Adjust this value as needed to move the tooltip further down */
+        padding: 0px 0px; /* Adjust the padding as needed */
+    }
+
+    .noUi-tooltip {
+        background: none; /* Remove background */
+        border: none; /* Remove border */
+        box-shadow: none; /* Remove box shadow */
+        color: inherit; /* Inherit text color */
+        padding: 0; /* Remove padding */
+        bottom: -5px; /* Adjust this value as needed to move the tooltip further down */
+    }
+
 </style>
 
 <div id="similarityContainer">
     <div class="controls">
-        <div>
-            <label for="thresholdSlider">Similarity Threshold (σ): <span id="thresholdValue">0.0</span></label>            
-            <div id="thresholdSlider" class="similarity-slider" style="width: 200px; margin-top: 10px;"></div>
-        </div>
-        <div>
-            <i class="bi bi-question-circle-fill" title="This icon provides additional help or explanations for this section."></i>
+        <div class="slider-container">
+            <label for="thresholdSlider" style="margin-bottom: 12px; display: block;">
+                <strong>Similarity Threshold (σ):</strong> <span id="thresholdValue" style="font-weight: bold; color: #B89491;">1.00</span>
+                <i class="bi bi-question-circle-fill" title="This visualization shows semantic similarity between paper abstracts. Similarities were calculated using Google Gemini embeddings (gemini-embedding-exp-03-07) with cosine similarity and then z-standardized. Values above 0 indicate above-average similarity (0=mean, 1=one standard deviation above mean). Higher thresholds show only the most similar papers." style="cursor: pointer; margin-left: 5px;"></i>
+            </label>           
+            <div style="display: flex; align-items: center; width: 400px;">
+                <span style="margin-right: 10px; font-size: inherit; color: inherit;" class="noUi-tooltip-style">-3</span>
+                <div id="thresholdSlider" class="similarity-slider" style="flex: 1;"></div>
+                <span style="margin-left: 10px; font-size: inherit; color: inherit;" class="noUi-tooltip-style">3</span>
+            </div>
         </div>
     </div>
     
@@ -244,15 +269,16 @@
             
             noUiSlider.create(sliderElement, {
                 start: [1], // Default to 1 steddev
-                connect: true,
+                connect: [true, false], // Connect to the left
                 range: {
                     'min': -3, // Typically -3 standard deviations
                     'max': 3   // Typically +3 standard deviations
                 },
                 step: 0.1,
+                tooltips: [true], // Show tooltip
                 format: {
                     to: function (value) {
-                        return value.toFixed(1);
+                        return value.toFixed(2);
                     },
                     from: function (value) {
                         return parseFloat(value);
@@ -264,6 +290,7 @@
             sliderElement.noUiSlider.on('update', function (values, handle) {
                 const threshold = parseFloat(values[handle]);
                 document.getElementById('thresholdValue').textContent = threshold.toFixed(2);
+                document.getElementById('thresholdValue').classList.add('threshold-value-display');
                 
                 // Only update visualization if it's been initialized
                 if (svg) {
