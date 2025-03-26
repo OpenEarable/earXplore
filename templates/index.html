@@ -37,10 +37,18 @@
             $('table thead th').each(function (index) {
                 if (index > 0) { // Skip the first column
                     let colName = $(this).data('col').split('_').pop(); // Removes prefixes, keeping only the last part
-                    columns.push(`<div class="form-check">
+                    let fullColName = $(this).data('col');
+                    
+                    // Skip the Abstract column
+                    if (colName !== 'Abstract') {
+                        columns.push(`<div class="form-check">
                                     <input class="form-check-input column-toggle" type="checkbox" data-index="${index + 1}" ${(index !== 1 && index < 7) ? 'checked' : ''}>
                                     <label class="form-check-label">${colName}</label>
                                 </div>`);
+                    } else {
+                        // Hide Abstract column immediately
+                        $(`table thead th:nth-child(${index + 1}), table tbody td:nth-child(${index + 1})`).hide();
+                    }
                 }
             });
 
