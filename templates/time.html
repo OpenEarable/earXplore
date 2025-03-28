@@ -193,10 +193,7 @@
     let timelineStudyIdToIndex = {};
     let timelineCitationMatrix = [];
     let timelineCoauthorMatrix = [];
-    
-    // Node lookup maps
-    let timelineNodeById = {};
-    let timelineNodeByNumericId = {};
+    let nodeById = {}; // Add this line to create a shared variable
     
     // Connection visibility flags
     let timelineShowSharedAuthors = true;
@@ -602,12 +599,12 @@
         console.log("Drawing timeline connections for", nodes.length, "nodes");
         console.log("Current citation mode:", timelineCitationMode);
         
-        // Update the global node lookup maps
-        timelineNodeById = {};
-        timelineNodeByNumericId = {};
+        // Create node lookup by ID and numeric ID
+        nodeById = {}; // Use the shared variable instead of declaring a new one
+        const nodeByNumericId = {};
         nodes.forEach(node => {
-            timelineNodeById[node.id] = node;
-            timelineNodeByNumericId[node.study.numericId] = node;
+            nodeById[node.id] = node;
+            nodeByNumericId[node.study.numericId] = node;
         });
         
         // Arrays to store different types of connections
@@ -616,7 +613,7 @@
         const citedByLinks = [];
 
         // Debug available IDs
-        console.log("Available node IDs:", Object.keys(timelineNodeByNumericId).join(", "));
+        console.log("Available node IDs:", Object.keys(nodeByNumericId).join(", "));
         
         // Process citation matrix - we still compute all citations even if only showing a subset
         if ({{ citation_matrix | default('[]') | tojson }}.length > 0) {
@@ -644,7 +641,7 @@
                     }
                     
                     // Get source node
-                    const sourceNode = timelineNodeByNumericId[sourceId] || timelineNodeById[String(sourceId)];
+                    const sourceNode = nodeByNumericId[sourceId] || nodeById[String(sourceId)];
                     if (!sourceNode) {
                         console.log(`Source ID ${sourceId} not found in nodes`);
                         continue;
@@ -665,7 +662,7 @@
                         }
                         
                         // Get target node
-                        let targetNode = timelineNodeByNumericId[targetId] || timelineNodeById[String(targetId)];
+                        let targetNode = nodeByNumericId[targetId] || nodeById[String(targetId)];
                         if (!targetNode) {
                             console.log(`Target ID ${targetId} not found in nodes`);
                             continue;
@@ -723,9 +720,9 @@
                     }
                     
                     // Get source node
-                    let sourceNode = timelineNodeByNumericId[sourceId];
+                    let sourceNode = nodeByNumericId[sourceId];
                     if (!sourceNode) {
-                        sourceNode = timelineNodeById[String(sourceId)];
+                        sourceNode = nodeById[String(sourceId)];
                         if (!sourceNode) {
                             console.log(`Source ID ${sourceId} not found in nodes (coauthor)`);
                             continue;
@@ -747,9 +744,9 @@
                         }
                         
                         // Get target node
-                        let targetNode = timelineNodeByNumericId[targetId];
+                        let targetNode = nodeByNumericId[targetId];
                         if (!targetNode) {
-                            targetNode = timelineNodeById[String(targetId)];
+                            targetNode = nodeById[String(targetId)];
                             if (!targetNode) {
                                 console.log(`Target ID ${targetId} not found in nodes (coauthor)`);
                                 continue;
@@ -790,9 +787,10 @@
                 .enter().append("path")
                 .attr("class", "timeline-link timeline-link-author")
                 .attr("d", d => timelineCreateLinkPath(d.source, d.target))
-                .style("stroke", "#f28e2c")
-                .style("stroke-width", 2)
-                .style("opacity", 0.7);
+                .style("stroke", "#999") // Change to neutral gray color like in similarity.html
+                .style("stroke-width", 1)
+                .style("stroke-opacity", 0.6)
+                .style("stroke-dasharray", "5,3"); // Dashed lines for shared authors
         }
         
         // Draw citation links based on selected mode
@@ -802,9 +800,9 @@
                 .enter().append("path")
                 .attr("class", "timeline-link timeline-link-cites")
                 .attr("d", d => timelineCreateLinkPath(d.source, d.target))
-                .style("stroke", "#4e79a7")
-                .style("stroke-width", 2)
-                .style("opacity", 0.7);
+                .style("stroke", "#999") // Change to neutral gray color like in similarity.html
+                .style("stroke-width", 1)
+                .style("stroke-opacity", 0.6);
         }
         
         if (timelineCitationMode === "both" || timelineCitationMode === "cited-by") {
@@ -813,9 +811,9 @@
                 .enter().append("path")
                 .attr("class", "timeline-link timeline-link-cited-by")
                 .attr("d", d => timelineCreateLinkPath(d.source, d.target))
-                .style("stroke", "#e15759")
-                .style("stroke-width", 2)
-                .style("opacity", 0.7);
+                .style("stroke", "#999") // Change to neutral gray color like in similarity.html
+                .style("stroke-width", 1)
+                .style("stroke-opacity", 0.6);
         }
     }
     
@@ -945,9 +943,14 @@
         // Highlight links that include this node, respecting the citation mode
         timelineSvg.selectAll(".timeline-link").each(function(d) {
             if (d && isNodePartOfLink(d, nodeId, timelineCitationMode)) {
-                d3.select(this)
-                    .style("opacity", 1)
-                    .style("stroke-width", 2.5);
+                const selection = d3.select(this);
+                selection.style("opacity", 1)
+                        .style("stroke-width", 2.5);
+                
+                // Keep the dash style for author links when highlighting
+                if (selection.classed("timeline-link-author")) {
+                    selection.style("stroke-dasharray", "5,3");
+                }
                     
                 // Also highlight connected node
                 if (d.source.id === nodeId) {
@@ -1018,7 +1021,7 @@
         });
         
         // Update tooltip info with citation counts
-        const tooltipNode = timelineNodeById[nodeId];
+        const tooltipNode = nodeById[nodeId];
         if (tooltipNode) {
             let tooltipContent = `
                 <strong>${tooltipNode.study.title}</strong><br>
@@ -1033,10 +1036,17 @@
     
     // Updated function to reset highlight state
     function timelineResetHighlight() {
+        // Reset all links to normal opacity
         timelineSvg.selectAll(".timeline-link")
-            .style("opacity", 0.7)
-            .style("stroke-width", 2);
+            .style("opacity", 0.6)
+            .style("stroke", "#999")
+            .style("stroke-width", 1);
         
+        // Ensure shared author links maintain their dashed style
+        timelineSvg.selectAll(".timeline-link-author")
+            .style("stroke-dasharray", "5,3");
+        
+        // Reset nodes and labels
         timelineSvg.selectAll(".timeline-node").style("opacity", 1);
         timelineSvg.selectAll(".timeline-node-label").style("opacity", 1);
     }
