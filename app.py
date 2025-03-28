@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify
 import pandas as pd
+import os  # Add this import for os.path.exists
 
 app = Flask(__name__)
 
@@ -86,7 +87,62 @@ def index():
         similarity_data = {'study_ids': [], 'matrix': [], 'index_ids': [], 'study_details': {}}
         print(f"Error loading similarity data: {e}")
 
-    return render_template("index.html", data=data, explanations=explanations, similarity_data=similarity_data)
+    # Load citation and co-author matrices for timeline view
+    citation_matrix = []
+    coauthor_matrix = []
+    
+    try:
+        citation_path = "interconnections_datasets/citation_matrix.csv"
+        if os.path.exists(citation_path):
+            # Read CSV - convert index to a column for proper processing in JS
+            citation_df = pd.read_csv(citation_path, index_col=0)
+            
+            # Get column names and index
+            col_headers = citation_df.columns.tolist()
+            row_indices = citation_df.index.tolist()
+            
+            # Create header row with empty first cell plus column names
+            header_row = [""] + col_headers
+            
+            # Create matrix with header row and data rows (index + values)
+            citation_matrix = [header_row]
+            for idx in row_indices:
+                row_data = [idx] + citation_df.loc[idx].tolist()
+                citation_matrix.append(row_data)
+                
+            print(f"Processed citation matrix: {len(citation_matrix)} rows")
+    except Exception as e:
+        print(f"Error loading citation matrix: {e}")
+    
+    try:
+        coauthor_path = "interconnections_datasets/coauthor_matrix.csv"
+        if os.path.exists(coauthor_path):
+            # Read CSV - convert index to a column for proper processing in JS
+            coauthor_df = pd.read_csv(coauthor_path, index_col=0)
+            
+            # Get column names and index
+            col_headers = coauthor_df.columns.tolist()
+            row_indices = coauthor_df.index.tolist()
+            
+            # Create header row with empty first cell plus column names
+            header_row = [""] + col_headers
+            
+            # Create matrix with header row and data rows (index + values)
+            coauthor_matrix = [header_row]
+            for idx in row_indices:
+                row_data = [idx] + coauthor_df.loc[idx].tolist()
+                coauthor_matrix.append(row_data)
+                
+            print(f"Processed coauthor matrix: {len(coauthor_matrix)} rows")
+    except Exception as e:
+        print(f"Error loading coauthor matrix: {e}")
+
+    return render_template("index.html", 
+                          data=data, 
+                          explanations=explanations, 
+                          similarity_data=similarity_data,
+                          citation_matrix=citation_matrix,
+                          coauthor_matrix=coauthor_matrix)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)

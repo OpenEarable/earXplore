@@ -458,6 +458,11 @@
                 if (window.filterSimilarityVisualization) {
                     window.filterSimilarityVisualization(filteredData);
                 }
+
+                // Filter timeline visualization if it exists
+                if (window.filterTimelineVisualization) {
+                    window.filterTimelineVisualization(filteredData);
+                }
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
@@ -846,6 +851,25 @@
                     
                     // Apply filters to similarity visualization
                     window.filterSimilarityVisualization(filteredData);
+                }
+                
+                // If switching to timeline view, apply current filters
+                if (sectionId === "timeView" && window.filterTimelineVisualization) {
+                    // Get currently filtered data (visible rows)
+                    const filteredData = [];
+                    $('tbody tr:visible').each(function() {
+                        const rowData = {};
+                        $(this).find('td').each(function(index) {
+                            const colName = $('table thead th').eq(index).data('col');
+                            if (colName) {
+                                rowData[colName] = $(this).text().trim();
+                            }
+                        });
+                        filteredData.push(rowData);
+                    });
+                    
+                    // Apply filters to timeline visualization
+                    window.filterTimelineVisualization(filteredData);
                 }
             });
         });

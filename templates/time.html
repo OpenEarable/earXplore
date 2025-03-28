@@ -1,0 +1,1084 @@
+<!-- Include D3.js -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+
+<style>
+    #timeline-container {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        margin: 20px 0;
+    }
+    
+    .timeline-controls {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .timeline-node {
+        cursor: pointer;
+    }
+    
+    .timeline-link {
+        stroke-opacity: 0.6;
+        fill: none;
+    }
+    
+    .timeline-node-label {
+        font-size: 10px;
+        pointer-events: none;
+    }
+    
+    .timeline-tooltip {
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 8px;
+        pointer-events: none;
+        box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+    }
+    
+    /* Button styling to match site theme */
+    .btn-timeline {
+        background-color: #B89491;
+        border-color: #B89491;
+        color: white;
+    }
+    
+    .btn-timeline:hover {
+        background-color: #a37c79;
+        border-color: #a37c79;
+    }
+    
+    .btn-timeline:not(.active) {
+        background-color: white;
+        color: #666;
+        border-color: #B89491;
+    }
+    
+    /* Timeline axis styling */
+    .timeline-axis {
+        stroke: #ccc;
+        stroke-width: 2;
+    }
+    
+    .timeline-tick {
+        stroke: #ccc;
+        stroke-width: 1;
+    }
+    
+    .timeline-label {
+        font-size: 12px;
+        fill: #666;
+    }
+    
+    /* Container dimensions */
+    #timeline-graph-container {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        overflow: visible;
+        margin-bottom: 20px;
+    }
+    
+    .timeline-info-icon {
+        cursor: pointer;
+        transition: transform 0.2s ease, fill 0.2s ease;
+    }
+    
+    .timeline-info-icon:hover {
+        fill: #a37c79 !important;
+        transform: scale(1.2);
+    }
+    
+    /* Connection type styles */
+    .timeline-link-citation {
+        stroke: #4e79a7;
+    }
+    
+    .timeline-link-author {
+        stroke: #f28e2c;
+    }
+    
+    .timeline-link-forward-citation {
+        stroke: #e15759;
+    }
+    
+    /* Legend styling */
+    .timeline-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 10px;
+    }
+    
+    .timeline-legend-item {
+        display: flex;
+        align-items: center;
+        font-size: 12px;
+    }
+    
+    .timeline-legend-color {
+        width: 20px;
+        height: 3px;
+        margin-right: 5px;
+    }
+    
+    .timeline-no-data-message {
+        text-align: center;
+        padding: 40px;
+        color: #721c24;
+        font-size: 16px;
+    }
+</style>
+
+<div id="timeline-container">
+    <div class="timeline-controls">
+        <div>
+            <strong>Connection Types:</strong>
+            <div class="btn-group ms-2">
+                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-shared-authors">Shared Authors</button>
+                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-citations">Citations</button>
+                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-forward-citations">Forward Citations</button>
+            </div>
+        </div>
+        
+        <div class="timeline-legend">
+            <div class="timeline-legend-item">
+                <div class="timeline-legend-color" style="background-color: #f28e2c;"></div>
+                <span>Shared Authors</span>
+            </div>
+            <div class="timeline-legend-item">
+                <div class="timeline-legend-color" style="background-color: #4e79a7;"></div>
+                <span>Citations</span>
+            </div>
+            <div class="timeline-legend-item">
+                <div class="timeline-legend-color" style="background-color: #e15759;"></div>
+                <span>Forward Citations</span>
+            </div>
+        </div>
+    </div>
+    
+    <div id="timeline-graph-container"></div>
+</div>
+
+<script>
+// Use an immediately invoked function expression (IIFE) to create a closure and avoid polluting the global namespace
+(function() {
+    // Timeline-specific variables with proper namespacing
+    let timelineSvg;
+    let timelineWidth, timelineHeight;
+    let timelineTooltip;
+    let timelineStudyData = [];
+    let timelineYearGroups = {};
+    let timelineStudyIdToIndex = {};
+    let timelineCitationMatrix = [];
+    let timelineCoauthorMatrix = [];
+    
+    // Connection visibility flags
+    let timelineShowSharedAuthors = true;
+    let timelineShowCitations = true;
+    let timelineShowForwardCitations = true;
+    
+    // Constants
+    const TIMELINE_NODE_RADIUS = 8;
+    const TIMELINE_NODE_SPACING = 25;
+    const TIMELINE_PADDING = 60;
+    
+    // Add these variables to the top of your script, inside the IIFE
+    let timelineRawCitationMatrix = [];
+    let timelineRawCoauthorMatrix = [];
+    let timelineCitationIds = [];
+    let timelineCoauthorIds = [];
+    let timelineIdMapping = {};
+
+    // Debugging function to inspect matrices
+    function debugMatrix(matrix, label) {
+        console.log(`----- DEBUG: ${label} -----`);
+        console.log(`Matrix dimensions: ${matrix.length} rows`);
+        
+        if (matrix.length > 0) {
+            console.log(`First row length: ${matrix[0].length}`);
+            console.log(`First row content:`, matrix[0]);
+            
+            if (matrix.length > 1) {
+                console.log(`Second row example:`, matrix[1].slice(0, 10));
+                // Look for any non-zero values
+                let hasConnections = false;
+                let firstNonZeroRow = -1;
+                let firstNonZeroCol = -1;
+                
+                for (let i = 1; i < Math.min(matrix.length, 10); i++) {
+                    for (let j = 1; j < Math.min(matrix[i].length, 10); j++) {
+                        if (matrix[i][j] === 1 || matrix[i][j] === "1") {
+                            hasConnections = true;
+                            firstNonZeroRow = i;
+                            firstNonZeroCol = j;
+                            break;
+                        }
+                    }
+                    if (hasConnections) break;
+                }
+                
+                if (hasConnections) {
+                    console.log(`Found connection at [${firstNonZeroRow}][${firstNonZeroCol}]: Source=${matrix[firstNonZeroRow][0]}, Target=${matrix[0][firstNonZeroCol]}`);
+                } else {
+                    console.log("No non-zero values found in first 10x10 elements");
+                }
+            }
+        }
+    }
+
+    // Initialize when document loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create unique tooltip for timeline
+        timelineTooltip = d3.select("body").append("div")
+            .attr("class", "timeline-tooltip")
+            .style("opacity", 0);
+        
+        // Toggle buttons for connections
+        document.getElementById('timeline-toggle-shared-authors').addEventListener('click', function() {
+            this.classList.toggle('active');
+            timelineShowSharedAuthors = this.classList.contains('active');
+            timelineUpdateConnections();
+        });
+        
+        document.getElementById('timeline-toggle-citations').addEventListener('click', function() {
+            this.classList.toggle('active');
+            timelineShowCitations = this.classList.contains('active');
+            timelineUpdateConnections();
+        });
+        
+        document.getElementById('timeline-toggle-forward-citations').addEventListener('click', function() {
+            this.classList.toggle('active');
+            timelineShowForwardCitations = this.classList.contains('active');
+            timelineUpdateConnections();
+        });
+        
+        // Initialize when the timeline tab is selected
+        document.querySelectorAll('.navbar-item').forEach(navItem => {
+            navItem.addEventListener('click', function() {
+                if (this.getAttribute('data-section') === 'timeView') {
+                    // Use setTimeout to ensure the DOM is fully ready
+                    setTimeout(timelineInitialize, 300);
+                }
+            });
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', timelineDebounce(function() {
+            const container = document.getElementById('timeline-graph-container');
+            if (container && container.offsetParent !== null) {
+                timelineInitialize();
+            }
+        }, 250));
+        
+        // Immediately try to initialize if timeline is the starting view
+        setTimeout(function() {
+            const timelineView = document.getElementById('timeView');
+            if (timelineView && timelineView.style.display !== 'none') {
+                timelineInitialize();
+            }
+        }, 500);
+    });
+    
+    // Debounce function to limit frequent updates
+    function timelineDebounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+    
+    // Process data for timeline visualization - fixed for ID type issues
+    function timelineProcessData() {
+        try {
+            // Get data from the template
+            const rawData = {{ data | tojson }};
+            const citationRawMatrix = {{ citation_matrix | default('[]') | tojson }};
+            const coauthorRawMatrix = {{ coauthor_matrix | default('[]') | tojson }};
+            
+            if (!rawData || rawData.length === 0) {
+                console.error("No study data available for timeline");
+                return false;
+            }
+            
+            // Process study data
+            timelineStudyData = [];
+            
+            // Extract studies with valid years
+            for (let i = 0; i < rawData.length; i++) {
+                const study = rawData[i];
+                
+                // Skip studies without a valid year
+                if (!study.Year || study.Year === 'N/A' || isNaN(parseInt(study.Year))) {
+                    continue;
+                }
+                
+                const processedStudy = {
+                    id: String(study.ID),
+                    numericId: parseInt(study.ID),  // Store numeric ID for matrix lookups
+                    title: study.Title || `Study ${study.ID}`,
+                    authors: study['First Author'] || 'Unknown',
+                    year: parseInt(study.Year),
+                    bodyPart: study['Input Body Part'] || 'N/A',
+                    location: study.Location || 'N/A',
+                    details: study
+                };
+                
+                timelineStudyData.push(processedStudy);
+            }
+            
+            // Sort studies by year
+            timelineStudyData.sort((a, b) => a.year - b.year);
+            
+            // Group studies by year
+            timelineYearGroups = {};
+            for (const study of timelineStudyData) {
+                if (!timelineYearGroups[study.year]) {
+                    timelineYearGroups[study.year] = [];
+                }
+                timelineYearGroups[study.year].push(study);
+            }
+            
+            // Create mappings for both string and numeric IDs
+            timelineStudyIdToIndex = {};
+            timelineIdMapping = {}; // Map numeric IDs to study objects
+            
+            for (let i = 0; i < timelineStudyData.length; i++) {
+                const study = timelineStudyData[i];
+                timelineStudyIdToIndex[study.id] = i;
+                timelineIdMapping[study.numericId] = study;
+            }
+            
+            console.log("Available study IDs:", Object.keys(timelineIdMapping).join(", "));
+            
+            // Check if we need to process citation matrix directly
+            if (citationRawMatrix && citationRawMatrix.length > 0) {
+                timelineRawCitationMatrix = citationRawMatrix;
+                console.log("Raw citation matrix stored for direct processing");
+            }
+            
+            // Check if we need to process coauthor matrix directly
+            if (coauthorRawMatrix && coauthorRawMatrix.length > 0) {
+                timelineRawCoauthorMatrix = coauthorRawMatrix;
+                console.log("Raw coauthor matrix stored for direct processing");
+            }
+            
+            return timelineStudyData.length > 0;
+        } catch (error) {
+            console.error("Error processing timeline data:", error);
+            return false;
+        }
+    }
+    
+    // Helper function to process matrices into a unified format
+    function processTimelineMatrix(rawMatrix, allStudyIds, studyIdMapping) {
+        // Create an empty matrix filled with zeros
+        const studyCount = Object.keys(studyIdMapping).length;
+        const processedMatrix = Array(studyCount).fill().map(() => Array(studyCount).fill(0));
+        
+        // If no matrix data, return the empty matrix
+        if (!rawMatrix || !rawMatrix.length) {
+            console.log("No matrix data provided");
+            return processedMatrix;
+        }
+        
+        try {
+            console.log("Raw matrix structure:", {
+                rowCount: rawMatrix.length,
+                firstRowLength: rawMatrix[0] ? rawMatrix[0].length : 0,
+                sampleFirstRow: rawMatrix[0] ? rawMatrix[0].slice(0, 5) : []
+            });
+            
+            // Extract column IDs from the first row if available
+            const colIds = rawMatrix[0] ? rawMatrix[0].slice(1).map(id => String(id)) : [];
+            console.log("Column IDs extracted:", colIds.length, "first few:", colIds.slice(0, 5));
+            
+            // Process each row starting from index 1 (skipping header)
+            let connectionCount = 0;
+            for (let i = 1; i < rawMatrix.length; i++) {
+                const row = rawMatrix[i];
+                if (!row || row.length <= 1) continue;
+                
+                // Get source ID from the first column
+                const sourceId = String(row[0]);
+                if (!studyIdMapping.hasOwnProperty(sourceId)) {
+                    console.log(`Source ID ${sourceId} not found in mapping, skipping row`);
+                    continue;
+                }
+                
+                const sourceIndex = studyIdMapping[sourceId];
+                
+                // Process each cell in this row
+                for (let j = 1; j < row.length; j++) {
+                    if (j-1 >= colIds.length) continue;
+                    
+                    const targetId = String(colIds[j-1]);
+                    if (!studyIdMapping.hasOwnProperty(targetId)) {
+                        // Skip silently
+                        continue;
+                    }
+                    
+                    const targetIndex = studyIdMapping[targetId];
+                    const value = row[j];
+                    
+                    // Set connection if value is truthy (1, "1", true)
+                    if (value === 1 || value === true || value === "1") {
+                        processedMatrix[sourceIndex][targetIndex] = 1;
+                        connectionCount++;
+                    }
+                }
+            }
+            
+            console.log(`Matrix processing complete: ${connectionCount} connections found`);
+            
+            // Additional debug: Check if the matrix has any connections
+            let matrixHasConnections = false;
+            for (let i = 0; i < processedMatrix.length; i++) {
+                for (let j = 0; j < processedMatrix[i].length; j++) {
+                    if (processedMatrix[i][j] === 1) {
+                        matrixHasConnections = true;
+                        console.log(`Connection found in matrix: [${i}][${j}]`);
+                        break;
+                    }
+                }
+                if (matrixHasConnections) break;
+            }
+            
+            if (!matrixHasConnections) {
+                console.log("Warning: No connections found in the processed matrix");
+            }
+        } catch (error) {
+            console.error("Error processing matrix data:", error);
+        }
+        
+        return processedMatrix;
+    }
+    
+    // Initialize the timeline visualization
+    function timelineInitialize() {
+        const container = document.getElementById('timeline-graph-container');
+        if (!container) return;
+        
+        // Get container dimensions
+        timelineWidth = container.offsetWidth;
+        timelineHeight = 600;  // Fixed height or calculate based on data
+        
+        // Clear container
+        container.innerHTML = '';
+        
+        // Process data if not done yet
+        if (timelineStudyData.length === 0) {
+            if (!timelineProcessData()) {
+                container.innerHTML = '<div class="timeline-no-data-message">Could not load timeline data. Please check if studies with year information are available.</div>';
+                return;
+            }
+        }
+        
+        // Create SVG
+        timelineSvg = d3.select("#timeline-graph-container").append("svg")
+            .attr("width", timelineWidth)
+            .attr("height", timelineHeight);
+        
+        // Create layers for links and nodes
+        const linksLayer = timelineSvg.append("g").attr("class", "timeline-links-layer");
+        const nodesLayer = timelineSvg.append("g").attr("class", "timeline-nodes-layer");
+        
+        // Draw timeline
+        timelineDrawLines(nodesLayer, linksLayer);
+    }
+    
+    function timelineDrawLines(nodesLayer, linksLayer) {
+        // Get sorted years
+        const years = Object.keys(timelineYearGroups).sort((a, b) => parseInt(a) - parseInt(b));
+        
+        // Create scale for year positions
+        const yearScale = d3.scalePoint()
+            .domain(years)
+            .range([TIMELINE_PADDING, timelineWidth - TIMELINE_PADDING])
+            .padding(0.5);
+        
+        // Draw main timeline axis
+        const timelineAxisY = timelineHeight * 0.7; // Position line at 70% of height
+        
+        timelineSvg.append("line")
+            .attr("class", "timeline-axis")
+            .attr("x1", TIMELINE_PADDING)
+            .attr("y1", timelineAxisY)
+            .attr("x2", timelineWidth - TIMELINE_PADDING)
+            .attr("y2", timelineAxisY);
+        
+        // Draw year ticks and labels
+        years.forEach(year => {
+            const x = yearScale(year);
+            
+            // Draw tick
+            timelineSvg.append("line")
+                .attr("class", "timeline-tick")
+                .attr("x1", x)
+                .attr("y1", timelineAxisY - 10)
+                .attr("x2", x)
+                .attr("y2", timelineAxisY + 10);
+            
+            // Draw year label
+            timelineSvg.append("text")
+                .attr("class", "timeline-label")
+                .attr("x", x)
+                .attr("y", timelineAxisY + 30)
+                .attr("text-anchor", "middle")
+                .text(year);
+        });
+        
+        // Position all nodes
+        const nodes = [];
+        
+        years.forEach(year => {
+            const x = yearScale(year);
+            const studies = timelineYearGroups[year];
+            
+            // Stack nodes vertically above the line
+            studies.forEach((study, i) => {
+                // Start stacking ABOVE the timeline
+                const y = timelineAxisY - (i + 1) * TIMELINE_NODE_SPACING;
+                
+                // Add node data with index for matrix lookups
+                nodes.push({
+                    id: study.id,
+                    study: study,
+                    x: x,
+                    y: y,
+                    index: timelineStudyIdToIndex[study.id]
+                });
+            });
+        });
+        
+        // Draw connections between nodes
+        timelineDrawConnections(linksLayer, nodes);
+        
+        // Draw nodes
+        timelineDrawNodes(nodesLayer, nodes);
+    }
+    
+    // Fixed function to draw connections for index-based matrices
+    function timelineDrawConnections(layer, nodes) {
+        // Clear existing connections
+        layer.selectAll("*").remove();
+        
+        console.log("Drawing timeline connections for", nodes.length, "nodes");
+        
+        // Create node lookup by ID and numeric ID
+        const nodeById = {};
+        const nodeByNumericId = {};
+        nodes.forEach(node => {
+            nodeById[node.id] = node;
+            nodeByNumericId[node.study.numericId] = node;
+        });
+        
+        // Arrays to store different types of connections
+        const authorLinks = [];
+        const citationLinks = [];
+        const forwardCitationLinks = [];
+
+        // Debug available IDs
+        console.log("Available node IDs:", Object.keys(nodeByNumericId).join(", "));
+        
+        // Process citation matrix
+        if ((timelineShowCitations || timelineShowForwardCitations) && 
+            {{ citation_matrix | default('[]') | tojson }}.length > 0) {
+            
+            const matrix = {{ citation_matrix | default('[]') | tojson }};
+            console.log("Citation matrix size:", matrix.length, "rows");
+            
+            if (matrix.length > 1) {
+                // Get header row (column IDs)
+                const headerRow = matrix[0];
+                
+                // Process each row (skipping header row)
+                for (let i = 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    if (!row || row.length < 2) continue;
+                    
+                    // Get source ID from first column
+                    // Try parsing as integer first, fallback to string
+                    let sourceId;
+                    try {
+                        sourceId = parseInt(row[0]);
+                        if (isNaN(sourceId)) sourceId = String(row[0]);
+                    } catch (e) {
+                        sourceId = String(row[0]);
+                    }
+                    
+                    // Get source node
+                    const sourceNode = nodeByNumericId[sourceId];
+                    if (!sourceNode) {
+                        // Try string lookup if numeric fails
+                        const sourceNodeById = nodeById[String(sourceId)];
+                        if (!sourceNodeById) {
+                            console.log(`Source ID ${sourceId} not found in nodes`);
+                            continue;
+                        }
+                    }
+                    
+                    // Process each cell in the row (connection value)
+                    for (let j = 1; j < row.length; j++) {
+                        // Skip if not a connection (value must be 1)
+                        if (row[j] != 1) continue;
+                        
+                        // Get target ID from header
+                        let targetId;
+                        try {
+                            targetId = parseInt(headerRow[j]);
+                            if (isNaN(targetId)) targetId = String(headerRow[j]);
+                        } catch (e) {
+                            targetId = String(headerRow[j]);
+                        }
+                        
+                        // Get target node
+                        let targetNode = nodeByNumericId[targetId];
+                        if (!targetNode) {
+                            // Try string lookup if numeric fails
+                            targetNode = nodeById[String(targetId)];
+                            if (!targetNode) {
+                                console.log(`Target ID ${targetId} not found in nodes`);
+                                continue;
+                            }
+                        }
+                        
+                        // We found a valid connection! Now determine the type based on years
+                        const sourceNode = nodeByNumericId[sourceId] || nodeById[String(sourceId)];
+                        const sourceYear = sourceNode.study.year;
+                        const targetYear = targetNode.study.year;
+                        
+                        if (sourceYear > targetYear && timelineShowCitations) {
+                            // Regular citation (newer paper cites older)
+                            citationLinks.push({
+                                source: sourceNode,
+                                target: targetNode,
+                                type: 'citation'
+                            });
+                        } 
+                        else if (sourceYear < targetYear && timelineShowForwardCitations) {
+                            // Forward citation (older paper cites newer)
+                            forwardCitationLinks.push({
+                                source: sourceNode,
+                                target: targetNode,
+                                type: 'forward-citation'
+                            });
+                        }
+                    }
+                }
+            }
+            
+            console.log(`Citation connections: ${citationLinks.length} regular, ${forwardCitationLinks.length} forward`);
+        }
+        
+        // Process coauthor matrix
+        if (timelineShowSharedAuthors && 
+            {{ coauthor_matrix | default('[]') | tojson }}.length > 0) {
+            
+            const matrix = {{ coauthor_matrix | default('[]') | tojson }};
+            console.log("Coauthor matrix size:", matrix.length, "rows");
+            
+            if (matrix.length > 1) {
+                // Track processed pairs to avoid duplicates
+                const processedPairs = new Set();
+                
+                // Get header row (column IDs)
+                const headerRow = matrix[0];
+                
+                // Process each row (skipping header row)
+                for (let i = 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    if (!row || row.length < 2) continue;
+                    
+                    // Get source ID from first column
+                    let sourceId;
+                    try {
+                        sourceId = parseInt(row[0]);
+                        if (isNaN(sourceId)) sourceId = String(row[0]);
+                    } catch (e) {
+                        sourceId = String(row[0]);
+                    }
+                    
+                    // Get source node
+                    let sourceNode = nodeByNumericId[sourceId];
+                    if (!sourceNode) {
+                        sourceNode = nodeById[String(sourceId)];
+                        if (!sourceNode) {
+                            console.log(`Source ID ${sourceId} not found in nodes (coauthor)`);
+                            continue;
+                        }
+                    }
+                    
+                    // Process each cell in the row
+                    for (let j = 1; j < row.length; j++) {
+                        // Skip if not a connection
+                        if (row[j] != 1) continue;
+                        
+                        // Get target ID from header
+                        let targetId;
+                        try {
+                            targetId = parseInt(headerRow[j]);
+                            if (isNaN(targetId)) targetId = String(headerRow[j]);
+                        } catch (e) {
+                            targetId = String(headerRow[j]);
+                        }
+                        
+                        // Get target node
+                        let targetNode = nodeByNumericId[targetId];
+                        if (!targetNode) {
+                            targetNode = nodeById[String(targetId)];
+                            if (!targetNode) {
+                                console.log(`Target ID ${targetId} not found in nodes (coauthor)`);
+                                continue;
+                            }
+                        }
+                        
+                        // Create unique key for this pair to avoid duplicates
+                        const pairKey = [sourceId, targetId].sort().join('-');
+                        if (processedPairs.has(pairKey)) continue;
+                        
+                        processedPairs.add(pairKey);
+                        
+                        // Add connection
+                        authorLinks.push({
+                            source: sourceNode,
+                            target: targetNode,
+                            type: 'author'
+                        });
+                    }
+                }
+            }
+            
+            console.log(`Coauthor connections: ${authorLinks.length}`);
+        }
+        
+        console.log("Final connections found:", {
+            authorLinks: authorLinks.length,
+            citationLinks: citationLinks.length,
+            forwardCitationLinks: forwardCitationLinks.length
+        });
+        
+        // Draw the connections
+        // Draw shared author links
+        if (authorLinks.length > 0) {
+            layer.selectAll(".timeline-link-author")
+                .data(authorLinks)
+                .enter().append("path")
+                .attr("class", "timeline-link timeline-link-author")
+                .attr("d", d => timelineCreateLinkPath(d.source, d.target))
+                .style("stroke", "#f28e2c")
+                .style("stroke-width", 2)
+                .style("opacity", 0.7);
+        }
+        
+        // Draw citation links
+        if (citationLinks.length > 0) {
+            layer.selectAll(".timeline-link-citation")
+                .data(citationLinks)
+                .enter().append("path")
+                .attr("class", "timeline-link timeline-link-citation")
+                .attr("d", d => timelineCreateLinkPath(d.source, d.target))
+                .style("stroke", "#4e79a7")
+                .style("stroke-width", 2)
+                .style("opacity", 0.7);
+        }
+        
+        // Draw forward citation links
+        if (forwardCitationLinks.length > 0) {
+            layer.selectAll(".timeline-link-forward-citation")
+                .data(forwardCitationLinks)
+                .enter().append("path")
+                .attr("class", "timeline-link timeline-link-forward-citation")
+                .attr("d", d => timelineCreateLinkPath(d.source, d.target))
+                .style("stroke", "#e15759")
+                .style("stroke-width", 2)
+                .style("opacity", 0.7);
+        }
+    }
+    
+    // Improved function to create curved paths between nodes
+    function timelineCreateLinkPath(source, target) {
+        // Determine if this is a link between different years
+        const isSameYear = source.study.year === target.study.year;
+        
+        if (isSameYear) {
+            // For same year, create a simple arc to the side
+            const midY = (source.y + target.y) / 2;
+            const arcHeight = Math.abs(source.y - target.y) * 0.8;
+            const arcDirection = (source.y < target.y) ? -1 : 1;
+            
+            return `M ${source.x},${source.y} 
+                   Q ${source.x - arcHeight * arcDirection},${midY} 
+                   ${target.x},${target.y}`;
+        } else {
+            // For different years, create a bezier curve
+            const dx = target.x - source.x;
+            const controlOffset = Math.min(Math.abs(dx) * 0.4, 100); // Limit control point offset
+            
+            // Calculate control points - higher curves for connections between distant years
+            const controlX1 = source.x + Math.sign(dx) * controlOffset;
+            const controlY1 = source.y - 40; // Curve upward
+            const controlX2 = target.x - Math.sign(dx) * controlOffset;
+            const controlY2 = target.y - 40; // Curve upward
+            
+            return `M ${source.x},${source.y} 
+                   C ${controlX1},${controlY1} 
+                     ${controlX2},${controlY2} 
+                     ${target.x},${target.y}`;
+        }
+    }
+    
+    // Function to draw nodes with proper interaction
+    function timelineDrawNodes(layer, nodes) {
+        // Draw nodes
+        const nodeElements = layer.selectAll("circle")
+            .data(nodes)
+            .enter().append("circle")
+            .attr("class", "timeline-node")
+            .attr("r", TIMELINE_NODE_RADIUS)
+            .attr("cx", d => d.x)
+            .attr("cy", d => d.y)
+            .style("fill", "#B89491")
+            .style("stroke", "#fff")
+            .style("stroke-width", 2);
+        
+        // Add node interaction handlers
+        nodeElements
+            .on("mouseover", function(event, d) {
+                // Highlight node
+                d3.select(this)
+                    .attr("r", TIMELINE_NODE_RADIUS + 2)
+                    .style("fill", "#a37c79");
+                
+                // Highlight connections
+                timelineHighlightConnections(d.id);
+                
+                // Show tooltip
+                timelineTooltip.transition()
+                    .duration(200)
+                    .style("opacity", 0.9);
+                
+                timelineTooltip.html(`
+                    <strong>${d.study.title}</strong><br>
+                    ${d.study.authors} (${d.study.year})<br>
+                    ${d.study.bodyPart}, ${d.study.location}
+                `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function() {
+                // Reset node
+                d3.select(this)
+                    .attr("r", TIMELINE_NODE_RADIUS)
+                    .style("fill", "#B89491");
+                
+                // Reset connections highlight
+                timelineResetHighlight();
+                
+                // Hide tooltip
+                timelineTooltip.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            })
+            .on("click", function(event, d) {
+                // Show study details using the existing modal
+                const customEvent = new CustomEvent('showStudyDetailsRequest', {
+                    detail: { studyId: d.study.id }
+                });
+                document.dispatchEvent(customEvent);
+            });
+    }
+    
+    // Improved highlight connections function with error handling
+    function timelineHighlightConnections(nodeId) {
+        const nodeIndex = timelineStudyIdToIndex[nodeId];
+        if (nodeIndex === undefined) return;
+        
+        // Dim all links and nodes
+        timelineSvg.selectAll(".timeline-link").style("opacity", 0.2);
+        timelineSvg.selectAll(".timeline-node").style("opacity", 0.3);
+        timelineSvg.selectAll(".timeline-node-label").style("opacity", 0.3);
+        
+        // Helper function to check if the node is part of the link
+        function isNodePartOfLink(link, id) {
+            try {
+                return link && link.source && link.target && 
+                    (link.source.id === id || link.target.id === id);
+            } catch (e) {
+                console.error("Error checking link:", e);
+                return false;
+            }
+        }
+        
+        // Highlight links that include this node
+        timelineSvg.selectAll(".timeline-link").each(function(d) {
+            if (d && isNodePartOfLink(d, nodeId)) {
+                d3.select(this)
+                    .style("opacity", 1)
+                    .style("stroke-width", 2.5);
+            }
+        });
+        
+        // Highlight connected nodes
+        const connectedNodeIds = new Set([nodeId]);
+        
+        // Safely search for connections in the matrices
+        try {
+            // Find all nodes connected by citation matrix
+            if (timelineCitationMatrix && timelineCitationMatrix.length > nodeIndex) {
+                for (let i = 0; i < timelineStudyData.length; i++) {
+                    if ((timelineCitationMatrix[nodeIndex] && timelineCitationMatrix[nodeIndex][i] === 1) || 
+                        (timelineCitationMatrix[i] && timelineCitationMatrix[i][nodeIndex] === 1)) {
+                        const connectedId = timelineStudyData[i].id;
+                        connectedNodeIds.add(connectedId);
+                    }
+                }
+            }
+            
+            // Find all nodes connected by coauthor matrix
+            if (timelineCoauthorMatrix && timelineCoauthorMatrix.length > nodeIndex) {
+                for (let i = 0; i < timelineStudyData.length; i++) {
+                    if ((timelineCoauthorMatrix[nodeIndex] && timelineCoauthorMatrix[nodeIndex][i] === 1) || 
+                        (timelineCoauthorMatrix[i] && timelineCoauthorMatrix[i][nodeIndex] === 1)) {
+                        const connectedId = timelineStudyData[i].id;
+                        connectedNodeIds.add(connectedId);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Error finding connections in matrices:", e);
+        }
+        
+        // Also check direct links in the visualization
+        timelineSvg.selectAll(".timeline-link").each(function(d) {
+            if (!d) return;
+            
+            try {
+                if (d.source && d.source.id === nodeId && d.target) {
+                    connectedNodeIds.add(d.target.id);
+                } else if (d.target && d.target.id === nodeId && d.source) {
+                    connectedNodeIds.add(d.source.id);
+                }
+            } catch (e) {
+                console.error("Error checking link for connections:", e);
+            }
+        });
+        
+        // Highlight the connected nodes
+        timelineSvg.selectAll(".timeline-node").each(function(d) {
+            if (d && connectedNodeIds.has(d.id)) {
+                d3.select(this).style("opacity", 1);
+            }
+        });
+        
+        // Highlight node labels
+        timelineSvg.selectAll(".timeline-node-label").each(function(d) {
+            if (d && connectedNodeIds.has(d.id)) {
+                d3.select(this).style("opacity", 1);
+            }
+        });
+    }
+    
+    // Updated function to reset highlight state
+    function timelineResetHighlight() {
+        timelineSvg.selectAll(".timeline-link")
+            .style("opacity", 0.7)
+            .style("stroke-width", 2);
+        
+        timelineSvg.selectAll(".timeline-node").style("opacity", 1);
+        timelineSvg.selectAll(".timeline-node-label").style("opacity", 1);
+    }
+    
+    // Fixed function to update connections
+    function timelineUpdateConnections() {
+        const nodes = [];
+        
+        // Collect all nodes
+        timelineSvg.selectAll(".timeline-node").each(function(d) {
+            if (d) nodes.push(d);
+        });
+        
+        // Redraw connections with current settings
+        timelineDrawConnections(timelineSvg.select(".timeline-links-layer"), nodes);
+    }
+    
+    // Updated filter function to include numeric IDs
+    function filterTimelineVisualization(filteredData) {
+        try {
+            // Extract IDs from filtered data
+            const filteredIds = filteredData.map(row => String(row.ID));
+            
+            // Reset data structures
+            timelineStudyData = [];
+            timelineYearGroups = {};
+            timelineStudyIdToIndex = {};
+            timelineIdMapping = {};
+            
+            // Get raw data
+            const rawData = {{ data | tojson }};
+            
+            // Process only filtered studies
+            for (let i = 0; i < rawData.length; i++) {
+                const study = rawData[i];
+                
+                // Keep only filtered studies with valid years
+                if (filteredIds.includes(String(study.ID)) && 
+                    study.Year && 
+                    study.Year !== 'N/A' && 
+                    !isNaN(parseInt(study.Year))) {
+                    
+                    const processedStudy = {
+                        id: String(study.ID),
+                        numericId: parseInt(study.ID),  // Add numeric ID for matrix lookups
+                        title: study.Title || `Study ${study.ID}`,
+                        authors: study['First Author'] || 'Unknown',
+                        year: parseInt(study.Year),
+                        bodyPart: study['Input Body Part'] || 'N/A',
+                        location: study.Location || 'N/A',
+                        details: study
+                    };
+                    
+                    timelineStudyData.push(processedStudy);
+                }
+            }
+            
+            // Re-sort and group studies
+            timelineStudyData.sort((a, b) => a.year - b.year);
+            
+            for (const study of timelineStudyData) {
+                if (!timelineYearGroups[study.year]) {
+                    timelineYearGroups[study.year] = [];
+                }
+                timelineYearGroups[study.year].push(study);
+            }
+            
+            // Rebuild ID mappings
+            for (let i = 0; i < timelineStudyData.length; i++) {
+                const study = timelineStudyData[i];
+                timelineStudyIdToIndex[study.id] = i;
+                timelineIdMapping[study.numericId] = study;
+            }
+            
+            // Reinitialize visualization
+            timelineInitialize();
+            
+        } catch (error) {
+            console.error("Error filtering timeline visualization:", error);
+        }
+    }
+    
+    // Export filter function to parent
+    window.filterTimelineVisualization = filterTimelineVisualization;
+})(); // End of IIFE
+</script>
