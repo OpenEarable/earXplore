@@ -98,16 +98,20 @@
     }
     
     /* Connection type styles */
-    .timeline-link-cites {
-        stroke: #4e79a7;
+    .timeline-link-cites, .timeline-link-cited-by {
+        stroke: #999;  /* Use neutral gray like in similarity.html */
     }
     
     .timeline-link-author {
-        stroke: #f28e2c;
+        stroke: #999;  /* Same neutral color */
+        stroke-dasharray: 5,3;  /* Keep the dashed style for author links */
     }
-    
-    .timeline-link-cited-by {
-        stroke: #e15759;
+
+    /* Hover styles */
+    .timeline-link.highlighted {
+        stroke: #B89491 !important;  /* Match the color used in similarity.html */
+        stroke-opacity: 1 !important;
+        stroke-width: 2 !important;
     }
     
     /* Legend styling */
@@ -136,6 +140,19 @@
         color: #721c24;
         font-size: 16px;
     }
+
+    .timeline-legend-line {
+        display: flex;
+        align-items: center;
+        margin-right: 5px;
+    }
+    
+    /* Remove this old style since we're not using color blocks anymore */
+    .timeline-legend-color {
+        width: 20px;
+        height: 3px;
+        margin-right: 5px;
+    }
 </style>
 
 <div id="timeline-container">
@@ -159,26 +176,60 @@
                 
                 <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-cited-by" autocomplete="off">
                 <label class="btn btn-sm btn-timeline" for="timeline-mode-cited-by">Cited By</label>
+                
+                <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-none" autocomplete="off">
+                <label class="btn btn-sm btn-timeline" for="timeline-mode-none">None</label>
             </div>
         </div>
         
         <div class="timeline-legend">
             <div class="timeline-legend-item">
-                <div class="timeline-legend-color" style="background-color: #f28e2c;"></div>
+                <div class="timeline-legend-line">
+                    <svg width="20" height="3">
+                        <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#999" stroke-width="3" stroke-dasharray="5,3"/>
+                    </svg>
+                </div>
                 <span>Shared Authors</span>
             </div>
             <div class="timeline-legend-item">
-                <div class="timeline-legend-color" style="background-color: #4e79a7;"></div>
-                <span>Cites</span>
+                <div class="timeline-legend-line">
+                    <svg width="20" height="3">
+                        <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#999" stroke-width="3"/>
+                    </svg>
+                </div>
+                <span>Citations</span>
             </div>
             <div class="timeline-legend-item">
-                <div class="timeline-legend-color" style="background-color: #e15759;"></div>
-                <span>Cited By</span>
+                <div class="timeline-legend-line">
+                    <svg width="20" height="3">
+                        <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#B89491" stroke-width="3"/>
+                    </svg>
+                </div>
+                <span>Highlighted</span>
             </div>
         </div>
     </div>
     
     <div id="timeline-graph-container"></div>
+
+    <div class="modal fade" id="timelineConnectionsModal" tabindex="-1" aria-labelledby="timelineConnectionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="timelineConnectionsModalLabel">Node Connections</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="timelineConnectionsContainer">
+                        <!-- Connected studies will be populated here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -188,6 +239,7 @@
     let timelineSvg;
     let timelineWidth, timelineHeight;
     let timelineTooltip;
+    let timelineConnectionsModal;
     let timelineStudyData = [];
     let timelineYearGroups = {};
     let timelineStudyIdToIndex = {};
@@ -254,6 +306,9 @@
         timelineTooltip = d3.select("body").append("div")
             .attr("class", "timeline-tooltip")
             .style("opacity", 0);
+
+        // Initialize the connections modal
+        timelineConnectionsModal = new bootstrap.Modal(document.getElementById('timelineConnectionsModal'));
         
         // Toggle button for shared authors
         document.getElementById('timeline-toggle-shared-authors').addEventListener('change', function() {
@@ -279,6 +334,14 @@
         document.getElementById('timeline-mode-cited-by').addEventListener('change', function() {
             if (this.checked) {
                 timelineCitationMode = "cited-by";
+                timelineUpdateConnections();
+            }
+        });
+
+        // Add this after the other citation mode radio button event listeners
+        document.getElementById('timeline-mode-none').addEventListener('change', function() {
+            if (this.checked) {
+                timelineCitationMode = "none";
                 timelineUpdateConnections();
             }
         });
@@ -804,7 +867,7 @@
                 .style("stroke-width", 1)
                 .style("stroke-opacity", 0.6);
         }
-        
+
         if (timelineCitationMode === "both" || timelineCitationMode === "cited-by") {
             layer.selectAll(".timeline-link-cited-by")
                 .data(citedByLinks)
@@ -903,11 +966,16 @@
                     .style("opacity", 0);
             })
             .on("click", function(event, d) {
-                // Show study details using the existing modal
-                const customEvent = new CustomEvent('showStudyDetailsRequest', {
-                    detail: { studyId: d.study.id }
-                });
-                document.dispatchEvent(customEvent);
+                // Show connections in modal if shift key is not pressed (regular click)
+                if (!event.shiftKey) {
+                    showTimelineConnections(d);
+                } else {
+                    // Show study details using the existing modal (shift + click)
+                    const customEvent = new CustomEvent('showStudyDetailsRequest', {
+                        detail: { studyId: d.study.id }
+                    });
+                    document.dispatchEvent(customEvent);
+                }
             });
     }
     
@@ -932,6 +1000,8 @@
                     return link.source.id === id; // Node cites other papers
                 } else if (mode === "cited-by" && link.type === "cited-by") {
                     return link.source.id === id; // Node is cited by other papers
+                } else if (mode === "none") {
+                    return link.type === "author"; // Only show author links when mode is none
                 }
                 return false;
             } catch (e) {
@@ -945,7 +1015,8 @@
             if (d && isNodePartOfLink(d, nodeId, timelineCitationMode)) {
                 const selection = d3.select(this);
                 selection.style("opacity", 1)
-                        .style("stroke-width", 2.5);
+                        .style("stroke", "#B89491")  // Use the highlight color from similarity.html
+                        .style("stroke-width", 2);
                 
                 // Keep the dash style for author links when highlighting
                 if (selection.classed("timeline-link-author")) {
@@ -1039,7 +1110,7 @@
         // Reset all links to normal opacity
         timelineSvg.selectAll(".timeline-link")
             .style("opacity", 0.6)
-            .style("stroke", "#999")
+            .style("stroke", "#999")  // Reset to neutral gray color
             .style("stroke-width", 1);
         
         // Ensure shared author links maintain their dashed style
@@ -1128,6 +1199,152 @@
             console.error("Error filtering timeline visualization:", error);
         }
     }
+
+    // Function to show connections in a modal
+        function showTimelineConnections(node) {
+            // Find all connections for this node
+            const connections = [];
+            const nodeId = node.id;
+            
+            // Collect all connections based on the current mode
+            timelineSvg.selectAll(".timeline-link").each(function(d) {
+                if (!d) return;
+                
+                let connectionType = '';
+                let connectedNode = null;
+                
+                if (d.source.id === nodeId) {
+                    // This node is the source
+                    connectionType = d.type;
+                    connectedNode = d.target;
+                } else if (d.target.id === nodeId) {
+                    // This node is the target
+                    connectionType = d.type === 'cites' ? 'cited-by' : 
+                                    (d.type === 'cited-by' ? 'cites' : 'author');
+                    connectedNode = d.source;
+                } else {
+                    // Not connected to this node
+                    return;
+                }
+                
+                // Skip connection if it doesn't match the current citation mode filter
+                if (timelineCitationMode !== "both" && 
+                    timelineCitationMode !== "none" && 
+                    d.type !== timelineCitationMode && 
+                    d.type !== "author") {
+                    return;
+                }
+                
+                if (timelineCitationMode === "none" && d.type !== "author") {
+                    return;
+                }
+                
+                // Get connected node details
+                const study = connectedNode.study;
+                
+                connections.push({
+                    id: study.id,
+                    title: study.title,
+                    authors: study.authors,
+                    year: study.year,
+                    bodyPart: study.bodyPart,
+                    location: study.location,
+                    connectionType: connectionType
+                });
+            });
+            
+            // Sort connections: citations first, then shared authors, then by year
+            connections.sort((a, b) => {
+                // First group by connection type
+                if (a.connectionType !== b.connectionType) {
+                    if (a.connectionType === 'cites' || a.connectionType === 'cited-by') return -1;
+                    if (b.connectionType === 'cites' || b.connectionType === 'cited-by') return 1;
+                }
+                // Then sort by year
+                return b.year - a.year;
+            });
+            
+            // Create HTML for the modal
+            let html = `
+                <h5>Connections for: ${node.study.title} (${node.study.year})</h5>
+                <p><strong>Authors:</strong> ${node.study.authors}</p>
+            `;
+            
+            if (connections.length === 0) {
+                html += "<p>No connections found with current filter settings.</p>";
+            } else {
+                html += `
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Authors</th>
+                            <th>Year</th>
+                            <th>Body Part</th>
+                            <th>Connection Type</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+                
+                connections.forEach(connection => {
+                    // Format the connection type for display
+                    let connectionDisplay = connection.connectionType;
+                    let connectionClass = '';
+                    
+                    if (connection.connectionType === 'cites') {
+                        connectionDisplay = 'Cites';
+                        connectionClass = 'text-primary';
+                    } else if (connection.connectionType === 'cited-by') {
+                        connectionDisplay = 'Cited by';
+                        connectionClass = 'text-success';
+                    } else if (connection.connectionType === 'author') {
+                        connectionDisplay = 'Shared Author';
+                        connectionClass = 'text-secondary';
+                    }
+                    
+                    html += `
+                        <tr>
+                            <td><i class="bi bi-info-circle view-timeline-details" title="View details" style="cursor: pointer;" data-id="${connection.id}"></i></td>
+                            <td>${connection.id}</td>
+                            <td>${connection.title}</td>
+                            <td>${connection.authors}</td>
+                            <td>${connection.year}</td>
+                            <td>${connection.bodyPart}</td>
+                            <td class="${connectionClass}">${connectionDisplay}</td>
+                        </tr>
+                    `;
+                });
+                
+                html += `
+                    </tbody>
+                </table>
+                `;
+            }
+            
+            // Set the modal content
+            document.getElementById('timelineConnectionsContainer').innerHTML = html;
+            
+            // Add click handlers to the info icons
+            setTimeout(() => {
+                document.querySelectorAll('.view-timeline-details').forEach(icon => {
+                    icon.addEventListener('click', function() {
+                        const studyId = this.getAttribute('data-id');
+                        
+                        // Dispatch event to show study details
+                        const event = new CustomEvent('showStudyDetailsRequest', {
+                            detail: { studyId: studyId }
+                        });
+                        document.dispatchEvent(event);
+                    });
+                });
+            }, 100);
+            
+            // Show the modal
+            timelineConnectionsModal.show();
+        }
     
     // Export filter function to parent
     window.filterTimelineVisualization = filterTimelineVisualization;
