@@ -98,7 +98,7 @@
     }
     
     /* Connection type styles */
-    .timeline-link-citation {
+    .timeline-link-cites {
         stroke: #4e79a7;
     }
     
@@ -106,7 +106,7 @@
         stroke: #f28e2c;
     }
     
-    .timeline-link-forward-citation {
+    .timeline-link-cited-by {
         stroke: #e15759;
     }
     
@@ -141,11 +141,24 @@
 <div id="timeline-container">
     <div class="timeline-controls">
         <div>
-            <strong>Connection Types:</strong>
-            <div class="btn-group ms-2">
-                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-shared-authors">Shared Authors</button>
-                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-citations">Citations</button>
-                <button type="button" class="btn btn-sm btn-timeline active" id="timeline-toggle-forward-citations">Forward Citations</button>
+            <strong>Shared Authors:</strong>
+            <div class="form-check form-switch ms-2 d-inline-block">
+                <input class="form-check-input" type="checkbox" id="timeline-toggle-shared-authors" checked>
+                <label class="form-check-label" for="timeline-toggle-shared-authors"></label>
+            </div>
+        </div>
+        
+        <div class="mt-2">
+            <strong>Citation Mode:</strong>
+            <div class="btn-group ms-2" role="group" aria-label="Citation mode selection">
+                <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-both" autocomplete="off" checked>
+                <label class="btn btn-sm btn-timeline" for="timeline-mode-both">Both</label>
+                
+                <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-cites" autocomplete="off">
+                <label class="btn btn-sm btn-timeline" for="timeline-mode-cites">Cites</label>
+                
+                <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-cited-by" autocomplete="off">
+                <label class="btn btn-sm btn-timeline" for="timeline-mode-cited-by">Cited By</label>
             </div>
         </div>
         
@@ -156,11 +169,11 @@
             </div>
             <div class="timeline-legend-item">
                 <div class="timeline-legend-color" style="background-color: #4e79a7;"></div>
-                <span>Citations</span>
+                <span>Cites</span>
             </div>
             <div class="timeline-legend-item">
                 <div class="timeline-legend-color" style="background-color: #e15759;"></div>
-                <span>Forward Citations</span>
+                <span>Cited By</span>
             </div>
         </div>
     </div>
@@ -181,10 +194,13 @@
     let timelineCitationMatrix = [];
     let timelineCoauthorMatrix = [];
     
+    // Node lookup maps
+    let timelineNodeById = {};
+    let timelineNodeByNumericId = {};
+    
     // Connection visibility flags
     let timelineShowSharedAuthors = true;
-    let timelineShowCitations = true;
-    let timelineShowForwardCitations = true;
+    let timelineCitationMode = "both"; // "both", "cites", or "cited-by"
     
     // Constants
     const TIMELINE_NODE_RADIUS = 8;
@@ -242,23 +258,32 @@
             .attr("class", "timeline-tooltip")
             .style("opacity", 0);
         
-        // Toggle buttons for connections
-        document.getElementById('timeline-toggle-shared-authors').addEventListener('click', function() {
-            this.classList.toggle('active');
-            timelineShowSharedAuthors = this.classList.contains('active');
+        // Toggle button for shared authors
+        document.getElementById('timeline-toggle-shared-authors').addEventListener('change', function() {
+            timelineShowSharedAuthors = this.checked;
             timelineUpdateConnections();
         });
         
-        document.getElementById('timeline-toggle-citations').addEventListener('click', function() {
-            this.classList.toggle('active');
-            timelineShowCitations = this.classList.contains('active');
-            timelineUpdateConnections();
+        // Radio buttons for citation mode
+        document.getElementById('timeline-mode-both').addEventListener('change', function() {
+            if (this.checked) {
+                timelineCitationMode = "both";
+                timelineUpdateConnections();
+            }
         });
         
-        document.getElementById('timeline-toggle-forward-citations').addEventListener('click', function() {
-            this.classList.toggle('active');
-            timelineShowForwardCitations = this.classList.contains('active');
-            timelineUpdateConnections();
+        document.getElementById('timeline-mode-cites').addEventListener('change', function() {
+            if (this.checked) {
+                timelineCitationMode = "cites";
+                timelineUpdateConnections();
+            }
+        });
+        
+        document.getElementById('timeline-mode-cited-by').addEventListener('change', function() {
+            if (this.checked) {
+                timelineCitationMode = "cited-by";
+                timelineUpdateConnections();
+            }
         });
         
         // Initialize when the timeline tab is selected
@@ -575,26 +600,26 @@
         layer.selectAll("*").remove();
         
         console.log("Drawing timeline connections for", nodes.length, "nodes");
+        console.log("Current citation mode:", timelineCitationMode);
         
-        // Create node lookup by ID and numeric ID
-        const nodeById = {};
-        const nodeByNumericId = {};
+        // Update the global node lookup maps
+        timelineNodeById = {};
+        timelineNodeByNumericId = {};
         nodes.forEach(node => {
-            nodeById[node.id] = node;
-            nodeByNumericId[node.study.numericId] = node;
+            timelineNodeById[node.id] = node;
+            timelineNodeByNumericId[node.study.numericId] = node;
         });
         
         // Arrays to store different types of connections
         const authorLinks = [];
-        const citationLinks = [];
-        const forwardCitationLinks = [];
+        const citesLinks = [];
+        const citedByLinks = [];
 
         // Debug available IDs
-        console.log("Available node IDs:", Object.keys(nodeByNumericId).join(", "));
+        console.log("Available node IDs:", Object.keys(timelineNodeByNumericId).join(", "));
         
-        // Process citation matrix
-        if ((timelineShowCitations || timelineShowForwardCitations) && 
-            {{ citation_matrix | default('[]') | tojson }}.length > 0) {
+        // Process citation matrix - we still compute all citations even if only showing a subset
+        if ({{ citation_matrix | default('[]') | tojson }}.length > 0) {
             
             const matrix = {{ citation_matrix | default('[]') | tojson }};
             console.log("Citation matrix size:", matrix.length, "rows");
@@ -619,14 +644,10 @@
                     }
                     
                     // Get source node
-                    const sourceNode = nodeByNumericId[sourceId];
+                    const sourceNode = timelineNodeByNumericId[sourceId] || timelineNodeById[String(sourceId)];
                     if (!sourceNode) {
-                        // Try string lookup if numeric fails
-                        const sourceNodeById = nodeById[String(sourceId)];
-                        if (!sourceNodeById) {
-                            console.log(`Source ID ${sourceId} not found in nodes`);
-                            continue;
-                        }
+                        console.log(`Source ID ${sourceId} not found in nodes`);
+                        continue;
                     }
                     
                     // Process each cell in the row (connection value)
@@ -644,42 +665,33 @@
                         }
                         
                         // Get target node
-                        let targetNode = nodeByNumericId[targetId];
+                        let targetNode = timelineNodeByNumericId[targetId] || timelineNodeById[String(targetId)];
                         if (!targetNode) {
-                            // Try string lookup if numeric fails
-                            targetNode = nodeById[String(targetId)];
-                            if (!targetNode) {
-                                console.log(`Target ID ${targetId} not found in nodes`);
-                                continue;
-                            }
+                            console.log(`Target ID ${targetId} not found in nodes`);
+                            continue;
                         }
                         
-                        // We found a valid connection! Now determine the type based on years
-                        const sourceNode = nodeByNumericId[sourceId] || nodeById[String(sourceId)];
-                        const sourceYear = sourceNode.study.year;
-                        const targetYear = targetNode.study.year;
+                        // IMPORTANT: The citation matrix represents "cites" relationships
+                        // If row[i] -> column[j] = 1, it means paper i cites paper j
                         
-                        if (sourceYear > targetYear && timelineShowCitations) {
-                            // Regular citation (newer paper cites older)
-                            citationLinks.push({
-                                source: sourceNode,
-                                target: targetNode,
-                                type: 'citation'
-                            });
-                        } 
-                        else if (sourceYear < targetYear && timelineShowForwardCitations) {
-                            // Forward citation (older paper cites newer)
-                            forwardCitationLinks.push({
-                                source: sourceNode,
-                                target: targetNode,
-                                type: 'forward-citation'
-                            });
-                        }
+                        // Add to appropriate list - every citation is both a "cites" and a "cited by" relationship
+                        // depending on perspective
+                        citesLinks.push({
+                            source: sourceNode,
+                            target: targetNode,
+                            type: 'cites'
+                        });
+                        
+                        citedByLinks.push({
+                            source: targetNode,
+                            target: sourceNode,
+                            type: 'cited-by'
+                        });
                     }
                 }
             }
             
-            console.log(`Citation connections: ${citationLinks.length} regular, ${forwardCitationLinks.length} forward`);
+            console.log(`Citation connections: ${citesLinks.length} cites, ${citedByLinks.length} cited by`);
         }
         
         // Process coauthor matrix
@@ -711,9 +723,9 @@
                     }
                     
                     // Get source node
-                    let sourceNode = nodeByNumericId[sourceId];
+                    let sourceNode = timelineNodeByNumericId[sourceId];
                     if (!sourceNode) {
-                        sourceNode = nodeById[String(sourceId)];
+                        sourceNode = timelineNodeById[String(sourceId)];
                         if (!sourceNode) {
                             console.log(`Source ID ${sourceId} not found in nodes (coauthor)`);
                             continue;
@@ -735,9 +747,9 @@
                         }
                         
                         // Get target node
-                        let targetNode = nodeByNumericId[targetId];
+                        let targetNode = timelineNodeByNumericId[targetId];
                         if (!targetNode) {
-                            targetNode = nodeById[String(targetId)];
+                            targetNode = timelineNodeById[String(targetId)];
                             if (!targetNode) {
                                 console.log(`Target ID ${targetId} not found in nodes (coauthor)`);
                                 continue;
@@ -765,13 +777,14 @@
         
         console.log("Final connections found:", {
             authorLinks: authorLinks.length,
-            citationLinks: citationLinks.length,
-            forwardCitationLinks: forwardCitationLinks.length
+            citesLinks: citesLinks.length,
+            citedByLinks: citedByLinks.length
         });
         
-        // Draw the connections
-        // Draw shared author links
-        if (authorLinks.length > 0) {
+        // Draw the connections based on current mode
+        
+        // Draw shared author links if enabled
+        if (timelineShowSharedAuthors && authorLinks.length > 0) {
             layer.selectAll(".timeline-link-author")
                 .data(authorLinks)
                 .enter().append("path")
@@ -782,24 +795,23 @@
                 .style("opacity", 0.7);
         }
         
-        // Draw citation links
-        if (citationLinks.length > 0) {
-            layer.selectAll(".timeline-link-citation")
-                .data(citationLinks)
+        // Draw citation links based on selected mode
+        if (timelineCitationMode === "both" || timelineCitationMode === "cites") {
+            layer.selectAll(".timeline-link-cites")
+                .data(citesLinks)
                 .enter().append("path")
-                .attr("class", "timeline-link timeline-link-citation")
+                .attr("class", "timeline-link timeline-link-cites")
                 .attr("d", d => timelineCreateLinkPath(d.source, d.target))
                 .style("stroke", "#4e79a7")
                 .style("stroke-width", 2)
                 .style("opacity", 0.7);
         }
         
-        // Draw forward citation links
-        if (forwardCitationLinks.length > 0) {
-            layer.selectAll(".timeline-link-forward-citation")
-                .data(forwardCitationLinks)
+        if (timelineCitationMode === "both" || timelineCitationMode === "cited-by") {
+            layer.selectAll(".timeline-link-cited-by")
+                .data(citedByLinks)
                 .enter().append("path")
-                .attr("class", "timeline-link timeline-link-forward-citation")
+                .attr("class", "timeline-link timeline-link-cited-by")
                 .attr("d", d => timelineCreateLinkPath(d.source, d.target))
                 .style("stroke", "#e15759")
                 .style("stroke-width", 2)
@@ -839,13 +851,14 @@
         }
     }
     
-    // Function to draw nodes with proper interaction
+    // Function to draw nodes with proper interaction and data attributes
     function timelineDrawNodes(layer, nodes) {
         // Draw nodes
         const nodeElements = layer.selectAll("circle")
             .data(nodes)
             .enter().append("circle")
             .attr("class", "timeline-node")
+            .attr("data-id", d => d.id)  // Add data attribute for easier selection
             .attr("r", TIMELINE_NODE_RADIUS)
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
@@ -900,7 +913,7 @@
             });
     }
     
-    // Improved highlight connections function with error handling
+    // Improved highlight connections function with mode awareness
     function timelineHighlightConnections(nodeId) {
         const nodeIndex = timelineStudyIdToIndex[nodeId];
         if (nodeIndex === undefined) return;
@@ -910,65 +923,74 @@
         timelineSvg.selectAll(".timeline-node").style("opacity", 0.3);
         timelineSvg.selectAll(".timeline-node-label").style("opacity", 0.3);
         
-        // Helper function to check if the node is part of the link
-        function isNodePartOfLink(link, id) {
+        // Helper function to check if the node is part of the link, considering direction
+        function isNodePartOfLink(link, id, mode) {
             try {
-                return link && link.source && link.target && 
-                    (link.source.id === id || link.target.id === id);
+                if (!link || !link.source || !link.target) return false;
+                
+                if (mode === "both") {
+                    return link.source.id === id || link.target.id === id;
+                } else if (mode === "cites" && link.type === "cites") {
+                    return link.source.id === id; // Node cites other papers
+                } else if (mode === "cited-by" && link.type === "cited-by") {
+                    return link.source.id === id; // Node is cited by other papers
+                }
+                return false;
             } catch (e) {
                 console.error("Error checking link:", e);
                 return false;
             }
         }
         
-        // Highlight links that include this node
+        // Highlight links that include this node, respecting the citation mode
         timelineSvg.selectAll(".timeline-link").each(function(d) {
-            if (d && isNodePartOfLink(d, nodeId)) {
+            if (d && isNodePartOfLink(d, nodeId, timelineCitationMode)) {
                 d3.select(this)
                     .style("opacity", 1)
                     .style("stroke-width", 2.5);
+                    
+                // Also highlight connected node
+                if (d.source.id === nodeId) {
+                    // Connected node is the target
+                    d3.select(`.timeline-node[data-id="${d.target.id}"]`)
+                        .style("opacity", 1);
+                } else {
+                    // Connected node is the source
+                    d3.select(`.timeline-node[data-id="${d.source.id}"]`)
+                        .style("opacity", 1);
+                }
             }
         });
         
-        // Highlight connected nodes
-        const connectedNodeIds = new Set([nodeId]);
-        
-        // Safely search for connections in the matrices
-        try {
-            // Find all nodes connected by citation matrix
-            if (timelineCitationMatrix && timelineCitationMatrix.length > nodeIndex) {
-                for (let i = 0; i < timelineStudyData.length; i++) {
-                    if ((timelineCitationMatrix[nodeIndex] && timelineCitationMatrix[nodeIndex][i] === 1) || 
-                        (timelineCitationMatrix[i] && timelineCitationMatrix[i][nodeIndex] === 1)) {
-                        const connectedId = timelineStudyData[i].id;
-                        connectedNodeIds.add(connectedId);
-                    }
-                }
-            }
+        // Always highlight the current node
+        d3.select(`.timeline-node[data-id="${nodeId}"]`)
+            .style("opacity", 1);
             
-            // Find all nodes connected by coauthor matrix
-            if (timelineCoauthorMatrix && timelineCoauthorMatrix.length > nodeIndex) {
-                for (let i = 0; i < timelineStudyData.length; i++) {
-                    if ((timelineCoauthorMatrix[nodeIndex] && timelineCoauthorMatrix[nodeIndex][i] === 1) || 
-                        (timelineCoauthorMatrix[i] && timelineCoauthorMatrix[i][nodeIndex] === 1)) {
-                        const connectedId = timelineStudyData[i].id;
-                        connectedNodeIds.add(connectedId);
-                    }
-                }
-            }
-        } catch (e) {
-            console.error("Error finding connections in matrices:", e);
-        }
+        // Find all connected nodes based on the selected mode
+        const connectedNodeIds = new Set([nodeId]);
         
         // Also check direct links in the visualization
         timelineSvg.selectAll(".timeline-link").each(function(d) {
             if (!d) return;
             
             try {
-                if (d.source && d.source.id === nodeId && d.target) {
-                    connectedNodeIds.add(d.target.id);
-                } else if (d.target && d.target.id === nodeId && d.source) {
-                    connectedNodeIds.add(d.source.id);
+                if (timelineCitationMode === "both") {
+                    // Include all connected nodes
+                    if (d.source.id === nodeId) {
+                        connectedNodeIds.add(d.target.id);
+                    } else if (d.target.id === nodeId) {
+                        connectedNodeIds.add(d.source.id);
+                    }
+                } else if (timelineCitationMode === "cites") {
+                    // Only include nodes that this node cites
+                    if (d.source.id === nodeId && d.type === "cites") {
+                        connectedNodeIds.add(d.target.id);
+                    }
+                } else if (timelineCitationMode === "cited-by") {
+                    // Only include nodes that cite this node
+                    if (d.source.id === nodeId && d.type === "cited-by") {
+                        connectedNodeIds.add(d.target.id);
+                    }
                 }
             } catch (e) {
                 console.error("Error checking link for connections:", e);
@@ -982,12 +1004,31 @@
             }
         });
         
-        // Highlight node labels
-        timelineSvg.selectAll(".timeline-node-label").each(function(d) {
-            if (d && connectedNodeIds.has(d.id)) {
-                d3.select(this).style("opacity", 1);
+        // Update the tooltip to show different info based on mode
+        let citesCount = 0, citedByCount = 0;
+        
+        timelineSvg.selectAll(".timeline-link").each(function(d) {
+            if (!d) return;
+            
+            if (d.source.id === nodeId && d.type === "cites") {
+                citesCount++;
+            } else if (d.source.id === nodeId && d.type === "cited-by") {
+                citedByCount++;
             }
         });
+        
+        // Update tooltip info with citation counts
+        const tooltipNode = timelineNodeById[nodeId];
+        if (tooltipNode) {
+            let tooltipContent = `
+                <strong>${tooltipNode.study.title}</strong><br>
+                ${tooltipNode.study.authors} (${tooltipNode.study.year})<br>
+                ${tooltipNode.study.bodyPart}, ${tooltipNode.study.location}<br><br>
+                <strong>Citations:</strong> Cites ${citesCount} papers, Cited by ${citedByCount} papers
+            `;
+            
+            timelineTooltip.html(tooltipContent);
+        }
     }
     
     // Updated function to reset highlight state
