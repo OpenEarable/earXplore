@@ -994,6 +994,13 @@
             try {
                 if (!link || !link.source || !link.target) return false;
                 
+                // Special handling for author links
+                if (link.type === "author") {
+                    // For author links, we only care if the node is connected, not about direction
+                    return (link.source.id === id || link.target.id === id) && timelineShowSharedAuthors;
+                }
+                
+                // Normal handling for citation links
                 if (mode === "both") {
                     return link.source.id === id || link.target.id === id;
                 } else if (mode === "cites" && link.type === "cites") {
@@ -1001,7 +1008,7 @@
                 } else if (mode === "cited-by" && link.type === "cited-by") {
                     return link.source.id === id; // Node is cited by other papers
                 } else if (mode === "none") {
-                    return link.type === "author"; // Only show author links when mode is none
+                    return false; // No citation links when mode is none
                 }
                 return false;
             } catch (e) {
@@ -1200,10 +1207,10 @@
         }
     }
 
-    // Function to show connections in a modal
+        // Function to show connections in a modal
         function showTimelineConnections(node) {
             // Find all connections for this node
-            const connections = [];
+            const connectionsByStudyId = new Map(); // Use a Map to track unique studies by ID
             const nodeId = node.id;
             
             // Collect all connections based on the current mode
@@ -1242,20 +1249,46 @@
                 // Get connected node details
                 const study = connectedNode.study;
                 
-                connections.push({
-                    id: study.id,
-                    title: study.title,
-                    authors: study.authors,
-                    year: study.year,
-                    bodyPart: study.bodyPart,
-                    location: study.location,
-                    connectionType: connectionType
-                });
+                // If we already have this study ID, let's update its connection types
+                if (connectionsByStudyId.has(study.id)) {
+                    const existingConnection = connectionsByStudyId.get(study.id);
+                    
+                    // If this is a different connection type, update the connection type to show multiple types
+                    if (existingConnection.connectionType !== connectionType) {
+                        // Prioritize citation connections over author connections
+                        if (existingConnection.connectionType === 'author') {
+                            existingConnection.connectionType = connectionType;
+                        } 
+                        // For citation connections, prefer "both" if we have both cites and cited-by
+                        else if ((existingConnection.connectionType === 'cites' && connectionType === 'cited-by') ||
+                                (existingConnection.connectionType === 'cited-by' && connectionType === 'cites')) {
+                            existingConnection.connectionType = 'both';
+                        }
+                    }
+                } else {
+                    // New study ID - add to our map
+                    connectionsByStudyId.set(study.id, {
+                        id: study.id,
+                        title: study.title,
+                        authors: study.authors,
+                        year: study.year,
+                        bodyPart: study.bodyPart,
+                        location: study.location,
+                        connectionType: connectionType
+                    });
+                }
             });
+            
+            // Convert the Map values to an array
+            const connections = Array.from(connectionsByStudyId.values());
             
             // Sort connections: citations first, then shared authors, then by year
             connections.sort((a, b) => {
-                // First group by connection type
+                // First prioritize "both" connections
+                if (a.connectionType === 'both' && b.connectionType !== 'both') return -1;
+                if (b.connectionType === 'both' && a.connectionType !== 'both') return 1;
+                
+                // Then group by connection type
                 if (a.connectionType !== b.connectionType) {
                     if (a.connectionType === 'cites' || a.connectionType === 'cited-by') return -1;
                     if (b.connectionType === 'cites' || b.connectionType === 'cited-by') return 1;
@@ -1266,43 +1299,62 @@
             
             // Create HTML for the modal
             let html = `
-                <h5>Connections for: ${node.study.title} (${node.study.year})</h5>
-                <p><strong>Authors:</strong> ${node.study.authors}</p>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Study Details</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">${node.study.title} (${node.study.year})</h6>
+                        <p class="card-text"><strong>Authors:</strong> ${node.study.authors}</p>
+                        <p class="card-text"><strong>Body Part:</strong> ${node.study.bodyPart}</p>
+                        <p class="card-text"><strong>Location:</strong> ${node.study.location}</p>
+                    </div>
+                </div>
             `;
+            
+            html += `<h5 class="mb-3">Study Connections (${connections.length})</h5>`;
             
             if (connections.length === 0) {
                 html += "<p>No connections found with current filter settings.</p>";
             } else {
                 html += `
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>ID</th>
-                            <th>Title</th>
-                            <th>Authors</th>
-                            <th>Year</th>
-                            <th>Body Part</th>
-                            <th>Connection Type</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Authors</th>
+                                <th>Year</th>
+                                <th>Location</th>
+                                <th>Body Part</th>
+                                <th>Connection Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
                 
                 connections.forEach(connection => {
                     // Format the connection type for display
                     let connectionDisplay = connection.connectionType;
                     let connectionClass = '';
+                    let connectionIcon = '';
                     
                     if (connection.connectionType === 'cites') {
                         connectionDisplay = 'Cites';
                         connectionClass = 'text-primary';
+                        connectionIcon = '<i class="bi bi-arrow-right"></i>';
                     } else if (connection.connectionType === 'cited-by') {
                         connectionDisplay = 'Cited by';
                         connectionClass = 'text-success';
+                        connectionIcon = '<i class="bi bi-arrow-left"></i>';
+                    } else if (connection.connectionType === 'both') {
+                        connectionDisplay = 'Bidirectional Citation';
+                        connectionClass = 'text-info';
+                        connectionIcon = '<i class="bi bi-arrow-left-right"></i>';
                     } else if (connection.connectionType === 'author') {
                         connectionDisplay = 'Shared Author';
                         connectionClass = 'text-secondary';
+                        connectionIcon = '<i class="bi bi-person"></i>';
                     }
                     
                     html += `
@@ -1312,15 +1364,17 @@
                             <td>${connection.title}</td>
                             <td>${connection.authors}</td>
                             <td>${connection.year}</td>
+                            <td>${connection.location}</td>
                             <td>${connection.bodyPart}</td>
-                            <td class="${connectionClass}">${connectionDisplay}</td>
+                            <td class="${connectionClass}">${connectionIcon} ${connectionDisplay}</td>
                         </tr>
                     `;
                 });
                 
                 html += `
-                    </tbody>
-                </table>
+                        </tbody>
+                    </table>
+                </div>
                 `;
             }
             
@@ -1332,6 +1386,8 @@
                 document.querySelectorAll('.view-timeline-details').forEach(icon => {
                     icon.addEventListener('click', function() {
                         const studyId = this.getAttribute('data-id');
+                        // Close the modal before showing study details
+                        timelineConnectionsModal.hide();
                         
                         // Dispatch event to show study details
                         const event = new CustomEvent('showStudyDetailsRequest', {
