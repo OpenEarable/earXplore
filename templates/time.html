@@ -153,6 +153,39 @@
         height: 3px;
         margin-right: 5px;
     }
+
+    .connections-container h5 {
+        margin-bottom: 15px;
+        color: #B89491;
+    }
+
+    .connections-container .table {
+        font-size: 14px;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .connections-container .table th {
+        background-color: #f8f9fa;
+        font-size: 14px;
+    }
+
+    .connections-container .table td {
+        font-size: 14px;
+        vertical-align: middle;
+    }
+
+    .table-responsive {
+        margin-bottom: 1.5rem;
+    }
+
+    .view-study-details:hover {
+        color: #a37c79;
+    }
+
+    .selected-study-row {
+        background-color: #e2f0fb !important;
+    }
 </style>
 
 <div id="timeline-container">
@@ -212,7 +245,7 @@
     
     <div id="timeline-graph-container"></div>
 
-    <div class="modal fade" id="timelineConnectionsModal" tabindex="-1" aria-labelledby="timelineConnectionsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="timelineConnectionsModal" tabindex="-1" aria-labelledby="connectionsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-body">
@@ -1169,7 +1202,8 @@
                         authors: study['First Author'] || 'Unknown',
                         year: parseInt(study.Year),
                         bodyPart: study['Input Body Part'] || 'N/A',
-                        location: study.Location || 'N/A',
+                        location: study.details['Location'] || study.details[' Location'] || 'N/A',
+                        gesture: study.details['Gesture'] || study.details['Gestures'] || 'N/A',
                         details: study
                     };
                     
@@ -1247,16 +1281,30 @@
         if (connectionsByStudyId.has(study.id)) {
             const existingConnection = connectionsByStudyId.get(study.id);
             
-            // If this is a different connection type, update the connection type to show multiple types
-            if (existingConnection.connectionType !== connectionType) {
-                // Prioritize citation connections over author connections
-                if (existingConnection.connectionType === 'author') {
-                    existingConnection.connectionType = connectionType;
-                } 
-                // For citation connections, prefer "both" if we have both cites and cited-by
-                else if ((existingConnection.connectionType === 'cites' && connectionType === 'cited-by') ||
-                        (existingConnection.connectionType === 'cited-by' && connectionType === 'cites')) {
-                    existingConnection.connectionType = 'both';
+            // Check if this connection type is already recorded
+            if (!existingConnection.connectionTypes.includes(connectionType)) {
+                // Add the new connection type
+                existingConnection.connectionTypes.push(connectionType);
+                
+                // Special handling for citation connections
+                // Only run this check when we add a new connection type
+                if (existingConnection.connectionTypes.includes('cites') && 
+                    existingConnection.connectionTypes.includes('cited-by')) {
+                    // Replace individual citation types with 'both'
+                    existingConnection.connectionTypes = existingConnection.connectionTypes
+                        .filter(type => type !== 'cites' && type !== 'cited-by');
+                    // Only add 'both' if it's not already there
+                    if (!existingConnection.connectionTypes.includes('both')) {
+                        existingConnection.connectionTypes.push('both');
+                    }
+                }
+            } else if (connectionType === 'both') {
+                // If we're adding 'both' directly, make sure we remove individual citation types
+                existingConnection.connectionTypes = existingConnection.connectionTypes
+                    .filter(type => type !== 'cites' && type !== 'cited-by');
+                // Ensure 'both' is only present once
+                if (!existingConnection.connectionTypes.includes('both')) {
+                    existingConnection.connectionTypes.push('both');
                 }
             }
         } else {
@@ -1266,9 +1314,9 @@
                 authors: study.authors,
                 year: study.year,
                 bodyPart: study.bodyPart,
-                location: study.location,
-                gesture: study.details['Gesture Type'] || 'N/A',
-                connectionType: connectionType
+                location: study.details && (study.details['Location'] || study.details[' Location']) || 'N/A',
+                gesture: study.details && (study.details['Gesture'] || study.details['Gestures'] || study.details['Gesture Type']) || 'N/A',
+                connectionTypes: [connectionType]  // Array instead of single value
             });
         }
     });
@@ -1278,155 +1326,181 @@
     
     // Sort connections
     connections.sort((a, b) => {
-        // First prioritize "both" connections
-        if (a.connectionType === 'both' && b.connectionType !== 'both') return -1;
-        if (b.connectionType === 'both' && a.connectionType !== 'both') return 1;
+        // First prioritize multiple connection types
+        if (a.connectionTypes.length > b.connectionTypes.length) return -1;
+        if (b.connectionTypes.length > a.connectionTypes.length) return 1;
         
-        // Then group by connection type
-        if (a.connectionType !== b.connectionType) {
-            if (a.connectionType === 'cites' || a.connectionType === 'cited-by') return -1;
-            if (b.connectionType === 'cites' || b.connectionType === 'cited-by') return 1;
-        }
+        // Then prioritize "both" connections
+        const aHasBoth = a.connectionTypes.includes('both');
+        const bHasBoth = b.connectionTypes.includes('both');
+        if (aHasBoth && !bHasBoth) return -1;
+        if (bHasBoth && !aHasBoth) return 1;
+        
+        // Then prioritize citation connections
+        const aHasCitation = a.connectionTypes.includes('cites') || 
+                            a.connectionTypes.includes('cited-by') || 
+                            a.connectionTypes.includes('both');
+        const bHasCitation = b.connectionTypes.includes('cites') || 
+                            b.connectionTypes.includes('cited-by') || 
+                            b.connectionTypes.includes('both');
+        
+        if (aHasCitation && !bHasCitation) return -1;
+        if (bHasCitation && !aHasCitation) return 1;
+        
         // Then sort by year
         return b.year - a.year;
     });
     
     // Get gesture type for the selected node
-    const nodeGesture = node.study.details ? (node.study.details['Gesture Type'] || 'N/A') : 'N/A';
+    const nodeGesture = node.study.details ? (node.study.details['Gesture Type'] || node.study.details['Gesture'] || node.study.details['Gestures'] || 'N/A') : 'N/A';
     
+    // Build HTML for the modal
     let html = `
-    <h5 class="mb-3">Selected Study</h5>
-    <div class="table-responsive mb-4">
-        <table class="table table-striped" style="table-layout: fixed; width: 100%;">
-            <colgroup>
-                <col style="width: 5%;">  <!-- Info icon column -->
-                <col style="width: 10%;"> <!-- ID column -->
-                <col style="width: 20%;"> <!-- Authors column -->
-                <col style="width: 8%;">  <!-- Year column -->
-                <col style="width: 12%;"> <!-- Location column -->
-                <col style="width: 12%;"> <!-- Body Part column -->
-                <col style="width: 13%;"> <!-- Gesture column -->
-                <col style="width: 20%;"> <!-- Empty column with same width as Connection Type -->
-            </colgroup>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>ID</th>
-                    <th>Authors</th>
-                    <th>Year</th>
-                    <th>Location</th>
-                    <th>Body Part</th>
-                    <th>Gesture</th>
-                    <th></th> <!-- Empty header for alignment -->
-                </tr>
-            </thead>
-            <tbody>
-                <tr class="table-primary">
-                    <td><i class="bi bi-info-circle view-timeline-details" title="View details" style="cursor: pointer;" data-id="${node.study.id}"></i></td>
-                    <td>${node.study.id}</td>
-                    <td>${node.study.authors}</td>
-                    <td>${node.study.year}</td>
-                    <td>${node.study.location}</td>
-                    <td>${node.study.bodyPart}</td>
-                    <td>${nodeGesture}</td>
-                    <td></td> <!-- Empty cell for alignment -->
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <div class="connections-container">
+        <h5 class="mb-3">Selected Study</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-striped">
+                <colgroup>
+                    <col style="width: 3%;">  <!-- Info icon column -->
+                    <col style="width: 5%;"> <!-- ID column -->
+                    <col style="width: 17%;"> <!-- Authors column -->
+                    <col style="width: 8%;">  <!-- Year column -->
+                    <col style="width: 15%;"> <!-- Location column -->
+                    <col style="width: 12%;"> <!-- Body Part column -->
+                    <col style="width: 18%;"> <!-- Gesture column -->
+                    <col style="width: 10%;"> <!-- Empty column for alignment -->
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>ID</th>
+                        <th>Authors</th>
+                        <th>Year</th>
+                        <th>Location</th>
+                        <th>Body Part</th>
+                        <th>Gesture</th>
+                        <th></th> <!-- Empty header for alignment -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="selected-study-row">
+                        <td><i class="bi bi-info-circle view-study-details" title="View details" data-id="${node.study.id}"></i></td>
+                        <td>${node.study.id}</td>
+                        <td>${node.study.authors}</td>
+                        <td>${node.study.year}</td>
+                        <td>${node.study.location || 'N/A'}</td>
+                        <td>${node.study.bodyPart || 'N/A'}</td>
+                        <td>${nodeGesture}</td>
+                        <td></td> <!-- Empty cell for alignment -->
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <h5 class="mb-3">Study Network</h5>
-    `;
+        <h5 class="mb-3">Study Network</h5>
+        `;
 
     // Now create the connections table
     html += `
-    <div class="table-responsive">
-        <table class="table table-striped" style="table-layout: fixed; width: 100%;">
-            <colgroup>
-                <col style="width: 5%;">  <!-- Info icon column -->
-                <col style="width: 10%;"> <!-- ID column -->
-                <col style="width: 20%;"> <!-- Authors column -->
-                <col style="width: 8%;">  <!-- Year column -->
-                <col style="width: 12%;"> <!-- Location column -->
-                <col style="width: 12%;"> <!-- Body Part column -->
-                <col style="width: 13%;"> <!-- Gesture column -->
-                <col style="width: 20%;"> <!-- Connection Type column -->
-            </colgroup>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>ID</th>
-                    <th>Authors</th>
-                    <th>Year</th>
-                    <th>Location</th>
-                    <th>Body Part</th>
-                    <th>Gesture</th>
-                    <th>Connection Type</th>
-                </tr>
-            </thead>
-            <tbody>
-                `;
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <colgroup>
+                    <col style="width: 3%;">  <!-- Info icon column -->
+                    <col style="width: 5%;"> <!-- ID column -->
+                    <col style="width: 17%;"> <!-- Authors column -->
+                    <col style="width: 8%;">  <!-- Year column -->
+                    <col style="width: 15%;"> <!-- Location column -->
+                    <col style="width: 12%;"> <!-- Body Part column -->
+                    <col style="width: 18%;"> <!-- Gesture column -->
+                    <col style="width: 10%;"> <!-- Connection Type column -->
+                </colgroup>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>ID</th>
+                        <th>Authors</th>
+                        <th>Year</th>
+                        <th>Location</th>
+                        <th>Body Part</th>
+                        <th>Gesture</th>
+                        <th>Connection Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    `;
 
-                if (connections.length === 0) {
-                    html += `
-                            <tr>
-                                <td colspan="8" class="text-center">No connections found with current filter settings.</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    </div>`;
-                } else {
-                    connections.forEach(connection => {
-                        // Format the connection type for display
-                        let connectionDisplay = connection.connectionType;
-                        let connectionClass = '';
-                        let connectionIcon = '';
-                        
-                        if (connection.connectionType === 'cites') {
-                            connectionDisplay = 'Cites';
-                            connectionClass = 'text-primary';
-                            connectionIcon = '<i class="bi bi-arrow-right"></i>';
-                        } else if (connection.connectionType === 'cited-by') {
-                            connectionDisplay = 'Cited by';
-                            connectionClass = 'text-success';
-                            connectionIcon = '<i class="bi bi-arrow-left"></i>';
-                        } else if (connection.connectionType === 'both') {
-                            connectionDisplay = 'Bidirectional Citation';
-                            connectionClass = 'text-info';
-                            connectionIcon = '<i class="bi bi-arrow-left-right"></i>';
-                        } else if (connection.connectionType === 'author') {
-                            connectionDisplay = 'Shared Author';
-                            connectionClass = 'text-secondary';
-                            connectionIcon = '<i class="bi bi-person"></i>';
-                        }
+                    if (connections.length === 0) {
+                        html += `
+                                <tr>
+                                    <td colspan="8" class="text-center">No connections found with current filter settings.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        </div>`;
+                    } else {
+                        connections.forEach(connection => {
+                            // Create an array to hold all connection displays
+                            const connectionDisplays = [];
+                            
+                            // First deduplicate the connection types array to prevent duplicates
+                            connection.connectionTypes = [...new Set(connection.connectionTypes)];
+                            
+                            // Process each connection type
+                            connection.connectionTypes.forEach(type => {
+                                let display, cls, icon;
+                                
+                                if (type === 'cites') {
+                                    display = 'Cites';
+                                    cls = 'text-primary';
+                                    icon = '<i class="bi bi-arrow-right"></i>';
+                                } else if (type === 'cited-by') {
+                                    display = 'Cited by';
+                                    cls = 'text-success';
+                                    icon = '<i class="bi bi-arrow-left"></i>';
+                                } else if (type === 'both') {
+                                    display = 'Bidirectional Citation';
+                                    cls = 'text-info';
+                                    icon = '<i class="bi bi-arrow-left-right"></i>';
+                                } else if (type === 'author') {
+                                    display = 'Shared Author';
+                                    cls = 'text-secondary';
+                                    icon = '<i class="bi bi-person"></i>';
+                                }
+                                
+                                connectionDisplays.push(`<span class="${cls}">${icon} ${display}</span>`);
+                            });
+                            
+                            // Join the displays with a line break
+                            const connectionDisplay = connectionDisplays.join('<br>');
+                            
+                            html += `
+                                <tr>
+                                    <td><i class="bi bi-info-circle view-study-details" title="View details" data-id="${connection.id}"></i></td>
+                                    <td>${connection.id}</td>
+                                    <td>${connection.authors || 'N/A'}</td>
+                                    <td>${connection.year || 'N/A'}</td>
+                                    <td>${connection.location}</td>
+                                    <td>${connection.bodyPart || 'N/A'}</td>
+                                    <td>${connection.gesture}</td>
+                                    <td>${connectionDisplay}</td>
+                                </tr>
+                            `;
+                        });
                         
                         html += `
-                            <tr>
-                                <td><i class="bi bi-info-circle view-timeline-details" title="View details" style="cursor: pointer;" data-id="${connection.id}"></i></td>
-                                <td>${connection.id}</td>
-                                <td>${connection.authors}</td>
-                                <td>${connection.year}</td>
-                                <td>${connection.location}</td>
-                                <td>${connection.bodyPart}</td>
-                                <td>${connection.gesture}</td>
-                                <td class="${connectionClass}">${connectionIcon} ${connectionDisplay}</td>
-                            </tr>
-                        `;
-                    });
-                    
-                    html += `
-                        </tbody>
-                    </table>
-                    </div>
-                    <p class="text-muted mt-2">Total connections: ${connections.length}</p>`;
-                }
+                            </tbody>
+                        </table>
+                        </div>
+                        <p class="text-muted mt-2">Total connections: ${connections.length}</p>
+                    </div>`;
+                    }
             
             // Set the modal content
             document.getElementById('timelineConnectionsContainer').innerHTML = html;
             
             // Add click handlers to the info icons
             setTimeout(() => {
-                document.querySelectorAll('.view-timeline-details').forEach(icon => {
+                document.querySelectorAll('.view-study-details').forEach(icon => {
                     icon.addEventListener('click', function() {
                         const studyId = this.getAttribute('data-id');
                         // Close the modal before showing study details
