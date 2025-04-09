@@ -463,6 +463,15 @@
                 if (window.filterTimelineVisualization) {
                     window.filterTimelineVisualization(filteredData);
                 }
+
+                // At the end of this function, update the global state
+                window.earXploreState.updateFilteredData(filteredData);
+                
+                // Update row visibility directly (no need to repeat data processing for charts)
+                $('tbody tr').each(function(rowIndex) {
+                    const showRow = rowIndex < filteredData.length; // Only show rows in filteredData
+                    $(this).toggle(showRow);
+                });
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
@@ -484,6 +493,52 @@
                 });
 
             });
+
+            window.earXploreState = {
+                allData: [], // Complete dataset
+                filteredData: [], // Current filtered dataset
+                isDatasetEmpty: false, // Flag for empty state
+                
+                // Method to update the filtered dataset
+                updateFilteredData: function(data) {
+                    this.filteredData = data || [];
+                    this.isDatasetEmpty = this.filteredData.length === 0;
+                    
+                    // Trigger data update for all visualizations
+                    if (window.generateBarCharts) {
+                        const selectedColumns = $('.column-toggle:checked').map(function() {
+                            return $(this).closest('.form-check').find('label').text();
+                        }).get();
+                        window.generateBarCharts(this.filteredData, selectedColumns);
+                    }
+                    
+                    if (window.filterSimilarityVisualization) {
+                        window.filterSimilarityVisualization(this.filteredData);
+                    }
+                    
+                    if (window.filterTimelineVisualization) {
+                        window.filterTimelineVisualization(this.filteredData);
+                    }
+                }
+            };
+
+        // Initialize state with full dataset on page load
+        $(document).ready(function() {
+            // Get initial full dataset
+            const fullData = [];
+            $('tbody tr').each(function() {
+                const rowData = {};
+                $(this).find('td').each(function(index) {
+                    const colName = $('table thead th').eq(index).data('col');
+                    if (colName) {
+                        rowData[colName] = $(this).text().trim();
+                    }
+                });
+                fullData.push(rowData);
+            });
+            window.earXploreState.allData = fullData;
+            window.earXploreState.filteredData = fullData;
+        });
 
         function sortTable(header) {
             const table = header.closest("table");
@@ -826,51 +881,45 @@
         const sections = document.querySelectorAll(".content-section");
         const toggleMenuContainer = document.getElementById("toggleMenuContainer");
 
+        // Define helper function to collect visible row data
+        window.collectVisibleRowData = function() {
+            // If we already know dataset is empty, return empty array
+            if (window.earXploreState && window.earXploreState.isDatasetEmpty) {
+                return [];
+            }
+            
+            // Otherwise return the current filtered data
+            return window.earXploreState ? window.earXploreState.filteredData : [];
+        };
+
         navbarItems.forEach(item => {
             item.addEventListener("click", function() {
-                // Remove selected class from all items
+                // UI updates (same as before)
                 navbarItems.forEach(nav => nav.classList.remove("navbar-item-selected"));
-                // Add selected class to clicked item
                 this.classList.add("navbar-item-selected");
-
-                // Hide all sections
                 sections.forEach(section => section.style.display = "none");
                 
-                // Show selected section
                 const sectionId = this.getAttribute("data-section");
                 document.getElementById(sectionId).style.display = "block";
 
-                // Hide toggle menu for timeline and similarity views, show for other views
+                // Hide toggle menu for specific views
                 if (sectionId === "timeView" || sectionId === "similarityView") {
                     toggleMenuContainer.style.display = "none";
                 } else {
                     toggleMenuContainer.style.display = "block";
                 }
 
-                // If switching to similarity view, apply current filters
+                // When switching to a view, use the shared filtered data
                 if (sectionId === "similarityView" && window.filterSimilarityVisualization) {
-                    try {
-                        // Short timeout to ensure DOM is ready
-                        setTimeout(() => {
-                            const filteredData = collectVisibleRowData();
-                            window.filterSimilarityVisualization(filteredData);
-                        }, 300);
-                    } catch(e) {
-                        console.error("Error applying filters to similarity view:", e);
-                    }
+                    setTimeout(() => {
+                        window.filterSimilarityVisualization(window.earXploreState.filteredData);
+                    }, 300);
                 }
                 
-                // If switching to timeline view, apply current filters
                 if (sectionId === "timeView" && window.filterTimelineVisualization) {
-                    try {
-                        // Short timeout to ensure DOM is ready
-                        setTimeout(() => {
-                            const filteredData = collectVisibleRowData();
-                            window.filterTimelineVisualization(filteredData);
-                        }, 300);
-                    } catch(e) {
-                        console.error("Error applying filters to timeline view:", e);
-                    }
+                    setTimeout(() => {
+                        window.filterTimelineVisualization(window.earXploreState.filteredData);
+                    }, 300);
                 }
             });
         });

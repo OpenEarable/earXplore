@@ -1189,6 +1189,25 @@
     // Updated filter function to include numeric IDs
     function filterTimelineVisualization(filteredData) {
         try {
+            // First, check if we have empty or no filtered data
+            if (!filteredData || filteredData.length === 0) {
+                console.log("Empty or no filtered data - clearing timeline visualization");
+                
+                // Reset data structures
+                timelineStudyData = [];
+                timelineYearGroups = {};
+                timelineStudyIdToIndex = {};
+                timelineIdMapping = {};
+                
+                // Clear the container and show a message
+                const container = document.getElementById('timeline-graph-container');
+                if (container) {
+                    container.innerHTML = '<div class="timeline-no-data-message">No studies match your current filters.</div>';
+                }
+                
+                return;
+            }
+            
             // Extract IDs from filtered data
             const filteredIds = filteredData.map(row => String(row.ID));
             
@@ -1207,7 +1226,7 @@
                     study.Year !== 'N/A' && 
                     !isNaN(parseInt(study.Year))) {
                     
-                    // Use the filtered data directly - no need to access study.details
+                    // Use the filtered data directly
                     const processedStudy = {
                         id: String(study.ID),
                         numericId: parseInt(study.ID),
@@ -1243,11 +1262,26 @@
             
             console.log(`Timeline filtered: ${timelineStudyData.length} studies remaining`);
             
+            // Handle case where we have filtered data but none with valid years
+            if (timelineStudyData.length === 0) {
+                const container = document.getElementById('timeline-graph-container');
+                if (container) {
+                    container.innerHTML = '<div class="timeline-no-data-message">No studies with valid years match your current filters.</div>';
+                }
+                return;
+            }
+            
             // Reinitialize visualization
             timelineInitialize();
             
         } catch (error) {
             console.error("Error filtering timeline visualization:", error);
+            
+            // In case of error, display error message
+            const container = document.getElementById('timeline-graph-container');
+            if (container) {
+                container.innerHTML = '<div class="timeline-no-data-message">Error filtering timeline data.</div>';
+            }
         }
     }
 

@@ -1294,11 +1294,16 @@ function addInfoIconClickHandlers() {
             studyIds = [...originalStudyIds];
             similarityMatrix = originalSimilarityMatrix.map(row => [...row]);
             
+            // Handle empty filtered data - just clear the visualization
             if (!filteredData || filteredData.length === 0) {
-                debug("No filtered data provided or empty filter - showing all studies");
-                // Just use the original data
-                const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
-                updateVisualization(threshold);
+                debug("Empty or no filtered data - clearing visualization");
+                
+                // Clear existing visualization
+                d3.select("#graphContainer").html("");
+                
+                // Reset SVG to null so we can detect this state
+                svg = null;
+                
                 return;
             }
             
@@ -1348,9 +1353,15 @@ function addInfoIconClickHandlers() {
                 studyIdCount: studyIds.length 
             });
             
-            // Redraw visualization with current threshold
-            const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
-            updateVisualization(threshold);
+            // Check if visualization was previously cleared (svg is null)
+            if (!svg) {
+                // We need to reinitialize the entire visualization
+                initializeVisualization();
+            } else {
+                // Just update the existing visualization with current threshold
+                const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
+                updateVisualization(threshold);
+            }
         } catch (error) {
             console.error("Error filtering visualization:", error);
             debug("Error filtering visualization", error.toString());
