@@ -401,6 +401,21 @@
             }
         }, 500);
     });
+
+    function collectVisibleRowData() {
+        const filteredData = [];
+        $('tbody tr:visible').each(function() {
+            const rowData = {};
+            $(this).find('td').each(function(index) {
+                const colName = $('table thead th').eq(index).data('col');
+                if (colName) {
+                    rowData[colName] = $(this).text().trim();
+                }
+            });
+            filteredData.push(rowData);
+        });
+        return filteredData;
+    }
     
     // Debounce function to limit frequent updates
     function timelineDebounce(func, wait) {
@@ -1183,28 +1198,26 @@
             timelineStudyIdToIndex = {};
             timelineIdMapping = {};
             
-            // Get raw data
-            const rawData = {{ data | tojson }};
-            
-            // Process only filtered studies
-            for (let i = 0; i < rawData.length; i++) {
-                const study = rawData[i];
+            // Process only filtered studies directly from the filteredData
+            for (let i = 0; i < filteredData.length; i++) {
+                const study = filteredData[i];
                 
-                // Keep only filtered studies with valid years
-                if (filteredIds.includes(String(study.ID)) && 
-                    study.Year && 
+                // Keep only studies with valid years
+                if (study.Year && 
                     study.Year !== 'N/A' && 
                     !isNaN(parseInt(study.Year))) {
                     
+                    // Use the filtered data directly - no need to access study.details
                     const processedStudy = {
                         id: String(study.ID),
-                        numericId: parseInt(study.ID),  // Add numeric ID for matrix lookups
+                        numericId: parseInt(study.ID),
+                        title: study.Title || `Study ${study.ID}`,
                         authors: study['First Author'] || 'Unknown',
                         year: parseInt(study.Year),
                         bodyPart: study['Input Body Part'] || 'N/A',
-                        location: study.details['Location'] || study.details[' Location'] || 'N/A',
-                        gesture: study.details['Gesture'] || study.details['Gestures'] || 'N/A',
-                        details: study
+                        location: study.Location || study[' Location'] || 'N/A',
+                        gesture: study.Gesture || study['Gesture Type'] || study.Gestures || 'N/A',
+                        details: study  // Store the entire study object
                     };
                     
                     timelineStudyData.push(processedStudy);
@@ -1227,6 +1240,8 @@
                 timelineStudyIdToIndex[study.id] = i;
                 timelineIdMapping[study.numericId] = study;
             }
+            
+            console.log(`Timeline filtered: ${timelineStudyData.length} studies remaining`);
             
             // Reinitialize visualization
             timelineInitialize();
