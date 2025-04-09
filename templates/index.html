@@ -763,6 +763,7 @@
         </div>
 
         <!-- Toggle Menu Select/Deselect All Buttons -->
+    <div id="toggleMenuContainer">
         <div class="d-flex mb-2">
             <button type="button" class="btn btn-sm btn-primary me-2 small-button" id="toggleSelectAllColumns">Select All</button>
             <button type="button" class="btn btn-sm btn-secondary small-button" id="toggleDeselectAllColumns">Deselect All</button>
@@ -771,6 +772,7 @@
         <div class="mb-5">
             <div id="columnToggles" class="d-flex flex-wrap gap-2" type="checkbox"></div>
         </div>
+    </div>
     
         <!-- Tabular Overview Section -->
         <div id="tableView" class="content-section">
@@ -820,6 +822,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         const navbarItems = document.querySelectorAll(".navbar-item");
         const sections = document.querySelectorAll(".content-section");
+        const toggleMenuContainer = document.getElementById("toggleMenuContainer");
 
         navbarItems.forEach(item => {
             item.addEventListener("click", function() {
@@ -830,10 +833,18 @@
 
                 // Hide all sections
                 sections.forEach(section => section.style.display = "none");
+                
                 // Show selected section
                 const sectionId = this.getAttribute("data-section");
                 document.getElementById(sectionId).style.display = "block";
-                
+
+                // Hide toggle menu for timeline and similarity views, show for other views
+                if (sectionId === "timeView" || sectionId === "similarityView") {
+                    toggleMenuContainer.style.display = "none";
+                } else {
+                    toggleMenuContainer.style.display = "block";
+                }
+
                 // If switching to similarity view, apply current filters
                 if (sectionId === "similarityView" && window.filterSimilarityVisualization) {
                     // Get currently filtered data (visible rows)
@@ -873,6 +884,12 @@
                 }
             });
         });
+
+        // Check initial view state
+        const initialActiveView = document.querySelector(".navbar-item-selected").getAttribute("data-section");
+        if (initialActiveView === "timeView" || initialActiveView === "similarityView") {
+            toggleMenuContainer.style.display = "none";
+        }
     });
     </script>
 
