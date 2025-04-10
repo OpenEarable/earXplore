@@ -52,7 +52,22 @@
     }
 </style>
 
+<div class="d-flex justify-content-end mb-3 align-items-center">
+    <label for="maxBarsDropdown" class="form-label me-2 mb-0">Maximum bars per chart:</label>
+    <select id="maxBarsDropdown" class="form-select form-select-sm" style="width: auto;">
+        <option value="30">30</option>
+        <option value="40">40</option>
+        <option value="50" selected>50</option>
+        <option value="70">70</option>
+        <option value="100">100</option>
+        <option value="999">Unlimited</option>
+    </select>
+</div>
 <div id="chartsContainer"></div>
+<div id="hiddenChartsMessage" class="mt-3" style="display: none; padding: 15px;">
+    <h6>Some charts exceed the maximum bar threshold and are not displayed:</h6>
+    <ul id="hiddenChartsList"></ul>
+</div>
 
 <!-- Modal Structure -->
 <div class="modal fade" id="infoModalBarCharts" tabindex="-1" aria-labelledby="infoModalLabelBarCharts" aria-hidden="true">
@@ -71,6 +86,32 @@
 </div>
 
 <script>
+
+    // Store the maximum bars threshold
+    let maxBarsThreshold = 50; // Default value
+
+    // Set up event listener for the dropdown
+    document.addEventListener('DOMContentLoaded', function() {
+        const maxBarsDropdown = document.getElementById('maxBarsDropdown');
+        
+        if (maxBarsDropdown) {
+            maxBarsDropdown.addEventListener('change', function() {
+                // Update the threshold
+                maxBarsThreshold = parseInt(this.value);
+                
+                // Get current filtered data from the parent window
+                const filteredData = window.parent.earXploreState ? window.parent.earXploreState.filteredData : [];
+                
+                // Get selected columns from the parent window
+                const selectedColumns = Array.from(window.parent.document.querySelectorAll('.column-toggle:checked'))
+                    .map(el => el.closest('.form-check').querySelector('label').textContent);
+                
+                // Directly call the chart generation function with current data
+                generateBarCharts(filteredData, selectedColumns);
+            });
+        }
+    });
+
     // Cache modal instance - avoids creating a new one for each click
     document.addEventListener('DOMContentLoaded', function() {
         barChartInfoModal = new bootstrap.Modal(document.getElementById('infoModalBarCharts'));
@@ -450,8 +491,8 @@
         columnsToProcess.forEach(col => {
             const { uniqueGroups, labels, dataValues, barThickness } = columnDataMap[col];
             
-            // Check if this chart has too many bars
-            if (labels.length > 50) {
+            // Check if this chart has too many bars (using the configurable threshold)
+            if (maxBarsThreshold !== -1 && labels.length > maxBarsThreshold) {
                 // If the chart already exists, remove it - too many bars to display clearly
                 if (window.chartInstances[col] && window.chartInstances[col].chart) {
                     window.chartInstances[col].chart.destroy();
@@ -470,8 +511,9 @@
                 const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
                 const container = document.getElementById(containerId);
                 if (container) {
-                    if (labels.length > 20 && labels.length <= 50) {
-                        // Make charts with 26-50 bars take double width
+                    const adjustmentThreshold = Math.min(20, Math.floor(maxBarsThreshold/2.5));
+                    if (labels.length > adjustmentThreshold && labels.length <= maxBarsThreshold) {
+                        // Make charts with many bars take double width
                         container.style.gridColumn = "span 2";
                     } else {
                         // Reset to default (in case it was previously expanded)
@@ -496,6 +538,40 @@
                 }
             }
         });
+        // Track charts that exceed threshold for notification
+        const hiddenCharts = [];
+
+        columnsToProcess.forEach(col => {
+            const { labels } = columnDataMap[col];
+            
+            // If chart exceeds threshold, add to hidden charts list
+            if (maxBarsThreshold !== 999 && labels.length > maxBarsThreshold) {
+                hiddenCharts.push({
+                    name: col.split('_').pop(),
+                    count: labels.length
+                });
+            }
+        });
+
+        // Update the hidden charts message
+        const hiddenChartsMessage = document.getElementById('hiddenChartsMessage');
+        const hiddenChartsList = document.getElementById('hiddenChartsList');
+
+        if (hiddenCharts.length > 0) {
+            // Sort hidden charts by name
+            hiddenCharts.sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Create list items for each hidden chart
+            hiddenChartsList.innerHTML = hiddenCharts.map(chart => 
+                `<li><strong>${chart.name}</strong>: ${chart.count} bars (exceeds threshold of ${maxBarsThreshold})</li>`
+            ).join('');
+            
+            // Show the message
+            hiddenChartsMessage.style.display = 'block';
+        } else {
+            // Hide the message if no charts are hidden
+            hiddenChartsMessage.style.display = 'none';
+        }
     }
     
     // Create a debounced version that can be used where rapid updates might occur
