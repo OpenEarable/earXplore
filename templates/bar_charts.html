@@ -5,9 +5,26 @@
     /* Grid layout for charts */
     #chartsContainer {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsive grid */
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* More responsive grid */
         gap: 20px;
         padding: 20px;
+    }
+
+    /* Add these media queries for better control on smaller screens */
+    @media (max-width: 768px) {
+        #chartsContainer {
+            grid-template-columns: 1fr; /* Single column on small screens */
+        }
+        
+        .chart-wrapper {
+            min-height: 250px; /* Slightly smaller height */
+        }
+    }
+
+    @media (min-width: 769px) and (max-width: 1200px) {
+        #chartsContainer {
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); /* Two columns on medium screens */
+        }
     }
 
     .chart-wrapper {
@@ -55,6 +72,8 @@
 <div class="d-flex justify-content-end mb-3 align-items-center">
     <label for="maxBarsDropdown" class="form-label me-2 mb-0">Maximum bars per chart:</label>
     <select id="maxBarsDropdown" class="form-select form-select-sm" style="width: auto;">
+        <option value="10">10</option>
+        <option value="20">20</option>
         <option value="30">30</option>
         <option value="40">40</option>
         <option value="50" selected>50</option>
@@ -110,6 +129,22 @@
                 generateBarCharts(filteredData, selectedColumns);
             });
         }
+        
+        // Add window resize handler here
+        window.addEventListener('resize', debounce(() => {
+            // Only regenerate if we already have charts
+            if (window.chartInstances && Object.keys(window.chartInstances).length > 0) {
+                // Get current filtered data from the parent window
+                const filteredData = window.parent.earXploreState ? window.parent.earXploreState.filteredData : [];
+                
+                // Get selected columns from the parent window
+                const selectedColumns = Array.from(window.parent.document.querySelectorAll('.column-toggle:checked'))
+                    .map(el => el.closest('.form-check').querySelector('label').textContent);
+                
+                // Call generate charts with current data (this will recalculate optimal spans)
+                generateBarCharts(filteredData, selectedColumns);
+            }
+        }, 250));
     });
 
     // Cache modal instance - avoids creating a new one for each click
@@ -400,6 +435,42 @@
             };
         }
     }
+
+    // Add this function before the generateBarCharts function
+    function calculateOptimalSpan(container, labels, totalCharts) {
+        // Get container width
+        const containerWidth = container.clientWidth;
+        
+        // Base chart size calculations
+        const minChartWidth = 350; // Minimum readable chart width
+        
+        // Calculate how many charts fit in a row at minimum width
+        const chartsPerRow = Math.max(1, Math.floor(containerWidth / minChartWidth));
+        
+        // Calculate spans based on label count and charts per row
+        if (chartsPerRow === 1) {
+            // On very small screens, everything gets full width
+            return "span 1";
+        } else if (chartsPerRow === 2) {
+            // On medium screens, adjust based on bar count
+            if (labels.length > 40) return "span 2"; // Full width
+            if (labels.length > 20) return "span 1"; // Half width
+            return ""; // Default (fits in standard grid)
+        } else {
+            // On large screens, use the existing logic
+            if (labels.length <= 15) {
+                return ""; // Default width 
+            } else if (labels.length > 15 && labels.length <= 30) {
+                return "span 2"; // Double width
+            } else if (labels.length > 30 && labels.length <= 50) {
+                return "span 3"; // Triple width
+            } else if (labels.length > 50 && labels.length <= 75) {
+                return "span 4"; // Triple width
+            } else {
+                return "span 5"; // Quadruple width
+            }
+        }
+    }
         
     function generateBarCharts(filteredData, selectedColumns) {
         // Initialize chart tracking if needed
@@ -507,18 +578,13 @@
                 // Create or update chart
                 updateOrCreateChart(col, labels, dataValues, uniqueGroups, barThickness);
                 
-                // Adjust chart width based on number of bars
+                // Replace the progressive width scaling code in generateBarCharts function
                 const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
                 const container = document.getElementById(containerId);
                 if (container) {
-                    const adjustmentThreshold = Math.min(20, Math.floor(maxBarsThreshold/2.5));
-                    if (labels.length > adjustmentThreshold && labels.length <= maxBarsThreshold) {
-                        // Make charts with many bars take double width
-                        container.style.gridColumn = "span 2";
-                    } else {
-                        // Reset to default (in case it was previously expanded)
-                        container.style.gridColumn = "";
-                    }
+                    const chartContainer = document.getElementById('chartsContainer');
+                    const span = calculateOptimalSpan(chartContainer, labels, columnsToProcess.length);
+                    container.style.gridColumn = span;
                 }
             }
         });
