@@ -342,6 +342,57 @@
                 }, 500);
             });
             
+            // Add participant count fields to specific sections
+            // This needs to run after the form is rendered but before user interaction
+            const participantFields = [
+        'Accuracy of Interaction Recognition',
+        'Robustness of Interaction Detection',
+        'Elicitation Study',
+        'Usability Evaluations',
+        'Cognitive Ease Evaluations',
+        'Discreetness of Interactions Evaluations',
+        'Social Acceptability of Interactions Evaluations',
+        'Accuracy of Interactions Evaluations',
+        'Alternative Interaction Validity Evaluations'
+    ];
+    
+    participantFields.forEach(fieldName => {
+        // Find the section/label containing this field name
+        const fieldLabel = $(`label.form-label:contains("${fieldName}")`);
+        if (fieldLabel.length) {
+            // Create a unique ID for the participant count field
+            const idBase = fieldName.replace(/\s+/g, '_').toLowerCase();
+            const participantCountId = `${idBase}_participant_count`;
+            
+            // Create the participant count field in a style similar to "Other" option
+            const participantCountField = $(`
+                <div class="col-md-12 mt-2">
+                    <div class="d-flex align-items-center">
+                        <label for="${participantCountId}" class="me-2 mb-0" style="min-width: 200px;">Number of Participants (N):</label>
+                        <input type="number" class="form-control other-option-field" 
+                            id="${participantCountId}" 
+                            min="1" placeholder="Enter number of participants"
+                            data-field="${idBase}">
+                    </div>
+                </div>
+            `);
+            
+            // Find the right location to insert
+            const targetContainer = fieldLabel.closest('.mb-3');
+            // If this is a checkbox group with options, add to the end of the row
+            const rowContainer = targetContainer.find('.row');
+            
+            if (rowContainer.length) {
+                // Add to the end of the existing row container
+                rowContainer.append(participantCountField);
+            } else {
+                // Create a new row and add it after the field
+                const newRow = $('<div class="row"></div>').append(participantCountField);
+                targetContainer.append(newRow);
+            }
+        }
+    });
+            
             // Handle report mistake form submission
             $("#mistakeForm").submit(function(e) {
                 e.preventDefault();

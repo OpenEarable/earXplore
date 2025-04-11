@@ -177,6 +177,19 @@ def add_study():
                     panels['General'] = []
                 panels['General'].append(col)
         
+        # Fields that need participant count fields and should have parentheticals removed
+        participant_count_fields = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition',
+            'Interaction_PANEL_Robustness of Interaction Detection',
+            'Study_PANEL_Elicitation Study',
+            'Study_PANEL_Usability Evaluations',
+            'Study_PANEL_Cognitive Ease Evaluations',
+            'Study_PANEL_Discreetness of Interactions Evaluations',
+            'Study_PANEL_Social Acceptability of Interactions Evaluations',
+            'Study_PANEL_Accuracy of Interactions Evaluations',
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ]
+        
         # Process each panel to extract unique values
         for panel, columns in panels.items():
             panel_options = {}
@@ -209,22 +222,34 @@ def add_study():
                     if isinstance(cell, str):
                         for value in cell.split(','):
                             clean_value = value.strip()
-                            # For parenthetical columns, extract base value
-                            if '(' in clean_value:
+                            
+                            # For specific fields, remove parenthetical content
+                            if col in participant_count_fields and '(' in clean_value:
                                 base_value = clean_value.split('(')[0].strip()
                                 if base_value and base_value not in unique_values:
                                     unique_values.append(base_value)
+                            # For other fields, keep parenthetical content
                             elif clean_value and clean_value not in unique_values:
                                 unique_values.append(clean_value)
                 
                 # Use custom_sort instead of default sorting
                 unique_values = custom_sort(unique_values)
                 
-                panel_options[col] = {
-                    'type': 'checkbox' if len(unique_values) > 1 else 'text',
+                # Determine field type and properties
+                field_type = 'checkbox' if len(unique_values) > 1 else 'text'
+                
+                # Set up the basic field properties
+                field_data = {
+                    'type': field_type,
                     'name': display_name,
                     'options': unique_values
                 }
+                
+                # For participant count fields, add a flag to include N input
+                if col in participant_count_fields:
+                    field_data['needs_participant_count'] = True
+                
+                panel_options[col] = field_data
             
             if panel_options:  # Only add non-empty panels
                 form_categories[panel] = panel_options
