@@ -646,4 +646,80 @@
     // Expose both regular and debounced versions
     window.generateBarCharts = generateBarCharts;
     window.debouncedGenerateBarCharts = debouncedGenerateBarCharts;
+    
+    // Add a specialized chart width manager
+    (function() {
+        // Create a MutationObserver to watch for chart additions
+        const chartsObserver = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                // Check if charts were added
+                if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                    // Force layout recalculation after charts are rendered
+                    correctChartWidths();
+                }
+            });
+        });
+        
+        // Start observing the charts container
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('chartsContainer');
+            chartsObserver.observe(container, { childList: true });
+            
+            // Initial chart creation is typically triggered from parent window
+            // Add a backup timer to ensure charts are properly sized
+            setTimeout(correctChartWidths, 300);
+        });
+        
+        // Check if we're in an iframe and listen for iframe load events
+        if (window !== window.parent) {
+            window.addEventListener('load', () => setTimeout(correctChartWidths, 100));
+        }
+        
+        // Define the width correction function
+        function correctChartWidths() {
+            // Only run if we have chart instances
+            if (!window.chartInstances || Object.keys(window.chartInstances).length === 0) return;
+            
+            const container = document.getElementById('chartsContainer');
+            
+            // Process each chart
+            Object.keys(window.chartInstances).forEach(col => {
+                const containerId = `chart-container-${col.replace(/\s+/g, '-')}`;
+                const chartContainer = document.getElementById(containerId);
+                
+                if (chartContainer && window.chartInstances[col]) {
+                    const { labels } = window.chartInstances[col];
+                    
+                    // Force recalculation with container measurements
+                    const span = calculateOptimalSpan(container, labels, Object.keys(window.chartInstances).length);
+                    chartContainer.style.gridColumn = span;
+                    
+                    // Force chart redraw by resizing it
+                    window.chartInstances[col].chart.resize();
+                }
+            });
+        }
+        
+        // Also handle potential visibility changes (tab switching, etc)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                setTimeout(correctChartWidths, 100);
+            }
+        });
+        
+        // Register with resize observer for more precise size monitoring
+        if ('ResizeObserver' in window) {
+            const resizeObserver = new ResizeObserver(debounce(() => {
+                correctChartWidths();
+            }, 250));
+            
+            document.addEventListener('DOMContentLoaded', () => {
+                const container = document.getElementById('chartsContainer');
+                resizeObserver.observe(container);
+            });
+        }
+        
+        // Add this to parent page communication
+        window.correctChartWidths = correctChartWidths;
+    })();
 </script>
