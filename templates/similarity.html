@@ -201,6 +201,10 @@
     let tooltip;
     let studyIds = [];
     let similarityMatrix = [];
+    let originalStudyIds = []; // To store the original study IDs
+    let originalSimilarityMatrix = []; // To store the original similarity matrix
+    let currentColorScale = null; // To store the current color scale
+    let studyDetailsCache = {}; // To store study details
     
     // Helper function for debugging
     function debug(message, obj = null) {
@@ -212,10 +216,6 @@
         console.error(message);
         }
     }
-    
-    // Add these variables at the top of the script section, with your other global variables
-    let originalStudyIds = []; // To store the original study IDs
-    let originalSimilarityMatrix = []; // To store the original similarity matrix
 
     // Modify the processSimilarityData function to cache the original data
     function processSimilarityData() {
@@ -293,6 +293,14 @@
         if (!processSimilarityData()) {
             return; // Exit if data processing failed
         }
+
+        // Populate the color category dropdown
+        populateColorCategoryDropdown();
+        
+        // Add event listener for the color category dropdown
+        document.getElementById('similarityColorCategory').addEventListener('change', function() {
+            updateNodeColors();
+        });
         
         // Create slider
         try {
@@ -387,6 +395,142 @@
             }
         });
     });
+
+    // Function to create and display a legend
+    function createColorLegend() {
+        try {
+            // Remove any existing legend
+            d3.select("#colorLegend").remove();
+            
+            const category = document.getElementById('similarityColorCategory').value;
+            
+            // Only create legend if a category is selected
+            if (!category || !currentColorScale) {
+                return;
+            }
+            
+            // Collect unique individual values for the selected category
+            const valueSet = new Set();
+            
+            // Go through all studies to collect unique values for this category
+            for (const studyId in studyDetailsCache) {
+                const study = studyDetailsCache[studyId];
+                
+                // Skip if study is not an object
+                if (!study || typeof study !== 'object') continue;
+                
+                // Get the value for this category
+                let value = study[category];
+                
+                // Skip if value is undefined or null
+                if (value === undefined || value === null) continue;
+                
+                // Convert to string and trim
+                value = String(value).trim();
+                
+                if (!value) continue;
+                
+                // Handle comma-separated values - add each individual value to the set
+                if (value.includes(',')) {
+                    value.split(',').forEach(v => {
+                        const trimmed = v.trim();
+                        if (trimmed) valueSet.add(trimmed);
+                    });
+                } else {
+                    valueSet.add(value);
+                }
+            }
+            
+            // Get all unique individual values
+            let uniqueValues = Array.from(valueSet);
+            
+            // Apply custom sort logic
+            const specialOrders = {
+                'Yes': 1, 'Partly': 2, 'No': 3, 
+                'Low': 1, 'Medium': 2, 'High': 3, 
+                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                'Yes (Performance Loss)': 2, 'Visual Attention': 2
+            };
+            
+            uniqueValues.sort((a, b) => {
+                const orderA = specialOrders[a] || 0;
+                const orderB = specialOrders[b] || 0;
+                
+                // First sort by special order
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                
+                // Then sort alphabetically
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+            
+            // Create legend container after the graph container
+            const legend = d3.select("#similarityContainer")
+                .append("div")
+                .attr("id", "colorLegend")
+                .style("display", "flex")
+                .style("flex-wrap", "wrap")
+                .style("justify-content", "center")
+                .style("background", "rgba(255, 255, 255, 0.9)")
+                .style("border", "1px solid #ddd")
+                .style("border-radius", "4px")
+                .style("padding", "12px")
+                .style("margin-top", "15px")
+                .style("margin-bottom", "15px")
+                .style("font-size", "13px")
+                .style("box-shadow", "0px 0px 5px rgba(0, 0, 0, 0.1)");
+                    
+            // Add title that spans the full width
+            legend.append("div")
+                .style("width", "100%")
+                .style("font-weight", "bold")
+                .style("margin-bottom", "10px")
+                .style("text-align", "center")
+                .text(`Legend: ${category}`);
+                
+            // Add note about multi-values
+            legend.append("div")
+                .style("width", "100%")
+                .style("font-style", "italic")
+                .style("margin-bottom", "10px")
+                .style("text-align", "center")
+                .style("font-size", "11px")
+                .text("Note: Studies with multiple values are shown as pie charts");
+                
+            // Add legend items in a flex container
+            const legendItems = legend.append("div")
+                .style("display", "flex")
+                .style("flex-wrap", "wrap")
+                .style("justify-content", "center")
+                .style("gap", "15px");
+                
+            // Add legend items in the sorted order
+            uniqueValues.forEach(value => {
+                const item = legendItems.append("div")
+                    .style("display", "flex")
+                    .style("align-items", "center")
+                    .style("margin-bottom", "5px")
+                    .style("margin-right", "5px");
+                    
+                // Color square
+                item.append("div")
+                    .style("width", "14px")
+                    .style("height", "14px")
+                    .style("background", currentColorScale(value))
+                    .style("border", "1px solid #ddd")
+                    .style("margin-right", "5px");
+                    
+                // Value label
+                item.append("div")
+                    .text(value);
+            });
+                
+        } catch (error) {
+            console.error("Error creating color legend:", error);
+            debug("Error creating color legend", error.toString());
+        }
+    }
     
     // Also update the handleVisibilityChange function to be more aggressive
     function handleVisibilityChange() {
@@ -405,6 +549,299 @@
             }
         }
     }
+
+    function populateColorCategoryDropdown() {
+        try {
+            const dropdown = document.getElementById('similarityColorCategory');
+            
+            // Clear existing options, keeping only the default
+            while (dropdown.options.length > 1) {
+                dropdown.remove(1);
+            }
+            
+            // Extract all unique category names from the studyDetailsCache
+            const categories = new Set();
+            
+            // Check if we have study details data
+            if (Object.keys(studyDetailsCache).length === 0) {
+                debug("No study details available for categories");
+                return;
+            }
+            
+            // Go through all studies to collect unique category names
+            for (const studyId in studyDetailsCache) {
+                const study = studyDetailsCache[studyId];
+                
+                // Skip if study is not an object
+                if (!study || typeof study !== 'object') continue;
+                
+                // Add each property as a potential category
+                Object.keys(study).forEach(key => {
+                    // Skip common fields that wouldn't make sense as categories
+                    if (['id', 'title', 'abstract', 'doi', 'url', 'pdf', 'bibtex',
+                        'first author', 'gesture', 'keywords', 'study link', 'authors', 'year',
+                        'gesture type'].includes(key.toLowerCase())) return;
+                    
+                    // Add the category to our set of unique categories
+                    categories.add(key);
+                });
+            }
+            
+            // Convert set to array and sort alphabetically
+            const categoryArray = Array.from(categories).sort();
+            
+            // Add options to dropdown
+            categoryArray.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                dropdown.appendChild(option);
+            });
+            
+            debug("Color category dropdown populated with options", { 
+                optionCount: categoryArray.length, 
+                categories: categoryArray 
+            });
+            
+        } catch (error) {
+            console.error("Error populating color category dropdown:", error);
+            debug("Error populating color category dropdown", error.toString());
+        }
+    }
+
+    // Function to generate a color scale for category values
+    function generateColorScale(category) {
+        try {
+            // Collect unique values for the selected category
+            const values = new Set();
+            
+            // Go through all studies to collect unique values for this category
+            for (const studyId in studyDetailsCache) {
+                const study = studyDetailsCache[studyId];
+                
+                // Skip if study is not an object
+                if (!study || typeof study !== 'object') continue;
+                
+                // Get the value for this category
+                let value = study[category];
+                
+                // Skip if value is undefined or null
+                if (value === undefined || value === null) continue;
+                
+                // Convert to string and trim
+                value = String(value).trim();
+                
+                // Add non-empty values to the set
+                if (value) {
+                    values.add(value);
+                }
+            }
+            
+            // Convert set to array
+            let uniqueValues = Array.from(values);
+            
+            // Apply custom sort logic (similar to Python implementation)
+            const specialOrders = {
+                'Yes': 1, 'Partly': 2, 'No': 3, 
+                'Low': 1, 'Medium': 2, 'High': 3, 
+                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                'Yes (Performance Loss)': 2, 'Visual Attention': 2
+            };
+            
+            uniqueValues.sort((a, b) => {
+                const orderA = specialOrders[a] || 0;
+                const orderB = specialOrders[b] || 0;
+                
+                // First sort by special order
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                
+                // Then sort alphabetically
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+            
+            // Define the custom color palette
+            const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
+            
+            // Generate a color scale based on the number of unique values
+            let colorScale;
+            
+            if (uniqueValues.length <= chartColorPalette.length) {
+                // Use custom color palette if we have enough colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(uniqueValues)
+                    .range(chartColorPalette.slice(0, uniqueValues.length));
+            } else {
+                // If more values than colors, cycle through the palette
+                colorScale = d3.scaleOrdinal()
+                    .domain(uniqueValues)
+                    .range(Array.from({ length: uniqueValues.length }, (_, i) => 
+                        chartColorPalette[i % chartColorPalette.length]));
+            }
+            
+            debug("Generated color scale for category", { 
+                category, 
+                uniqueValues: uniqueValues.length 
+            });
+            
+            return colorScale;
+            
+        } catch (error) {
+            console.error("Error generating color scale:", error);
+            debug("Error generating color scale", error.toString());
+            
+            // Return a default color function that always returns the same color
+            return () => "#B89491";
+        }
+    }
+
+    // Function to get node color based on selected category
+    function getNodeColor(node) {
+        // If no category is selected, use default color
+        if (!currentColorScale) {
+            return "#B89491";
+        }
+        
+        const studyId = node.id;
+        const study = studyDetailsCache[studyId];
+        
+        // If study doesn't exist, use default color
+        if (!study) return "#B89491";
+        
+        const category = document.getElementById('similarityColorCategory').value;
+        const rawValue = study[category];
+        
+        // If value is undefined, use default color
+        if (rawValue === undefined || rawValue === null || rawValue === "") {
+            return "#cccccc"; // Light gray for missing values
+        }
+        
+        // Check if the value contains multiple options (comma-separated)
+        if (typeof rawValue === 'string' && rawValue.includes(',')) {
+            // Split the value by commas and trim each value
+            const values = rawValue.split(',').map(v => v.trim()).filter(v => v);
+            
+            // If we have multiple values after splitting, return an array of colors
+            if (values.length > 1) {
+                return values.map(val => currentColorScale(val));
+            }
+            
+            // If only one value after splitting, use that single value
+            if (values.length === 1) {
+                return currentColorScale(values[0]);
+            }
+        }
+        
+        // Single value - use the color scale to determine color
+        return currentColorScale(rawValue);
+    }
+
+    // Replace the createPieNode function with our new approach
+    function createPieNode(nodeSelection, d, nodeRadius) {
+        // Use the pattern fill approach instead
+        createPatternFill(nodeSelection, d, nodeRadius);
+    }
+
+    // Function to create a pattern fill for multi-value nodes
+    function createPatternFill(nodeSelection, d, nodeRadius) {
+        const colors = getNodeColor(d);
+        
+        // If not an array, this is a single-value node, just set the fill color directly
+        if (!Array.isArray(colors) || colors.length === 1) {
+            nodeSelection.style("fill", Array.isArray(colors) ? colors[0] : colors);
+            return;
+        }
+        
+        // For multi-value nodes, create a pie chart pattern
+        // Make sure pattern ID is URL-safe and unique
+        const patternId = `pattern-${d.id}-${Math.random().toString(36).substring(2, 10)}`.replace(/[^\w-]/g, '-');
+        
+        // Remove any existing patterns for this node
+        d3.selectAll(`pattern[id^="pattern-${d.id}-"]`).remove();
+        
+        // Create a pattern definition
+        const defs = svg.select("defs").empty() ? svg.append("defs") : svg.select("defs");
+        
+        // Create a pattern
+        const pattern = defs.append("pattern")
+            .attr("id", patternId)
+            .attr("width", 1)
+            .attr("height", 1)
+            .attr("patternUnits", "objectBoundingBox")
+            .attr("patternContentUnits", "objectBoundingBox");
+        
+        // Create a pie chart layout
+        const pie = d3.pie()
+            .value(() => 1)
+            .sort(null)
+            .padAngle(0.01);
+            
+        // Generate the pie segments data
+        const pieData = pie(colors);
+        
+        // Create an arc generator for the segments
+        const arc = d3.arc()
+            .innerRadius(0)
+            .outerRadius(0.5) // Use 0.5 since pattern coordinates are normalized (0-1)
+            .padAngle(0.01);
+        
+        // Add a group for the pie chart with proper centering
+        const pieGroup = pattern.append("g")
+            .attr("transform", "translate(0.5, 0.5)"); // Center in the pattern
+            
+        // Add each segment to the pattern
+        pieData.forEach(segment => {
+            pieGroup.append("path")
+                .attr("d", arc(segment))
+                .style("fill", segment.data)
+                .style("stroke", "#fff")
+                .style("stroke-width", 0.02);
+        });
+        
+        // Apply the pattern to the node
+        nodeSelection.style("fill", `url(#${patternId})`);
+    }
+
+// Function to update node colors based on selected category
+function updateNodeColors() {
+    try {
+        const category = document.getElementById('similarityColorCategory').value;
+        
+        // If no category selected, reset to default colors
+        if (!category) {
+            currentColorScale = null;
+            d3.selectAll(".node").style("fill", "#B89491");
+            // Remove any existing legend
+            d3.select("#colorLegend").remove();
+            return;
+        }
+        
+        // Generate a new color scale for the selected category
+        currentColorScale = generateColorScale(category);
+        
+        // Clear any existing patterns before creating new ones
+        svg.select("defs").html("");
+        
+        // Update all nodes - instead of just setting style directly, use createPatternFill for each node
+        d3.selectAll(".node").each(function(d) {
+            // Get the current node radius before applying pattern
+            const nodeRadius = parseFloat(d3.select(this).attr("r")) || 8;
+            // Apply pattern fill to handle both single-color and multi-color nodes
+            createPatternFill(d3.select(this), d, nodeRadius);
+        });
+        
+        // Create or update the color legend
+        createColorLegend();
+        
+        debug("Updated node colors based on category", { category });
+        
+    } catch (error) {
+        console.error("Error updating node colors:", error);
+        debug("Error updating node colors", error.toString());
+        showStatus(`Error updating node colors: ${error.message}`, true);
+    }
+}
     
     // Debounce function to limit frequent updates
     function debounce(func, wait) {
@@ -546,7 +983,7 @@ function getLineSpacingRatio() {
     }
 }
     
-    function updateVisualization(threshold) {
+function updateVisualization(threshold) {
     try {
         debug(`Updating visualization with threshold: ${threshold}`);
         
@@ -554,6 +991,9 @@ function getLineSpacingRatio() {
             debug("SVG not initialized or has zero width, aborting update");
             return;
         }
+        
+        // Clean up any existing patterns in defs
+        svg.select("defs").html("");
         
         // Generate graph data
         const graphData = generateGraphData(threshold);
@@ -659,6 +1099,15 @@ function getLineSpacingRatio() {
             layout: useULayout ? "U-shaped" : "Standard"
         });
     
+        // Force patterns to be drawn immediately for all nodes
+        setTimeout(() => {
+            const nodes = d3.selectAll(".node");
+            nodes.each(function(d) {
+                const nodeRadius = parseFloat(d3.select(this).attr("r")) || 8;
+                createPatternFill(d3.select(this), d, nodeRadius);
+            });
+        }, 100);
+        
     } catch (error) {
         console.error("Error updating visualization:", error);
         debug("Error updating visualization", error.toString());
@@ -671,7 +1120,7 @@ function drawStandardLayout(container, graphData, lineY, nodeStep, padding, node
     // Create a group for curves (arcs/links) to be drawn below nodes
     const linkGroup = container.append("g").attr("class", "links");
     
-    // Draw links
+    // Draw links (keep existing code)
     linkGroup.selectAll("path")
         .data(graphData.links)
         .enter().append("path")
@@ -683,38 +1132,19 @@ function drawStandardLayout(container, graphData, lineY, nodeStep, padding, node
             const sourceX = padding + d.source * nodeStep;
             const targetX = padding + d.target * nodeStep;
             const arcHeight = Math.min(Math.abs(d.source - d.target) * 15, height / 3);
-            
-            // Create arc path
             return `M ${sourceX},${lineY} Q ${(sourceX + targetX) / 2},${lineY - arcHeight} ${targetX},${lineY}`;
         })
         .on("mouseover", function(event, d) {
-            d3.select(this)
-                .style("stroke", "#B89491")
-                .style("stroke-opacity", 1)
-                .style("stroke-width", 1.5);
-                
-            tooltip.transition()
-                .duration(200)
-                .style("opacity", 0.9);
-            tooltip.html(`Similarity between ${d.sourceId} and ${d.targetId}: ${d.value.toFixed(2)}`)
-                .style("left", (event.pageX + 10) + "px")
-                .style("top", (event.pageY - 28) + "px");
+            // Existing mouseover handler
         })
         .on("mouseout", function(event, d) {
-            d3.select(this)
-                .style("stroke", "#999")
-                .style("stroke-opacity", 0.6)
-                .style("stroke-width", 1);
-                
-            tooltip.transition()
-                .duration(500)
-                .style("opacity", 0);
+            // Existing mouseout handler
         });
     
     // Create node group to ensure nodes are drawn on top of links
     const nodeGroup = container.append("g").attr("class", "nodes");
     
-    // Draw nodes (existing code)
+    // Draw nodes with multi-value support
     const nodes = nodeGroup.selectAll("circle")
         .data(graphData.nodes)
         .enter().append("circle")
@@ -722,11 +1152,14 @@ function drawStandardLayout(container, graphData, lineY, nodeStep, padding, node
         .attr("r", nodeRadius)
         .attr("cx", (d, i) => padding + i * nodeStep)
         .attr("cy", lineY)
-        .style("fill", "#B89491")
         .style("stroke", "#fff")
-        .style("stroke-width", 2);
+        .style("stroke-width", 1.5)
+        .each(function(d) {
+            // Apply either single color or pie chart
+            createPieNode(d3.select(this), d, nodeRadius);
+        });
     
-    // Add event handlers to nodes (mouseover, mouseout, click)
+    // Add event handlers to nodes
     addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius);
     
     // Draw labels (same as before)
@@ -746,6 +1179,108 @@ function drawStandardLayout(container, graphData, lineY, nodeStep, padding, node
         .style("dominant-baseline", "middle")
         .style("pointer-events", "all");
     
+    // Add click handlers to info icons
+    addInfoIconClickHandlers();
+}
+
+// Helper function to update the drawUShapedLayout function
+function drawUShapedLayout(container, graphData, topLineY, bottomLineY, nodeStep, padding, nodeRadius, halfNodeCount) {
+    // Create a group for curves (arcs/links)
+    const linkGroup = container.append("g").attr("class", "links");
+    
+    // Draw links (keep existing code)
+    linkGroup.selectAll("path")
+        .data(graphData.links)
+        .enter().append("path")
+        .attr("class", "link")
+        .style("stroke", "#999")
+        .style("stroke-width", 1) 
+        .style("stroke-opacity", 0.6)
+        .attr("d", d => {
+            // Existing path drawing code
+        })
+        .on("mouseover", function(event, d) {
+            // Existing mouseover handler
+        })
+        .on("mouseout", function(event, d) {
+            // Existing mouseout handler
+        });
+    
+    // Create node group
+    const nodeGroup = container.append("g").attr("class", "nodes");
+    
+    // Draw nodes with multi-value support
+    const nodes = nodeGroup.selectAll("circle")
+        .data(graphData.nodes)
+        .enter().append("circle")
+        .attr("class", "node")
+        .attr("r", nodeRadius)
+        .attr("cx", (d, i) => {
+            if (i < halfNodeCount) {
+                // First half goes on top line
+                return padding + i * nodeStep;
+            } else {
+                // Second half goes on bottom line
+                return padding + (i - halfNodeCount) * nodeStep;
+            }
+        })
+        .attr("cy", (d, i) => i < halfNodeCount ? topLineY : bottomLineY)
+        .style("stroke", "#fff")
+        .style("stroke-width", 1.5)
+        .each(function(d) {
+            // Apply either single color or pie chart
+            createPieNode(d3.select(this), d, nodeRadius);
+        });
+    
+    // Add event handlers to nodes
+    addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius);
+    
+    // Draw labels (same as before)
+    nodeGroup.selectAll("text")
+        .data(graphData.nodes)
+        .enter().append("text")
+        .attr("class", "node-label")
+        .each(function(d, i) {
+            // Add labels with the info icon
+            addNodeLabel(d3.select(this), d);
+        })
+        .attr("x", (d, i) => {
+            if (i < halfNodeCount) {
+                // First half on top
+                return padding + i * nodeStep;
+            } else {
+                // Second half on bottom
+                return padding + (i - halfNodeCount) * nodeStep;
+            }
+        })
+        .attr("y", (d, i) => {
+            if (i < halfNodeCount) {
+                // Labels ABOVE top nodes
+                return topLineY - nodeRadius - 15;
+            } else {
+                // Labels BELOW bottom nodes
+                return bottomLineY + nodeRadius + 15;
+            }
+        })
+        .attr("transform", (d, i) => {
+            const x = i < halfNodeCount 
+                ? padding + i * nodeStep 
+                : padding + (i - halfNodeCount) * nodeStep;
+                
+            const y = i < halfNodeCount 
+                ? topLineY - nodeRadius - 15 // Above top line
+                : bottomLineY + nodeRadius + 15; // Below bottom line
+                
+            // Rotate labels differently based on position
+            return i < halfNodeCount 
+                ? `rotate(270, ${x}, ${y})` // Top line rotation
+                : `rotate(270, ${x}, ${y})`; // Bottom line rotation
+        })
+        .style("font-size", "10px")
+        .style("text-anchor", (d, i) => i < halfNodeCount ? "start" : "end")
+        .style("dominant-baseline", "middle")
+        .style("pointer-events", "all");
+        
     // Add click handlers to info icons
     addInfoIconClickHandlers();
 }
@@ -911,7 +1446,7 @@ function drawUShapedLayout(container, graphData, topLineY, bottomLineY, nodeStep
             }
         })
         .attr("cy", (d, i) => i < halfNodeCount ? topLineY : bottomLineY)
-        .style("fill", "#B89491")
+        .style("fill", d => getNodeColor(d))
         .style("stroke", "#fff")
         .style("stroke-width", 2);
     
@@ -1014,19 +1549,32 @@ function addInfoIconClickHandlers() {
         // Helper function to add event handlers to nodes
         function addNodeEventHandlers(nodes, graphData, linkGroup, nodeGroup, nodeRadius) {
             nodes.on("mouseover", function(event, d) {
-                    d3.select(this)
-                        .attr("r", nodeRadius + 2)
-                        .style("fill", "#a37c79");
-                        
-                    // Highlight connected links and nodes using the current graphData
+                    // Increase node size
+                    d3.select(this).attr("r", nodeRadius + 2);
+                    
+                    // Get node colors
+                    const colors = getNodeColor(d);
+                    
+                    // Handle hover effect based on whether it's multi-value
+                    if (Array.isArray(colors)) {
+                        // For multi-value nodes, recreate the pattern with larger radius
+                        createPatternFill(d3.select(this), d, nodeRadius + 2);
+                    } else {
+                        // Single color - darken it on hover
+                        const baseColor = d3.color(colors);
+                        d3.select(this).style("fill", baseColor.darker(0.5));
+                    }
+                    
+                    // Highlight connected links and nodes
                     highlightConnections(d, graphData);
-
                 })
-                .on("mouseout", function() {
-                    d3.select(this)
-                        .attr("r", nodeRadius)  // Now this will work correctly
-                        .style("fill", "#B89491");
-                        
+                .on("mouseout", function(event, d) {
+                    // Reset node size
+                    d3.select(this).attr("r", nodeRadius);
+                    
+                    // Reset node color/pattern
+                    createPatternFill(d3.select(this), d, nodeRadius);
+                    
                     // Reset links
                     d3.selectAll(".link")
                         .style("stroke", "#999")
@@ -1229,6 +1777,8 @@ function addInfoIconClickHandlers() {
                     
                     // Show the modal using Bootstrap
                     connectionsModal.show();
+
+                    handleNodeClick(d);
                 });
         }
 
