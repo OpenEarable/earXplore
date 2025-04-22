@@ -15,6 +15,24 @@
     <script>
         $(document).ready(function () {
 
+            // Transform Study Link column to show "LINK" instead of the URL
+            $('table thead th').each(function(index) {
+                if ($(this).data('col') === 'Study Link') {
+                    const linkColIndex = index + 1;
+                    $('table tbody tr').each(function() {
+                        const cell = $(this).find(`td:nth-child(${linkColIndex})`);
+                        const url = cell.text().trim();
+                        
+                        // Only create a link if the URL is valid
+                        if (url && url !== 'N/A' && url.toLowerCase() !== 'nan') {
+                            cell.html(`<a href="${url}" target="_blank" class="btn btn-sm btn-warning">LINK</a>`);
+                        } else {
+                            cell.text('N/A');
+                        }
+                    });
+                }
+            });
+
             let isUpdatingCheckboxes = false;
 
             const parentheticalColumns = [
@@ -576,7 +594,14 @@
         }
 
         function downloadCsv(data, filename) {
-            const csvContent = data.map(e => e.join(",")).join("\n");
+            // Generate CSV content with proper handling of already-quoted cells
+            const csvContent = data.map(row => {
+                return row.map(cell => {
+                    // If already quoted or doesn't need quoting, return as is
+                    return cell;
+                }).join(",");
+            }).join("\n");
+            
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -608,7 +633,25 @@
                 const row = [];
                 $(this).find('td').each(function (index) {
                     if (selectedColumns.includes(index + 1)) {
-                        row.push($(this).text().trim());
+                        // Check if this is the Study Link column
+                        const colName = $tableHeaders.eq(index).data('col');
+                        if (colName === 'Study Link') {
+                            // Get the actual URL from the href attribute if there's an anchor tag
+                            const $link = $(this).find('a');
+                            if ($link.length) {
+                                row.push($link.attr('href'));
+                            } else {
+                                row.push($(this).text().trim());
+                            }
+                        } else {
+                            // Wrap the text in quotes if it contains commas
+                            const cellText = $(this).text().trim();
+                            if (cellText.includes(',')) {
+                                row.push(`"${cellText}"`);
+                            } else {
+                                row.push(cellText);
+                            }
+                        }
                     }
                 });
                 filteredData.push(row);
@@ -628,7 +671,25 @@
                 const row = [];
                 $(this).find('td').each(function (index) {
                     if (index > 0) { // Skip the first column
-                        row.push($(this).text().trim());
+                        // Check if this is the Study Link column
+                        const colName = $('table thead th').eq(index).data('col');
+                        if (colName === 'Study Link') {
+                            // Get the actual URL from the href attribute if there's an anchor tag
+                            const $link = $(this).find('a');
+                            if ($link.length) {
+                                row.push($link.attr('href'));
+                            } else {
+                                row.push($(this).text().trim());
+                            }
+                        } else {
+                            // Wrap the text in quotes if it contains commas
+                            const cellText = $(this).text().trim();
+                            if (cellText.includes(',')) {
+                                row.push(`"${cellText}"`);
+                            } else {
+                                row.push(cellText);
+                            }
+                        }
                     }
                 });
                 fullData.push(row);
