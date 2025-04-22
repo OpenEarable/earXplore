@@ -169,7 +169,7 @@
                 <strong>Color Nodes by:</strong>
             </label>
             <select id="similarityColorCategory" class="form-select" style="width: 200px;">
-                <option value="">Default</option>
+                <option value="">None</option>
                 <!-- Category options will be populated dynamically -->
             </select>
         </div>
@@ -396,7 +396,7 @@
         });
     });
 
-    // Function to create and display a legend
+    // Modified function to create a color legend without parenthetical content for specific fields
     function createColorLegend() {
         try {
             // Remove any existing legend
@@ -408,6 +408,22 @@
             if (!category || !currentColorScale) {
                 return;
             }
+            
+            // Fields that should have parentheticals removed (from app.py)
+            const parentheticalRemovalFields = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Should we remove parentheticals for this category?
+            const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
             
             // Collect unique individual values for the selected category
             const valueSet = new Set();
@@ -434,10 +450,24 @@
                 if (value.includes(',')) {
                     value.split(',').forEach(v => {
                         const trimmed = v.trim();
-                        if (trimmed) valueSet.add(trimmed);
+                        if (trimmed) {
+                            // Remove parentheticals if required
+                            if (shouldRemoveParenthetical && trimmed.includes('(')) {
+                                const baseValue = trimmed.split('(')[0].trim();
+                                valueSet.add(baseValue);
+                            } else {
+                                valueSet.add(trimmed);
+                            }
+                        }
                     });
                 } else {
-                    valueSet.add(value);
+                    // Remove parentheticals if required
+                    if (shouldRemoveParenthetical && value.includes('(')) {
+                        const baseValue = value.split('(')[0].trim();
+                        valueSet.add(baseValue);
+                    } else {
+                        valueSet.add(value);
+                    }
                 }
             }
             
@@ -453,6 +483,13 @@
             };
             
             uniqueValues.sort((a, b) => {
+                // Check if this is the Number of Selected Gestures field
+                if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                    // Parse as numbers for numeric comparison
+                    return parseFloat(a) - parseFloat(b);
+                }
+                
+                // Use special order for specific values
                 const orderA = specialOrders[a] || 0;
                 const orderB = specialOrders[b] || 0;
                 
@@ -487,7 +524,7 @@
                 .style("font-weight", "bold")
                 .style("margin-bottom", "10px")
                 .style("text-align", "center")
-                .text(`Legend: ${category}`);
+                .text(`${category.includes('_') ? category.split('_').pop() : category}`);
                 
             // Add note about multi-values
             legend.append("div")
@@ -551,69 +588,119 @@
     }
 
     function populateColorCategoryDropdown() {
-        try {
-            const dropdown = document.getElementById('similarityColorCategory');
-            
-            // Clear existing options, keeping only the default
-            while (dropdown.options.length > 1) {
-                dropdown.remove(1);
-            }
-            
-            // Extract all unique category names from the studyDetailsCache
-            const categories = new Set();
-            
-            // Check if we have study details data
-            if (Object.keys(studyDetailsCache).length === 0) {
-                debug("No study details available for categories");
-                return;
-            }
-            
-            // Go through all studies to collect unique category names
-            for (const studyId in studyDetailsCache) {
-                const study = studyDetailsCache[studyId];
-                
-                // Skip if study is not an object
-                if (!study || typeof study !== 'object') continue;
-                
-                // Add each property as a potential category
-                Object.keys(study).forEach(key => {
-                    // Skip common fields that wouldn't make sense as categories
-                    if (['id', 'title', 'abstract', 'doi', 'url', 'pdf', 'bibtex',
-                        'first author', 'gesture', 'keywords', 'study link', 'authors', 'year',
-                        'gesture type'].includes(key.toLowerCase())) return;
-                    
-                    // Add the category to our set of unique categories
-                    categories.add(key);
-                });
-            }
-            
-            // Convert set to array and sort alphabetically
-            const categoryArray = Array.from(categories).sort();
-            
-            // Add options to dropdown
-            categoryArray.forEach(category => {
-                const option = document.createElement('option');
-                option.value = category;
-                option.textContent = category;
-                dropdown.appendChild(option);
-            });
-            
-            debug("Color category dropdown populated with options", { 
-                optionCount: categoryArray.length, 
-                categories: categoryArray 
-            });
-            
-        } catch (error) {
-            console.error("Error populating color category dropdown:", error);
-            debug("Error populating color category dropdown", error.toString());
+    try {
+        const dropdown = document.getElementById('similarityColorCategory');
+        
+        // Clear existing options, keeping only the default
+        while (dropdown.options.length > 1) {
+            dropdown.remove(1);
         }
+        
+        // Check if we have study details data
+        if (Object.keys(studyDetailsCache).length === 0) {
+            debug("No study details available for categories");
+            return;
+        }
+        
+        // Define the column order based on the CSV file structure
+        // This follows the exact order from the data.csv file
+        const columnOrder = [
+            "Location",
+            "Input Body Part",
+            "Sensing_PANEL_Sensors",
+            "Sensing_PANEL_No Additional Sensing",
+            "Interaction_PANEL_Number of Selected Gestures",
+            "Interaction_PANEL_Resolution",
+            "Interaction_PANEL_Hands-Free",
+            "Interaction_PANEL_Eyes-Free",
+            "Interaction_PANEL_Possible on One Ear",
+            "Interaction_PANEL_Adaptation of the Interaction Detection Algorithm to the Individual User",
+            "Interaction_PANEL_Discreetness of Interaction Techniques",
+            "Interaction_PANEL_Social Acceptability of Interaction Techniques",
+            "Interaction_PANEL_Accuracy of Interaction Recognition",
+            "Interaction_PANEL_Robustness of Interaction Detection",
+            "Study_PANEL_Elicitation Study",
+            "Study_PANEL_Usability Evaluations",
+            "Study_PANEL_Cognitive Ease Evaluations",
+            "Study_PANEL_Discreetness of Interactions Evaluations",
+            "Study_PANEL_Social Acceptability of Interactions Evaluations",
+            "Study_PANEL_Accuracy of Interactions Evaluations",
+            "Study_PANEL_Alternative Interaction Validity Evaluations",
+            "Study_PANEL_Evaluation of Different Conditions",
+            "Study_PANEL_Evaluation of Different Settings",
+            "Device_PANEL_Earphone Type",
+            "Device_PANEL_Development Stage",
+            "Device_PANEL_Real-Time Processing",
+            "Device_PANEL_On-Device Processing",
+            "Applications_PANEL_Intended Applications"
+        ];
+        
+        // Filter the columns to only include those available in the dataset
+        const availableColumns = [];
+        
+        // Go through the ordered columns and check if they exist in the data
+        for (const column of columnOrder) {
+            // Check if this column exists in at least one study
+            let columnExists = false;
+            for (const studyId in studyDetailsCache) {
+                if (studyDetailsCache[studyId] && 
+                    studyDetailsCache[studyId][column] !== undefined) {
+                    columnExists = true;
+                    break;
+                }
+            }
+            
+            if (columnExists) {
+                availableColumns.push(column);
+            }
+        }
+        
+        // Add options to dropdown in the specified order
+        availableColumns.forEach(category => {
+            const option = document.createElement('option');
+            option.value = category;  // Keep the full value for internal use
+            
+            // Display only the part after the last underscore
+            const displayName = category.includes('_') ? 
+                category.split('_').pop() : category;
+            
+            option.textContent = displayName;
+            dropdown.appendChild(option);
+        });
+        
+        debug("Color category dropdown populated with options", { 
+            optionCount: availableColumns.length, 
+            categories: availableColumns 
+        });
+        
+    } catch (error) {
+        console.error("Error populating color category dropdown:", error);
+        debug("Error populating color category dropdown", error.toString());
     }
+}
 
-    // Function to generate a color scale for category values
+    // Function to generate a color scale for category values with parenthetical handling
     function generateColorScale(category) {
         try {
+            // Fields that should have parentheticals removed (from app.py)
+            const parentheticalRemovalFields = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Should we remove parentheticals for this category?
+            const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+            
             // Collect unique values for the selected category
-            const values = new Set();
+            const allValues = [];
+            const uniqueValues = new Set();
             
             // Go through all studies to collect unique values for this category
             for (const studyId in studyDetailsCache) {
@@ -631,16 +718,40 @@
                 // Convert to string and trim
                 value = String(value).trim();
                 
-                // Add non-empty values to the set
+                // Add non-empty values to the map
                 if (value) {
-                    values.add(value);
+                    // Handle comma-separated values
+                    if (value.includes(',')) {
+                        value.split(',').forEach(v => {
+                            const trimmed = v.trim();
+                            if (trimmed) {
+                                if (shouldRemoveParenthetical && trimmed.includes('(')) {
+                                    const baseValue = trimmed.split('(')[0].trim();
+                                    allValues.push(baseValue);
+                                    uniqueValues.add(baseValue);
+                                } else {
+                                    allValues.push(trimmed);
+                                    uniqueValues.add(trimmed);
+                                }
+                            }
+                        });
+                    } else {
+                        if (shouldRemoveParenthetical && value.includes('(')) {
+                            const baseValue = value.split('(')[0].trim();
+                            allValues.push(baseValue);
+                            uniqueValues.add(baseValue);
+                        } else {
+                            allValues.push(value);
+                            uniqueValues.add(value);
+                        }
+                    }
                 }
             }
             
             // Convert set to array
-            let uniqueValues = Array.from(values);
+            const cleanedValues = Array.from(uniqueValues);
             
-            // Apply custom sort logic (similar to Python implementation)
+            // Apply custom sort logic to clean values
             const specialOrders = {
                 'Yes': 1, 'Partly': 2, 'No': 3, 
                 'Low': 1, 'Medium': 2, 'High': 3, 
@@ -648,7 +759,13 @@
                 'Yes (Performance Loss)': 2, 'Visual Attention': 2
             };
             
-            uniqueValues.sort((a, b) => {
+            cleanedValues.sort((a, b) => {
+                // Check if this is the Number of Selected Gestures field
+                if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                    // Parse as numbers for numeric comparison
+                    return parseFloat(a) - parseFloat(b);
+                }
+                
                 const orderA = specialOrders[a] || 0;
                 const orderB = specialOrders[b] || 0;
                 
@@ -667,22 +784,22 @@
             // Generate a color scale based on the number of unique values
             let colorScale;
             
-            if (uniqueValues.length <= chartColorPalette.length) {
+            if (cleanedValues.length <= chartColorPalette.length) {
                 // Use custom color palette if we have enough colors
                 colorScale = d3.scaleOrdinal()
-                    .domain(uniqueValues)
-                    .range(chartColorPalette.slice(0, uniqueValues.length));
+                    .domain(cleanedValues)
+                    .range(chartColorPalette.slice(0, cleanedValues.length));
             } else {
                 // If more values than colors, cycle through the palette
                 colorScale = d3.scaleOrdinal()
-                    .domain(uniqueValues)
-                    .range(Array.from({ length: uniqueValues.length }, (_, i) => 
+                    .domain(cleanedValues)
+                    .range(Array.from({ length: cleanedValues.length }, (_, i) => 
                         chartColorPalette[i % chartColorPalette.length]));
             }
             
             debug("Generated color scale for category", { 
                 category, 
-                uniqueValues: uniqueValues.length 
+                uniqueValues: cleanedValues.length
             });
             
             return colorScale;
@@ -696,7 +813,7 @@
         }
     }
 
-    // Function to get node color based on selected category
+    // Modified function to get node color based on selected category
     function getNodeColor(node) {
         // If no category is selected, use default color
         if (!currentColorScale) {
@@ -710,12 +827,28 @@
         if (!study) return "#B89491";
         
         const category = document.getElementById('similarityColorCategory').value;
-        const rawValue = study[category];
+        let rawValue = study[category];
         
         // If value is undefined, use default color
         if (rawValue === undefined || rawValue === null || rawValue === "") {
             return "#cccccc"; // Light gray for missing values
         }
+        
+        // Fields that should have parentheticals removed (from app.py)
+        const parentheticalRemovalFields = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition',
+            'Interaction_PANEL_Robustness of Interaction Detection',
+            'Study_PANEL_Elicitation Study',
+            'Study_PANEL_Usability Evaluations',
+            'Study_PANEL_Cognitive Ease Evaluations',
+            'Study_PANEL_Discreetness of Interactions Evaluations',
+            'Study_PANEL_Social Acceptability of Interactions Evaluations',
+            'Study_PANEL_Accuracy of Interactions Evaluations',
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ];
+        
+        // Should we remove parentheticals for this category?
+        const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
         
         // Check if the value contains multiple options (comma-separated)
         if (typeof rawValue === 'string' && rawValue.includes(',')) {
@@ -724,13 +857,32 @@
             
             // If we have multiple values after splitting, return an array of colors
             if (values.length > 1) {
-                return values.map(val => currentColorScale(val));
+                return values.map(val => {
+                    // Process each value to remove parentheticals if needed
+                    if (shouldRemoveParenthetical && val.includes('(')) {
+                        // Get the cleaned value for the color lookup
+                        const baseValue = val.split('(')[0].trim();
+                        // For this specific value, find the color from the color scale
+                        // Look up this clean value using the color scale
+                        return currentColorScale(baseValue);
+                    }
+                    return currentColorScale(val);
+                });
             }
             
             // If only one value after splitting, use that single value
             if (values.length === 1) {
-                return currentColorScale(values[0]);
+                let value = values[0];
+                if (shouldRemoveParenthetical && value.includes('(')) {
+                    value = value.split('(')[0].trim();
+                }
+                return currentColorScale(value);
             }
+        } else if (shouldRemoveParenthetical && typeof rawValue === 'string' && rawValue.includes('(')) {
+            // Single value with parenthetical that needs removal
+            const baseValue = rawValue.split('(')[0].trim();
+            // Use the cleaned value for color scale lookup
+            return currentColorScale(baseValue);
         }
         
         // Single value - use the color scale to determine color
