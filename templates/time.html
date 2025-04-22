@@ -241,6 +241,16 @@
                 <span>Highlighted</span>
             </div>
         </div>
+
+        <div class="category-dropdown-container">
+            <label for="timelineColorCategory" style="margin-bottom: 12px; display: block;">
+                <strong>Color Nodes by:</strong>
+            </label>
+            <select id="timelineColorCategory" class="form-select" style="width: 200px;">
+                <option value="">None</option>
+                <!-- Category options will be populated dynamically -->
+            </select>
+        </div>
     </div>
     
     <div id="timeline-graph-container"></div>
@@ -275,6 +285,7 @@
     let timelineCitationMatrix = [];
     let timelineCoauthorMatrix = [];
     let nodeById = {}; // Add this line to create a shared variable
+    let timelineCurrentColorScale = null; // To store the current color scale for the timeline
     
     // Connection visibility flags
     let timelineShowSharedAuthors = true;
@@ -375,12 +386,20 @@
             }
         });
         
-        // Initialize when the timeline tab is selected
+        // Add color category dropdown handler
+        document.getElementById('timelineColorCategory').addEventListener('change', function() {
+            updateTimelineNodeColors();
+        });
+        
+        // Initialize timeline when the timeline tab is selected
         document.querySelectorAll('.navbar-item').forEach(navItem => {
             navItem.addEventListener('click', function() {
                 if (this.getAttribute('data-section') === 'timeView') {
                     // Use setTimeout to ensure the DOM is fully ready
-                    setTimeout(timelineInitialize, 300);
+                    setTimeout(() => {
+                        timelineInitialize();
+                        populateTimelineColorCategoryDropdown(); // Populate dropdown when timeline is shown
+                    }, 300);
                 }
             });
         });
@@ -593,8 +612,600 @@
         
         return processedMatrix;
     }
+
+        // Function to populate the color category dropdown for timeline
+    function populateTimelineColorCategoryDropdown() {
+        try {
+            const dropdown = document.getElementById('timelineColorCategory');
+            
+            // Clear existing options, keeping only the default
+            while (dropdown.options.length > 1) {
+                dropdown.remove(1);
+            }
+            
+            // Check if we have study details data
+            if (timelineStudyData.length === 0) {
+                console.log("No timeline study data available for categories");
+                return;
+            }
+            
+            // Define the column order based on the same order in similarity view
+            const columnOrder = [
+                "Location",
+                "Input Body Part",
+                "Sensing_PANEL_Sensors",
+                "Sensing_PANEL_No Additional Sensing",
+                "Interaction_PANEL_Number of Selected Gestures",
+                "Interaction_PANEL_Resolution",
+                "Interaction_PANEL_Hands-Free",
+                "Interaction_PANEL_Eyes-Free",
+                "Interaction_PANEL_Possible on One Ear",
+                "Interaction_PANEL_Adaptation of the Interaction Detection Algorithm to the Individual User",
+                "Interaction_PANEL_Discreetness of Interaction Techniques",
+                "Interaction_PANEL_Social Acceptability of Interaction Techniques",
+                "Interaction_PANEL_Accuracy of Interaction Recognition",
+                "Interaction_PANEL_Robustness of Interaction Detection",
+                "Study_PANEL_Elicitation Study",
+                "Study_PANEL_Usability Evaluations",
+                "Study_PANEL_Cognitive Ease Evaluations",
+                "Study_PANEL_Discreetness of Interactions Evaluations",
+                "Study_PANEL_Social Acceptability of Interactions Evaluations",
+                "Study_PANEL_Accuracy of Interactions Evaluations",
+                "Study_PANEL_Alternative Interaction Validity Evaluations",
+                "Study_PANEL_Evaluation of Different Conditions",
+                "Study_PANEL_Evaluation of Different Settings",
+                "Device_PANEL_Earphone Type",
+                "Device_PANEL_Development Stage",
+                "Device_PANEL_Real-Time Processing",
+                "Device_PANEL_On-Device Processing",
+                "Applications_PANEL_Intended Applications"
+            ];
+            
+            // Filter the columns to only include those available in the data
+            const availableColumns = [];
+            
+            // Go through the ordered columns and check if they exist in the data
+            for (const column of columnOrder) {
+                // Check if this column exists in at least one study
+                let columnExists = false;
+                for (const study of timelineStudyData) {
+                    if (study && study.details && 
+                        study.details[column] !== undefined) {
+                        columnExists = true;
+                        break;
+                    }
+                }
+                
+                if (columnExists) {
+                    availableColumns.push(column);
+                }
+            }
+            
+            // Add options to dropdown in the specified order
+            availableColumns.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;  // Keep the full value for internal use
+                
+                // Display only the part after the last underscore
+                const displayName = category.includes('_') ? 
+                    category.split('_').pop() : category;
+                
+                option.textContent = displayName;
+                dropdown.appendChild(option);
+            });
+            
+            console.log("Timeline color category dropdown populated with options");
+            
+        } catch (error) {
+            console.error("Error populating timeline color category dropdown:", error);
+        }
+    }
+
+    // Function to generate a color scale for timeline
+    function generateTimelineColorScale(category) {
+        try {
+            // Fields that should have parentheticals removed (from app.py)
+            const parentheticalRemovalFields = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Should we remove parentheticals for this category?
+            const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+            
+            // Collect unique values for the selected category
+            const allValues = [];
+            const uniqueValues = new Set();
+            
+            // Go through all studies to collect unique values for this category
+            for (const study of timelineStudyData) {
+                if (!study || !study.details) continue;
+                
+                // Get the value for this category
+                let value = study.details[category];
+                
+                // Skip if value is undefined or null
+                if (value === undefined || value === null) continue;
+                
+                // Convert to string and trim
+                value = String(value).trim();
+                
+                // Add non-empty values to the map
+                if (value) {
+                    // Handle comma-separated values
+                    if (value.includes(',')) {
+                        value.split(',').forEach(v => {
+                            const trimmed = v.trim();
+                            if (trimmed) {
+                                if (shouldRemoveParenthetical && trimmed.includes('(')) {
+                                    const baseValue = trimmed.split('(')[0].trim();
+                                    allValues.push(baseValue);
+                                    uniqueValues.add(baseValue);
+                                } else {
+                                    allValues.push(trimmed);
+                                    uniqueValues.add(trimmed);
+                                }
+                            }
+                        });
+                    } else {
+                        if (shouldRemoveParenthetical && value.includes('(')) {
+                            const baseValue = value.split('(')[0].trim();
+                            allValues.push(baseValue);
+                            uniqueValues.add(baseValue);
+                        } else {
+                            allValues.push(value);
+                            uniqueValues.add(value);
+                        }
+                    }
+                }
+            }
+            
+            // Convert set to array
+            const cleanedValues = Array.from(uniqueValues);
+            
+            // Apply custom sort logic to clean values
+            const specialOrders = {
+                'Yes': 1, 'Partly': 2, 'No': 3, 
+                'Low': 1, 'Medium': 2, 'High': 3, 
+                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                'Yes (Performance Loss)': 2, 'Visual Attention': 2
+            };
+            
+            cleanedValues.sort((a, b) => {
+                // Check if this is the Number of Selected Gestures field
+                if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                    // Parse as numbers for numeric comparison
+                    return parseFloat(a) - parseFloat(b);
+                }
+                
+                const orderA = specialOrders[a] || 0;
+                const orderB = specialOrders[b] || 0;
+                
+                // First sort by special order
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                
+                // Then sort alphabetically
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+            
+            // Define the custom color palette
+            const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
+            
+            // Create an extended palette by duplicating and brightening the colors
+            const extendedPalette = [...chartColorPalette];
+            
+            // Add brightened versions of each color
+            chartColorPalette.forEach(color => {
+                // Parse the hex color
+                const rgb = d3.color(color);
+                
+                // Brighten the color by increasing lightness
+                rgb.opacity = 0.9;  // Make slightly transparent
+                const brighter = d3.color(rgb.brighter(0.7)); // Make brighter
+                
+                // Add the brightened color to our extended palette
+                extendedPalette.push(brighter.toString());
+            });
+            
+            // Add darker versions of each color (for options 21-30)
+            chartColorPalette.forEach(color => {
+                // Parse the hex color
+                const rgb = d3.color(color);
+                
+                // Darken the color
+                rgb.opacity = 1.0;  // Full opacity for darker colors
+                const darker = d3.color(rgb.darker(0.7)); // Make darker
+                
+                // Add the darkened color to our extended palette
+                extendedPalette.push(darker.toString());
+            });
+            
+            // Generate a color scale based on the number of unique values
+            let colorScale;
+            
+            if (cleanedValues.length <= 10) {
+                // Use original color palette if we have 10 or fewer values
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(chartColorPalette.slice(0, cleanedValues.length));
+            } else if (cleanedValues.length <= 20) {
+                // If 11-20 values, use the extended palette with bright colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(extendedPalette.slice(0, cleanedValues.length));
+            } else if (cleanedValues.length <= 30) {
+                // If 21-30 values, use the extended palette with all 30 colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(extendedPalette.slice(0, cleanedValues.length));
+            } else {
+                // If more than 30 values, cycle through the palette
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(Array.from({ length: cleanedValues.length }, (_, i) => 
+                        extendedPalette[i % extendedPalette.length]));
+            }
+            
+            return colorScale;
+            
+        } catch (error) {
+            console.error("Error generating timeline color scale:", error);
+            
+            // Return a default color function that always returns the same color
+            return () => "#B89491";
+        }
+    }
+
+    // Function to get node color based on selected category for timeline
+    function getTimelineNodeColor(node) {
+        // If no category is selected, use default color
+        if (!timelineCurrentColorScale) {
+            return "#B89491";
+        }
+        
+        const study = node.study;
+        
+        // If study doesn't exist or details are missing, use default color
+        if (!study || !study.details) return "#B89491";
+        
+        const category = document.getElementById('timelineColorCategory').value;
+        let rawValue = study.details[category];
+        
+        // If value is undefined, use default color
+        if (rawValue === undefined || rawValue === null || rawValue === "") {
+            return "#cccccc"; // Light gray for missing values
+        }
+        
+        // Fields that should have parentheticals removed
+        const parentheticalRemovalFields = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition',
+            'Interaction_PANEL_Robustness of Interaction Detection',
+            'Study_PANEL_Elicitation Study',
+            'Study_PANEL_Usability Evaluations',
+            'Study_PANEL_Cognitive Ease Evaluations',
+            'Study_PANEL_Discreetness of Interactions Evaluations',
+            'Study_PANEL_Social Acceptability of Interactions Evaluations',
+            'Study_PANEL_Accuracy of Interactions Evaluations',
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ];
+        
+        // Should we remove parentheticals for this category?
+        const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+        
+        // Check if the value contains multiple options (comma-separated)
+        if (typeof rawValue === 'string' && rawValue.includes(',')) {
+            // Split the value by commas and trim each value
+            const values = rawValue.split(',').map(v => v.trim()).filter(v => v);
+            
+            // If we have multiple values after splitting, return an array of colors
+            if (values.length > 1) {
+                return values.map(val => {
+                    // Process each value to remove parentheticals if needed
+                    if (shouldRemoveParenthetical && val.includes('(')) {
+                        // Get the cleaned value for the color lookup
+                        const baseValue = val.split('(')[0].trim();
+                        return timelineCurrentColorScale(baseValue);
+                    }
+                    return timelineCurrentColorScale(val);
+                });
+            }
+            
+            // If only one value after splitting, use that single value
+            if (values.length === 1) {
+                let value = values[0];
+                if (shouldRemoveParenthetical && value.includes('(')) {
+                    value = value.split('(')[0].trim();
+                }
+                return timelineCurrentColorScale(value);
+            }
+        } else if (shouldRemoveParenthetical && typeof rawValue === 'string' && rawValue.includes('(')) {
+            // Single value with parenthetical that needs removal
+            const baseValue = rawValue.split('(')[0].trim();
+            // Use the cleaned value for color scale lookup
+            return timelineCurrentColorScale(baseValue);
+        }
+        
+        // Single value - use the color scale to determine color
+        return timelineCurrentColorScale(rawValue);
+    }
+
+    // Function to create a pattern fill for multi-value nodes in timeline
+    function createTimelinePatternFill(nodeSelection, node, nodeRadius) {
+        const colors = getTimelineNodeColor(node);
+        
+        // If not an array, this is a single-value node, just set the fill color directly
+        if (!Array.isArray(colors) || colors.length === 1) {
+            nodeSelection.style("fill", Array.isArray(colors) ? colors[0] : colors);
+            return;
+        }
+        
+        // For multi-value nodes, create a pie chart pattern
+        // Make sure pattern ID is URL-safe and unique
+        const patternId = `timeline-pattern-${node.id}-${Math.random().toString(36).substring(2, 10)}`.replace(/[^\w-]/g, '-');
+        
+        // Remove any existing patterns for this node
+        d3.selectAll(`pattern[id^="timeline-pattern-${node.id}-"]`).remove();
+        
+        // Create a pattern definition
+        const defs = timelineSvg.select("defs").empty() ? timelineSvg.append("defs") : timelineSvg.select("defs");
+        
+        // Create a pattern
+        const pattern = defs.append("pattern")
+            .attr("id", patternId)
+            .attr("width", 1)
+            .attr("height", 1)
+            .attr("patternUnits", "objectBoundingBox")
+            .attr("patternContentUnits", "objectBoundingBox");
+        
+        // Create a pie chart layout
+        const pie = d3.pie()
+            .value(() => 1)
+            .sort(null)
+            .padAngle(0.01);
+            
+        // Generate the pie segments data
+        const pieData = pie(colors);
+        
+        // Create an arc generator for the segments
+        const arc = d3.arc()
+            .innerRadius(0)
+            .outerRadius(0.5) // Use 0.5 since pattern coordinates are normalized (0-1)
+            .padAngle(0.01);
+        
+        // Add a group for the pie chart with proper centering
+        const pieGroup = pattern.append("g")
+            .attr("transform", "translate(0.5, 0.5)"); // Center in the pattern
+            
+        // Add each segment to the pattern
+        pieData.forEach(segment => {
+            pieGroup.append("path")
+                .attr("d", arc(segment))
+                .style("fill", segment.data)
+                .style("stroke", "#fff")
+                .style("stroke-width", 0.02);
+        });
+        
+        // Apply the pattern to the node
+        nodeSelection.style("fill", `url(#${patternId})`);
+    }
+
+    // Function to create a legend for timeline colors
+    function createTimelineColorLegend() {
+        try {
+            // Remove any existing legend
+            d3.select("#timelineColorLegend").remove();
+            
+            const category = document.getElementById('timelineColorCategory').value;
+            
+            // Only create legend if a category is selected
+            if (!category || !timelineCurrentColorScale) {
+                return;
+            }
+            
+            // Fields that should have parentheticals removed (from app.py)
+            const parentheticalRemovalFields = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Should we remove parentheticals for this category?
+            const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+            
+            // Collect unique individual values for the selected category
+            const valueSet = new Set();
+            
+            // Go through all studies to collect unique values for this category
+            for (const study of timelineStudyData) {
+                if (!study || !study.details) continue;
+                
+                // Get the value for this category
+                let value = study.details[category];
+                
+                // Skip if value is undefined or null
+                if (value === undefined || value === null) continue;
+                
+                // Convert to string and trim
+                value = String(value).trim();
+                
+                if (!value) continue;
+                
+                // Handle comma-separated values - add each individual value to the set
+                if (value.includes(',')) {
+                    value.split(',').forEach(v => {
+                        const trimmed = v.trim();
+                        if (trimmed) {
+                            // Remove parentheticals if required
+                            if (shouldRemoveParenthetical && trimmed.includes('(')) {
+                                const baseValue = trimmed.split('(')[0].trim();
+                                valueSet.add(baseValue);
+                            } else {
+                                valueSet.add(trimmed);
+                            }
+                        }
+                    });
+                } else {
+                    // Remove parentheticals if required
+                    if (shouldRemoveParenthetical && value.includes('(')) {
+                        const baseValue = value.split('(')[0].trim();
+                        valueSet.add(baseValue);
+                    } else {
+                        valueSet.add(value);
+                    }
+                }
+            }
+            
+            // Get all unique individual values
+            let uniqueValues = Array.from(valueSet);
+            
+            // Apply custom sort logic
+            const specialOrders = {
+                'Yes': 1, 'Partly': 2, 'No': 3, 
+                'Low': 1, 'Medium': 2, 'High': 3, 
+                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                'Yes (Performance Loss)': 2, 'Visual Attention': 2
+            };
+            
+            uniqueValues.sort((a, b) => {
+                // Check if this is the Number of Selected Gestures field
+                if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                    // Parse as numbers for numeric comparison
+                    return parseFloat(a) - parseFloat(b);
+                }
+                
+                // Use special order for specific values
+                const orderA = specialOrders[a] || 0;
+                const orderB = specialOrders[b] || 0;
+                
+                // First sort by special order
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                
+                // Then sort alphabetically
+                return a.toLowerCase().localeCompare(b.toLowerCase());
+            });
+            
+            // Create legend container after the timeline-controls div
+            const legend = d3.select("#timeline-container")
+                .append("div")
+                .attr("id", "timelineColorLegend")
+                .style("display", "flex")
+                .style("flex-wrap", "wrap")
+                .style("justify-content", "center")
+                .style("background", "rgba(255, 255, 255, 0.9)")
+                .style("border", "1px solid #ddd")
+                .style("border-radius", "4px")
+                .style("padding", "12px")
+                .style("margin-top", "15px")
+                .style("margin-bottom", "15px")
+                .style("font-size", "13px")
+                .style("box-shadow", "0px 0px 5px rgba(0, 0, 0, 0.1)");
+                    
+            // Add title that spans the full width
+            legend.append("div")
+                .style("width", "100%")
+                .style("font-weight", "bold")
+                .style("margin-bottom", "10px")
+                .style("text-align", "center")
+                .text(`${category.includes('_') ? category.split('_').pop() : category}`);
+                
+            // Add note about multi-values
+            legend.append("div")
+                .style("width", "100%")
+                .style("font-style", "italic")
+                .style("margin-bottom", "10px")
+                .style("text-align", "center")
+                .style("font-size", "11px")
+                .text("Note: Studies with multiple values are shown as pie charts");
+                
+            // Add legend items in a flex container
+            const legendItems = legend.append("div")
+                .style("display", "flex")
+                .style("flex-wrap", "wrap")
+                .style("justify-content", "center")
+                .style("gap", "15px");
+                
+            // Add legend items in the sorted order
+            uniqueValues.forEach(value => {
+                const item = legendItems.append("div")
+                    .style("display", "flex")
+                    .style("align-items", "center")
+                    .style("margin-bottom", "5px")
+                    .style("margin-right", "5px");
+                    
+                // Color square
+                item.append("div")
+                    .style("width", "14px")
+                    .style("height", "14px")
+                    .style("background", timelineCurrentColorScale(value))
+                    .style("border", "1px solid #ddd")
+                    .style("margin-right", "5px");
+                    
+                // Value label
+                item.append("div")
+                    .text(value);
+            });
+                
+        } catch (error) {
+            console.error("Error creating timeline color legend:", error);
+        }
+    }
+
+    // Function to update node colors in the timeline
+    function updateTimelineNodeColors() {
+        try {
+            const category = document.getElementById('timelineColorCategory').value;
+            
+            // If no category selected, reset to default colors
+            if (!category) {
+                timelineCurrentColorScale = null;
+                d3.selectAll(".timeline-node").style("fill", "#B89491");
+                // Remove any existing legend
+                d3.select("#timelineColorLegend").remove();
+                return;
+            }
+            
+            // Generate a new color scale for the selected category
+            timelineCurrentColorScale = generateTimelineColorScale(category);
+            
+            // Clear any existing patterns before creating new ones
+            if (timelineSvg) {
+                timelineSvg.select("defs").html("");
+            }
+            
+            // Re-sort nodes within each year based on the new category
+            timelineRedrawWithColorSorting();
+            
+            // Create or update the color legend
+            createTimelineColorLegend();
+            
+        } catch (error) {
+            console.error("Error updating timeline node colors:", error);
+        }
+    }
+
+    // Function to sort and redraw the timeline with color-based sorting within years
+    function timelineRedrawWithColorSorting() {
+        // Re-initialize the timeline visualization with sorted nodes
+        timelineInitialize();
+    }
     
-    // Initialize the timeline visualization
     function timelineInitialize() {
         const container = document.getElementById('timeline-graph-container');
         if (!container) return;
@@ -625,78 +1236,256 @@
         
         // Draw timeline
         timelineDrawLines(nodesLayer, linksLayer);
+        
+        // Update node colors if needed
+        if (document.getElementById('timelineColorCategory').value) {
+            // Add a short delay to ensure nodes are properly created first
+            setTimeout(() => {
+                updateTimelineNodeColors();
+            }, 100);
+        }
     }
     
     function timelineDrawLines(nodesLayer, linksLayer) {
-        // Get sorted years
-        const years = Object.keys(timelineYearGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    // Get sorted years
+    const years = Object.keys(timelineYearGroups).sort((a, b) => parseInt(a) - parseInt(b));
+    
+    // Create scale for year positions
+    const yearScale = d3.scalePoint()
+        .domain(years)
+        .range([TIMELINE_PADDING, timelineWidth - TIMELINE_PADDING])
+        .padding(0.5);
+    
+    // Draw main timeline axis
+    const timelineAxisY = timelineHeight * 0.7; // Position line at 70% of height
+    
+    timelineSvg.append("line")
+        .attr("class", "timeline-axis")
+        .attr("x1", TIMELINE_PADDING)
+        .attr("y1", timelineAxisY)
+        .attr("x2", timelineWidth - TIMELINE_PADDING)
+        .attr("y2", timelineAxisY);
+    
+    // Draw year ticks and labels
+    years.forEach(year => {
+        const x = yearScale(year);
         
-        // Create scale for year positions
-        const yearScale = d3.scalePoint()
-            .domain(years)
-            .range([TIMELINE_PADDING, timelineWidth - TIMELINE_PADDING])
-            .padding(0.5);
-        
-        // Draw main timeline axis
-        const timelineAxisY = timelineHeight * 0.7; // Position line at 70% of height
-        
+        // Draw tick
         timelineSvg.append("line")
-            .attr("class", "timeline-axis")
-            .attr("x1", TIMELINE_PADDING)
-            .attr("y1", timelineAxisY)
-            .attr("x2", timelineWidth - TIMELINE_PADDING)
-            .attr("y2", timelineAxisY);
+            .attr("class", "timeline-tick")
+            .attr("x1", x)
+            .attr("y1", timelineAxisY - 10)
+            .attr("x2", x)
+            .attr("y2", timelineAxisY + 10);
         
-        // Draw year ticks and labels
-        years.forEach(year => {
-            const x = yearScale(year);
-            
-            // Draw tick
-            timelineSvg.append("line")
-                .attr("class", "timeline-tick")
-                .attr("x1", x)
-                .attr("y1", timelineAxisY - 10)
-                .attr("x2", x)
-                .attr("y2", timelineAxisY + 10);
-            
-            // Draw year label
-            timelineSvg.append("text")
-                .attr("class", "timeline-label")
-                .attr("x", x)
-                .attr("y", timelineAxisY + 30)
-                .attr("text-anchor", "middle")
-                .text(year);
-        });
+        // Draw year label
+        timelineSvg.append("text")
+            .attr("class", "timeline-label")
+            .attr("x", x)
+            .attr("y", timelineAxisY + 30)
+            .attr("text-anchor", "middle")
+            .text(year);
+    });
+    
+    // Position all nodes
+    const nodes = [];
+    
+    // Check if color category is selected
+    const category = document.getElementById('timelineColorCategory')?.value;
+    
+    // Helper function to get the proper category value for sorting
+    function getCategoryValue(study, category) {
+        if (!study || !study.details) return "";
         
-        // Position all nodes
-        const nodes = [];
+        // Fields that should have parentheticals removed
+        const parentheticalRemovalFields = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition',
+            'Interaction_PANEL_Robustness of Interaction Detection',
+            'Study_PANEL_Elicitation Study',
+            'Study_PANEL_Usability Evaluations',
+            'Study_PANEL_Cognitive Ease Evaluations',
+            'Study_PANEL_Discreetness of Interactions Evaluations',
+            'Study_PANEL_Social Acceptability of Interactions Evaluations',
+            'Study_PANEL_Accuracy of Interactions Evaluations',
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ];
         
-        years.forEach(year => {
-            const x = yearScale(year);
-            const studies = timelineYearGroups[year];
+        // Should we remove parentheticals for this category?
+        const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+        
+        // Get the raw value for this category
+        let value = study.details[category];
+        if (value === undefined || value === null || value === "") return "";
+        
+        // Convert to string and trim
+        value = String(value).trim();
+        
+        // For multi-values, take the first one for sorting
+        if (value.includes(',')) {
+            const firstValue = value.split(',')[0].trim();
             
-            // Stack nodes vertically above the line
-            studies.forEach((study, i) => {
-                // Start stacking ABOVE the timeline
-                const y = timelineAxisY - (i + 1) * TIMELINE_NODE_SPACING;
+            // Handle parenthetical removal if needed
+            if (shouldRemoveParenthetical && firstValue.includes('(')) {
+                return firstValue.split('(')[0].trim();
+            }
+            return firstValue;
+        }
+        
+        // Handle parenthetical removal for single values
+        if (shouldRemoveParenthetical && value.includes('(')) {
+            return value.split('(')[0].trim();
+        }
+        
+        return value;
+    }
+    
+    // Process each year
+    years.forEach(year => {
+        const x = yearScale(year);
+        let studies = timelineYearGroups[year];
+        
+        // Sort studies within this year by the selected category if applicable
+        if (category && timelineCurrentColorScale) {
+            // Define special ordering for certain values
+            const specialOrders = {
+                'Yes': 1, 'Partly': 2, 'No': 3, 
+                'Low': 1, 'Medium': 2, 'High': 3, 
+                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                'Yes (Performance Loss)': 2, 'Visual Attention': 2
+            };
+            
+            // Helper function to get array of category values for a study
+            function getStudyCategoryValues(study, category) {
+                if (!study || !study.details) return [];
                 
-                // Add node data with index for matrix lookups
-                nodes.push({
-                    id: study.id,
-                    study: study,
-                    x: x,
-                    y: y,
-                    index: timelineStudyIdToIndex[study.id]
-                });
+                // Fields that should have parentheticals removed
+                const parentheticalRemovalFields = [
+                    'Interaction_PANEL_Accuracy of Interaction Recognition',
+                    'Interaction_PANEL_Robustness of Interaction Detection',
+                    'Study_PANEL_Elicitation Study',
+                    'Study_PANEL_Usability Evaluations',
+                    'Study_PANEL_Cognitive Ease Evaluations',
+                    'Study_PANEL_Discreetness of Interactions Evaluations',
+                    'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                    'Study_PANEL_Accuracy of Interactions Evaluations',
+                    'Study_PANEL_Alternative Interaction Validity Evaluations'
+                ];
+                
+                // Should we remove parentheticals for this category?
+                const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+                
+                // Get the raw value for this category
+                let value = study.details[category];
+                if (value === undefined || value === null || value === "") return [];
+                
+                // Convert to string and trim
+                value = String(value).trim();
+                
+                // Extract values
+                let values = [];
+                if (value.includes(',')) {
+                    values = value.split(',')
+                        .map(v => v.trim())
+                        .filter(v => v);
+                } else {
+                    values = [value];
+                }
+                
+                // Clean values if needed (remove parentheticals)
+                if (shouldRemoveParenthetical) {
+                    values = values.map(v => {
+                        if (v.includes('(')) {
+                            return v.split('(')[0].trim();
+                        }
+                        return v;
+                    });
+                }
+                
+                return values;
+            }
+            
+            // Clone the array before sorting to avoid modifying the original
+            studies = [...studies].sort((a, b) => {
+                // Get all values for the category (may be multiple for each study)
+                const valuesA = getStudyCategoryValues(a, category);
+                const valuesB = getStudyCategoryValues(b, category);
+                
+                // First, sort by number of different values (fewer values first)
+                if (valuesA.length !== valuesB.length) {
+                    return valuesA.length - valuesB.length;
+                }
+                
+                // For the same number of values, sort by the values themselves
+                // Check if this is the Number of Selected Gestures field
+                if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                    // Sort numeric values
+                    const numA = parseFloat(valuesA[0]);
+                    const numB = parseFloat(valuesB[0]);
+                    
+                    if (!isNaN(numA) && !isNaN(numB)) {
+                        return numA - numB;
+                    }
+                }
+                
+                // For non-numeric values, use our special ordering if applicable
+                // Compare first values
+                if (valuesA.length > 0 && valuesB.length > 0) {
+                    const orderA = specialOrders[valuesA[0]] || 0;
+                    const orderB = specialOrders[valuesB[0]] || 0;
+                    
+                    if (orderA !== orderB) {
+                        return orderA - orderB;
+                    }
+                    
+                    // If special ordering doesn't distinguish, compare alphabetically
+                    const compareResult = valuesA[0].localeCompare(valuesB[0]);
+                    if (compareResult !== 0) {
+                        return compareResult;
+                    }
+                    
+                    // If first values are the same, compare second values if they exist
+                    if (valuesA.length > 1 && valuesB.length > 1) {
+                        const orderA2 = specialOrders[valuesA[1]] || 0;
+                        const orderB2 = specialOrders[valuesB[1]] || 0;
+                        
+                        if (orderA2 !== orderB2) {
+                            return orderA2 - orderB2;
+                        }
+                        
+                        // Compare second values alphabetically
+                        return valuesA[1].localeCompare(valuesB[1]);
+                    }
+                }
+                
+                // Fall back to ID for stable sort
+                return a.id.localeCompare(b.id);
+            });
+            
+            console.log(`Sorted ${studies.length} studies for year ${year} by category ${category}`);
+        }
+        
+        // Stack nodes vertically above the line
+        studies.forEach((study, i) => {
+            // Start stacking ABOVE the timeline
+            const y = timelineAxisY - (i + 1) * TIMELINE_NODE_SPACING;
+            
+            // Add node data with index for matrix lookups
+            nodes.push({
+                id: study.id,
+                study: study,
+                x: x,
+                y: y,
+                index: timelineStudyIdToIndex[study.id]
             });
         });
-        
-        // Draw connections between nodes
-        timelineDrawConnections(linksLayer, nodes);
-        
-        // Draw nodes
-        timelineDrawNodes(nodesLayer, nodes);
-    }
+    });
+    
+    // Draw connections between nodes
+    timelineDrawConnections(linksLayer, nodes);
+    
+    // Draw nodes with color support
+    timelineDrawNodes(nodesLayer, nodes);
+}
     
     // Fixed function to draw connections for index-based matrices
     function timelineDrawConnections(layer, nodes) {
@@ -958,6 +1747,11 @@
     
     // Function to draw nodes with proper interaction and data attributes
     function timelineDrawNodes(layer, nodes) {
+        // Create defs element for patterns if not exists
+        if (timelineSvg.select("defs").empty()) {
+            timelineSvg.append("defs");
+        }
+        
         // Draw nodes
         const nodeElements = layer.selectAll("circle")
             .data(nodes)
@@ -967,18 +1761,27 @@
             .attr("r", TIMELINE_NODE_RADIUS)
             .attr("cx", d => d.x)
             .attr("cy", d => d.y)
-            .style("fill", "#B89491")
             .style("stroke", "#fff")
-            .style("stroke-width", 2);
+            .style("stroke-width", 2)
+            .each(function(d) {
+                // Apply either default color or pattern based on category
+                if (timelineCurrentColorScale) {
+                    createTimelinePatternFill(d3.select(this), d, TIMELINE_NODE_RADIUS);
+                } else {
+                    d3.select(this).style("fill", "#B89491");
+                }
+            });
         
-        // Add node interaction handlers
+        // Add existing node interaction handlers
         nodeElements
             .on("mouseover", function(event, d) {
-                // Highlight node
+                // Highlight node by increasing size but maintain color/pattern
                 d3.select(this)
-                    .attr("r", TIMELINE_NODE_RADIUS + 2)
-                    .style("fill", "#a37c79");
-                
+                    .attr("r", TIMELINE_NODE_RADIUS + 2);
+                    
+                // Don't change the fill color/pattern - just preserve what's already there
+                // If using patterns, they'll automatically scale with the new radius
+                    
                 // Highlight connections
                 timelineHighlightConnections(d.id);
                 
@@ -996,10 +1799,9 @@
                     .style("top", (event.pageY - 28) + "px");
             })
             .on("mouseout", function() {
-                // Reset node
+                // Reset node size but keep original fill
                 d3.select(this)
-                    .attr("r", TIMELINE_NODE_RADIUS)
-                    .style("fill", "#B89491");
+                    .attr("r", TIMELINE_NODE_RADIUS);
                 
                 // Reset connections highlight
                 timelineResetHighlight();
