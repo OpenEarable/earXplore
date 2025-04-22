@@ -302,6 +302,7 @@
     let timelineCitationIds = [];
     let timelineCoauthorIds = [];
     let timelineIdMapping = {};
+    let timelineColorScaleCache = {};
 
     // Debugging function to inspect matrices
     function debugMatrix(matrix, label) {
@@ -390,25 +391,41 @@
         document.getElementById('timelineColorCategory').addEventListener('change', function() {
             updateTimelineNodeColors();
         });
+
+        // Add this helper function at the top level of your IIFE
+        function throttled(delay, fn) {
+            let lastCall = 0;
+            return function(...args) {
+                const now = Date.now();
+                if (now - lastCall < delay) {
+                    return;
+                }
+                lastCall = now;
+                return fn(...args);
+            }
+        }
+
+        // Then modify the initialization section in document.addEventListener('DOMContentLoaded', ...)
+        // Add throttling to the timelineInitialize call:
+        const throttledInitialize = throttled(200, timelineInitialize);
         
-        // Initialize timeline when the timeline tab is selected
         document.querySelectorAll('.navbar-item').forEach(navItem => {
             navItem.addEventListener('click', function() {
                 if (this.getAttribute('data-section') === 'timeView') {
                     // Use setTimeout to ensure the DOM is fully ready
                     setTimeout(() => {
-                        timelineInitialize();
+                        throttledInitialize();
                         populateTimelineColorCategoryDropdown(); // Populate dropdown when timeline is shown
                     }, 300);
                 }
             });
         });
-        
-        // Handle window resize
+
+        // Also throttle the window resize handler
         window.addEventListener('resize', timelineDebounce(function() {
             const container = document.getElementById('timeline-graph-container');
             if (container && container.offsetParent !== null) {
-                timelineInitialize();
+                throttledInitialize();
             }
         }, 250));
         
@@ -701,9 +718,14 @@
         }
     }
 
-    // Function to generate a color scale for timeline
+    // And replace the generateTimelineColorScale function with:
     function generateTimelineColorScale(category) {
         try {
+            // Check cache first
+            if (timelineColorScaleCache[category]) {
+                return timelineColorScaleCache[category];
+            }
+            
             // Fields that should have parentheticals removed (from app.py)
             const parentheticalRemovalFields = [
                 'Interaction_PANEL_Accuracy of Interaction Recognition',
@@ -721,7 +743,6 @@
             const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
             
             // Collect unique values for the selected category
-            const allValues = [];
             const uniqueValues = new Set();
             
             // Go through all studies to collect unique values for this category
@@ -746,10 +767,8 @@
                             if (trimmed) {
                                 if (shouldRemoveParenthetical && trimmed.includes('(')) {
                                     const baseValue = trimmed.split('(')[0].trim();
-                                    allValues.push(baseValue);
                                     uniqueValues.add(baseValue);
                                 } else {
-                                    allValues.push(trimmed);
                                     uniqueValues.add(trimmed);
                                 }
                             }
@@ -757,10 +776,8 @@
                     } else {
                         if (shouldRemoveParenthetical && value.includes('(')) {
                             const baseValue = value.split('(')[0].trim();
-                            allValues.push(baseValue);
                             uniqueValues.add(baseValue);
                         } else {
-                            allValues.push(value);
                             uniqueValues.add(value);
                         }
                     }
@@ -797,7 +814,7 @@
                 return a.toLowerCase().localeCompare(b.toLowerCase());
             });
             
-            // Define the custom color palette
+            // Define the custom color palette - define once to avoid recreating
             const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
             
             // Create an extended palette by duplicating and brightening the colors
@@ -855,6 +872,9 @@
                         extendedPalette[i % extendedPalette.length]));
             }
             
+            // Cache the result
+            timelineColorScaleCache[category] = colorScale;
+            
             return colorScale;
             
         } catch (error) {
@@ -865,7 +885,8 @@
         }
     }
 
-    // Function to get node color based on selected category for timeline
+    let timelineNodeColorCache = new Map();
+
     function getTimelineNodeColor(node) {
         // If no category is selected, use default color
         if (!timelineCurrentColorScale) {
@@ -878,11 +899,22 @@
         if (!study || !study.details) return "#B89491";
         
         const category = document.getElementById('timelineColorCategory').value;
+        
+        // Create a cache key that includes node ID and category
+        const cacheKey = `${study.id}-${category}`;
+        
+        // Check if we have a cached result
+        if (timelineNodeColorCache.has(cacheKey)) {
+            return timelineNodeColorCache.get(cacheKey);
+        }
+        
         let rawValue = study.details[category];
         
         // If value is undefined, use default color
         if (rawValue === undefined || rawValue === null || rawValue === "") {
-            return "#cccccc"; // Light gray for missing values
+            const defaultColor = "#cccccc"; // Light gray for missing values
+            timelineNodeColorCache.set(cacheKey, defaultColor);
+            return defaultColor;
         }
         
         // Fields that should have parentheticals removed
@@ -908,7 +940,7 @@
             
             // If we have multiple values after splitting, return an array of colors
             if (values.length > 1) {
-                return values.map(val => {
+                const colorArray = values.map(val => {
                     // Process each value to remove parentheticals if needed
                     if (shouldRemoveParenthetical && val.includes('(')) {
                         // Get the cleaned value for the color lookup
@@ -917,6 +949,10 @@
                     }
                     return timelineCurrentColorScale(val);
                 });
+                
+                // Cache the result
+                timelineNodeColorCache.set(cacheKey, colorArray);
+                return colorArray;
             }
             
             // If only one value after splitting, use that single value
@@ -925,18 +961,26 @@
                 if (shouldRemoveParenthetical && value.includes('(')) {
                     value = value.split('(')[0].trim();
                 }
-                return timelineCurrentColorScale(value);
+                const color = timelineCurrentColorScale(value);
+                timelineNodeColorCache.set(cacheKey, color);
+                return color;
             }
         } else if (shouldRemoveParenthetical && typeof rawValue === 'string' && rawValue.includes('(')) {
             // Single value with parenthetical that needs removal
             const baseValue = rawValue.split('(')[0].trim();
             // Use the cleaned value for color scale lookup
-            return timelineCurrentColorScale(baseValue);
+            const color = timelineCurrentColorScale(baseValue);
+            timelineNodeColorCache.set(cacheKey, color);
+            return color;
         }
         
         // Single value - use the color scale to determine color
-        return timelineCurrentColorScale(rawValue);
+        const color = timelineCurrentColorScale(rawValue);
+        timelineNodeColorCache.set(cacheKey, color);
+        return color;
     }
+
+    const timelinePatternsCache = new Map();
 
     // Function to create a pattern fill for multi-value nodes in timeline
     function createTimelinePatternFill(nodeSelection, node, nodeRadius) {
@@ -948,53 +992,58 @@
             return;
         }
         
-        // For multi-value nodes, create a pie chart pattern
-        // Make sure pattern ID is URL-safe and unique
-        const patternId = `timeline-pattern-${node.id}-${Math.random().toString(36).substring(2, 10)}`.replace(/[^\w-]/g, '-');
+        // Create a predictable pattern ID based on the colors array
+        // Sort colors to ensure same combinations get the same pattern regardless of order
+        const sortedColors = [...colors].sort();
+        const colorHash = sortedColors.join('-');
+        const patternId = `timeline-pattern-${colorHash}`.replace(/[^\w-]/g, '-');
         
-        // Remove any existing patterns for this node
-        d3.selectAll(`pattern[id^="timeline-pattern-${node.id}-"]`).remove();
-        
-        // Create a pattern definition
-        const defs = timelineSvg.select("defs").empty() ? timelineSvg.append("defs") : timelineSvg.select("defs");
-        
-        // Create a pattern
-        const pattern = defs.append("pattern")
-            .attr("id", patternId)
-            .attr("width", 1)
-            .attr("height", 1)
-            .attr("patternUnits", "objectBoundingBox")
-            .attr("patternContentUnits", "objectBoundingBox");
-        
-        // Create a pie chart layout
-        const pie = d3.pie()
-            .value(() => 1)
-            .sort(null)
-            .padAngle(0.01);
+        // Check if we've already created this pattern in our cache
+        if (!timelinePatternsCache.has(colorHash)) {
+            // Create a pattern definition if it doesn't exist yet
+            const defs = timelineSvg.select("defs").empty() ? timelineSvg.append("defs") : timelineSvg.select("defs");
             
-        // Generate the pie segments data
-        const pieData = pie(colors);
-        
-        // Create an arc generator for the segments
-        const arc = d3.arc()
-            .innerRadius(0)
-            .outerRadius(0.5) // Use 0.5 since pattern coordinates are normalized (0-1)
-            .padAngle(0.01);
-        
-        // Add a group for the pie chart with proper centering
-        const pieGroup = pattern.append("g")
-            .attr("transform", "translate(0.5, 0.5)"); // Center in the pattern
+            // Create the pattern
+            const pattern = defs.append("pattern")
+                .attr("id", patternId)
+                .attr("width", 1)
+                .attr("height", 1)
+                .attr("patternUnits", "objectBoundingBox")
+                .attr("patternContentUnits", "objectBoundingBox");
             
-        // Add each segment to the pattern
-        pieData.forEach(segment => {
-            pieGroup.append("path")
-                .attr("d", arc(segment))
-                .style("fill", segment.data)
-                .style("stroke", "#fff")
-                .style("stroke-width", 0.02);
-        });
+            // Create a pie chart layout
+            const pie = d3.pie()
+                .value(() => 1)
+                .sort(null)
+                .padAngle(0.01);
+                
+            // Generate the pie segments data
+            const pieData = pie(colors);
+            
+            // Create an arc generator for the segments
+            const arc = d3.arc()
+                .innerRadius(0)
+                .outerRadius(0.5)
+                .padAngle(0.01);
+            
+            // Add a group for the pie chart with proper centering
+            const pieGroup = pattern.append("g")
+                .attr("transform", "translate(0.5, 0.5)");
+                
+            // Add each segment to the pattern
+            pieData.forEach(segment => {
+                pieGroup.append("path")
+                    .attr("d", arc(segment))
+                    .style("fill", segment.data)
+                    .style("stroke", "#fff")
+                    .style("stroke-width", 0.02);
+            });
+            
+            // Add to cache
+            timelinePatternsCache.set(colorHash, patternId);
+        }
         
-        // Apply the pattern to the node
+        // Apply the pattern to the node - use the pattern ID from cache or newly created
         nodeSelection.style("fill", `url(#${patternId})`);
     }
 
@@ -1172,6 +1221,9 @@
         try {
             const category = document.getElementById('timelineColorCategory').value;
             
+            // Clear node color cache when category changes
+            timelineNodeColorCache.clear();
+            
             // If no category selected, reset to default colors
             if (!category) {
                 timelineCurrentColorScale = null;
@@ -1184,26 +1236,18 @@
             // Generate a new color scale for the selected category
             timelineCurrentColorScale = generateTimelineColorScale(category);
             
-            // Clear any existing patterns before creating new ones
-            if (timelineSvg) {
-                timelineSvg.select("defs").html("");
-            }
-            
-            // Re-sort nodes within each year based on the new category
-            timelineRedrawWithColorSorting();
+            // Update node colors in-place without redrawing entire visualization
+            d3.selectAll(".timeline-node").each(function(d) {
+                if (!d) return; // Skip if no data
+                createTimelinePatternFill(d3.select(this), d, TIMELINE_NODE_RADIUS);
+            });
             
             // Create or update the color legend
             createTimelineColorLegend();
-            
+                
         } catch (error) {
             console.error("Error updating timeline node colors:", error);
         }
-    }
-
-    // Function to sort and redraw the timeline with color-based sorting within years
-    function timelineRedrawWithColorSorting() {
-        // Re-initialize the timeline visualization with sorted nodes
-        timelineInitialize();
     }
     
     function timelineInitialize() {
