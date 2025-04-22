@@ -781,25 +781,65 @@
             // Define the custom color palette
             const chartColorPalette = ['#d1615d', '#5778a4', '#6a9f58', '#e49444', '#85b6b2', '#e7ca60', '#a87c9f', '#f1a2a9', '#967662', '#b8b0ac'];
             
+            // Create an extended palette by duplicating and brightening the colors
+            const extendedPalette = [...chartColorPalette];
+            
+            // Add brightened versions of each color
+            chartColorPalette.forEach(color => {
+                // Parse the hex color
+                const rgb = d3.color(color);
+                
+                // Brighten the color by increasing lightness
+                rgb.opacity = 0.9;  // Make slightly transparent
+                const brighter = d3.color(rgb.brighter(0.7)); // Make brighter
+                
+                // Add the brightened color to our extended palette
+                extendedPalette.push(brighter.toString());
+            });
+            
+            // Add darker versions of each color (for options 21-30)
+            chartColorPalette.forEach(color => {
+                // Parse the hex color
+                const rgb = d3.color(color);
+                
+                // Darken the color
+                rgb.opacity = 1.0;  // Full opacity for darker colors
+                const darker = d3.color(rgb.darker(0.7)); // Make darker
+                
+                // Add the darkened color to our extended palette
+                extendedPalette.push(darker.toString());
+            });
+            
             // Generate a color scale based on the number of unique values
             let colorScale;
             
-            if (cleanedValues.length <= chartColorPalette.length) {
-                // Use custom color palette if we have enough colors
+            if (cleanedValues.length <= 10) {
+                // Use original color palette if we have 10 or fewer values
                 colorScale = d3.scaleOrdinal()
                     .domain(cleanedValues)
                     .range(chartColorPalette.slice(0, cleanedValues.length));
+            } else if (cleanedValues.length <= 20) {
+                // If 11-20 values, use the extended palette with bright colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(extendedPalette.slice(0, cleanedValues.length));
+            } else if (cleanedValues.length <= 30) {
+                // If 21-30 values, use the extended palette with all 30 colors
+                colorScale = d3.scaleOrdinal()
+                    .domain(cleanedValues)
+                    .range(extendedPalette.slice(0, cleanedValues.length));
             } else {
-                // If more values than colors, cycle through the palette
+                // If more than 30 values, cycle through the palette
                 colorScale = d3.scaleOrdinal()
                     .domain(cleanedValues)
                     .range(Array.from({ length: cleanedValues.length }, (_, i) => 
-                        chartColorPalette[i % chartColorPalette.length]));
+                        extendedPalette[i % extendedPalette.length]));
             }
             
             debug("Generated color scale for category", { 
                 category, 
-                uniqueValues: cleanedValues.length
+                uniqueValues: cleanedValues.length,
+                paletteSize: colorScale.range().length
             });
             
             return colorScale;
@@ -975,13 +1015,9 @@ function updateNodeColors() {
         // Clear any existing patterns before creating new ones
         svg.select("defs").html("");
         
-        // Update all nodes - instead of just setting style directly, use createPatternFill for each node
-        d3.selectAll(".node").each(function(d) {
-            // Get the current node radius before applying pattern
-            const nodeRadius = parseFloat(d3.select(this).attr("r")) || 8;
-            // Apply pattern fill to handle both single-color and multi-color nodes
-            createPatternFill(d3.select(this), d, nodeRadius);
-        });
+        // Re-sort and re-layout the entire visualization based on the new category
+        const threshold = parseFloat(document.getElementById('thresholdValue').textContent);
+        updateVisualization(threshold);
         
         // Create or update the color legend
         createColorLegend();
@@ -1063,6 +1099,177 @@ function updateNodeColors() {
             height,
             threshold 
         });
+    }
+
+    // Add this function to sort nodes based on the selected category
+    function sortNodesByCategory(nodes) {
+        const category = document.getElementById('similarityColorCategory').value;
+        
+        // If no category is selected, return original order (by ID)
+        if (!category || !currentColorScale) {
+            return nodes;
+        }
+        
+        // Fields that should have parentheticals removed
+        const parentheticalRemovalFields = [
+            'Interaction_PANEL_Accuracy of Interaction Recognition',
+            'Interaction_PANEL_Robustness of Interaction Detection',
+            'Study_PANEL_Elicitation Study',
+            'Study_PANEL_Usability Evaluations',
+            'Study_PANEL_Cognitive Ease Evaluations',
+            'Study_PANEL_Discreetness of Interactions Evaluations',
+            'Study_PANEL_Social Acceptability of Interactions Evaluations',
+            'Study_PANEL_Accuracy of Interactions Evaluations',
+            'Study_PANEL_Alternative Interaction Validity Evaluations'
+        ];
+        
+        // Should we remove parentheticals for this category?
+        const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+        
+        // Get the unique values in the order they appear in the legend
+        const legendValues = [];
+        const valueSet = new Set();
+        
+        // Collect unique individual values for the selected category
+        for (const studyId in studyDetailsCache) {
+            const study = studyDetailsCache[studyId];
+            if (!study || typeof study !== 'object') continue;
+            
+            let value = study[category];
+            if (value === undefined || value === null) continue;
+            
+            value = String(value).trim();
+            if (!value) continue;
+            
+            // Handle comma-separated values
+            if (value.includes(',')) {
+                value.split(',').forEach(v => {
+                    const trimmed = v.trim();
+                    if (trimmed) {
+                        if (shouldRemoveParenthetical && trimmed.includes('(')) {
+                            const baseValue = trimmed.split('(')[0].trim();
+                            if (!valueSet.has(baseValue)) {
+                                valueSet.add(baseValue);
+                                legendValues.push(baseValue);
+                            }
+                        } else {
+                            if (!valueSet.has(trimmed)) {
+                                valueSet.add(trimmed);
+                                legendValues.push(trimmed);
+                            }
+                        }
+                    }
+                });
+            } else {
+                if (shouldRemoveParenthetical && value.includes('(')) {
+                    const baseValue = value.split('(')[0].trim();
+                    if (!valueSet.has(baseValue)) {
+                        valueSet.add(baseValue);
+                        legendValues.push(baseValue);
+                    }
+                } else {
+                    if (!valueSet.has(value)) {
+                        valueSet.add(value);
+                        legendValues.push(value);
+                    }
+                }
+            }
+        }
+        
+        // Sort legend values according to the same logic used in the legend
+        const specialOrders = {
+            'Yes': 1, 'Partly': 2, 'No': 3, 
+            'Low': 1, 'Medium': 2, 'High': 3, 
+            'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+            'Yes (Performance Loss)': 2, 'Visual Attention': 2
+        };
+        
+        legendValues.sort((a, b) => {
+            // Check if this is the Number of Selected Gestures field
+            if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                // Parse as numbers for numeric comparison
+                return parseFloat(a) - parseFloat(b);
+            }
+            
+            // Use special order for specific values
+            const orderA = specialOrders[a] || 0;
+            const orderB = specialOrders[b] || 0;
+            
+            // First sort by special order
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            
+            // Then sort alphabetically
+            return a.toLowerCase().localeCompare(b.toLowerCase());
+        });
+        
+        // Create a function to get the value(s) for a node
+        function getNodeValues(node) {
+            const study = studyDetailsCache[node.id];
+            if (!study) return [];
+            
+            let rawValue = study[category];
+            if (rawValue === undefined || rawValue === null || rawValue === "") {
+                return [];
+            }
+            
+            rawValue = String(rawValue).trim();
+            
+            let values = [];
+            if (rawValue.includes(',')) {
+                values = rawValue.split(',')
+                    .map(v => v.trim())
+                    .filter(v => v)
+                    .map(v => {
+                        if (shouldRemoveParenthetical && v.includes('(')) {
+                            return v.split('(')[0].trim();
+                        }
+                        return v;
+                    });
+            } else {
+                if (shouldRemoveParenthetical && rawValue.includes('(')) {
+                    values.push(rawValue.split('(')[0].trim());
+                } else {
+                    values.push(rawValue);
+                }
+            }
+            
+            return values;
+        }
+        
+        // Copy nodes to avoid modifying the original array
+        const sortedNodes = [...nodes];
+        
+        // Sort nodes by:
+        // 1. Number of values (ascending)
+        // 2. First value's position in legend
+        // 3. Second value's position in legend (if any)
+        // Etc.
+        sortedNodes.sort((a, b) => {
+            const valuesA = getNodeValues(a);
+            const valuesB = getNodeValues(b);
+            
+            // First sort by number of values
+            if (valuesA.length !== valuesB.length) {
+                return valuesA.length - valuesB.length;
+            }
+            
+            // Sort by values in order
+            for (let i = 0; i < Math.min(valuesA.length, valuesB.length); i++) {
+                const indexA = legendValues.indexOf(valuesA[i]);
+                const indexB = legendValues.indexOf(valuesB[i]);
+                
+                if (indexA !== indexB) {
+                    return indexA - indexB;
+                }
+            }
+            
+            // Default to ID sort if everything else is equal
+            return a.id.localeCompare(b.id);
+        });
+        
+        return sortedNodes;
     }
     
     // Generate graph data from the similarity matrix
@@ -1148,12 +1355,33 @@ function updateVisualization(threshold) {
         svg.select("defs").html("");
         
         // Generate graph data
-        const graphData = generateGraphData(threshold);
+        let graphData = generateGraphData(threshold);
         
         if (graphData.nodes.length === 0) {
             showStatus("No nodes available to visualize.", true);
             return;
         }
+        
+        // Sort nodes by selected category before layout
+        graphData.nodes = sortNodesByCategory(graphData.nodes);
+        
+        // Update links to use the new node indices after sorting
+        const nodeIdToIndex = {};
+        graphData.nodes.forEach((node, index) => {
+            nodeIdToIndex[node.id] = index;
+            // Update the index property to match its new position
+            node.index = index;
+        });
+        
+        // Update link source and target indices
+        graphData.links.forEach(link => {
+            const sourceId = studyIds[link.source];
+            const targetId = studyIds[link.target];
+            link.source = nodeIdToIndex[sourceId];
+            link.target = nodeIdToIndex[targetId];
+        });
+        
+        // Rest of the function remains the same...
         
         // Clear previous visualization
         d3.select(".viz-layer").html("");
