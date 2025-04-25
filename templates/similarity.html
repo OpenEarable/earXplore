@@ -147,10 +147,45 @@
         bottom: -5px; /* Adjust this value as needed to move the tooltip further down */
     }
 
+    /* Add to your existing styles */
+    .similarity-type-container {
+        margin-bottom: 20px;
+    }
+    
+    .btn-check:checked + .btn-outline-secondary {
+        background-color: #B89491;
+        border-color: #B89491;
+        color: white;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: rgba(184, 148, 145, 0.2);
+        border-color: #B89491;
+        color: #B89491;
+    }
+    
+    .btn-group .btn {
+        min-width: 150px;
+    }
+
 </style>
 
 <div id="similarityContainer">
-    <div class="controls">
+        <div class="controls">
+                <!-- Add similarity type toggle at the top -->
+        <div class="similarity-type-container mb-3">
+            <label style="margin-bottom: 12px; display: block;">
+                <strong>Similarity Type:</strong>
+            </label>
+            <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="similarityType" id="databaseSimilarity" value="database" checked>
+                <label class="btn btn-outline-secondary" for="databaseSimilarity">Database Similarity</label>
+                
+                <input type="radio" class="btn-check" name="similarityType" id="abstractSimilarity" value="abstract">
+                <label class="btn btn-outline-secondary" for="abstractSimilarity">Abstract Similarity</label>
+            </div>
+        </div>
+
         <div class="slider-container">
             <label for="thresholdSlider" style="margin-bottom: 12px; display: block;">
                 <strong>Similarity Threshold (σ):</strong> <span id="thresholdValue" style="font-weight: bold; color: #B89491;">1.00</span>
@@ -201,10 +236,17 @@
     let tooltip;
     let studyIds = [];
     let similarityMatrix = [];
-    let originalStudyIds = []; // To store the original study IDs
-    let originalSimilarityMatrix = []; // To store the original similarity matrix
-    let currentColorScale = null; // To store the current color scale
-    let studyDetailsCache = {}; // To store study details
+    let originalStudyIds = []; 
+    let originalSimilarityMatrix = []; 
+    let currentColorScale = null;
+    let studyDetailsCache = {};
+
+    // Add new variables for dual similarity support
+    let currentSimilarityType = 'database'; // Default to abstract similarity
+    let abstractStudyIds = [];
+    let abstractSimilarityMatrix = [];
+    let databaseStudyIds = [];
+    let databaseSimilarityMatrix = [];
     
     // Helper function for debugging
     function debug(message, obj = null) {
@@ -225,39 +267,51 @@
             
             debug("Raw similarity data received", rawData);
             
+            // Process abstract similarity data
             if (!rawData || !rawData.abstract_study_ids || rawData.abstract_study_ids.length === 0) {
-                showStatus("No similarity data available. Please check if the data file exists and is properly formatted.", true);
-                return false;
+                debug("No abstract similarity data available");
+                abstractStudyIds = [];
+                abstractSimilarityMatrix = [];
+            } else {
+                abstractStudyIds = rawData.abstract_study_ids;
+                abstractSimilarityMatrix = rawData.abstract_matrix || [];
+                debug("Processed abstract similarity matrix", { rows: abstractSimilarityMatrix.length });
             }
             
-            // Extract study IDs from the provided data, now with abstract_ prefix
-            studyIds = rawData.abstract_study_ids;
-            // Cache original study IDs
-            originalStudyIds = [...studyIds];
+            // Process database similarity data
+            if (!rawData || !rawData.database_study_ids || rawData.database_study_ids.length === 0) {
+                debug("No database similarity data available");
+                databaseStudyIds = [];
+                databaseSimilarityMatrix = [];
+            } else {
+                databaseStudyIds = rawData.database_study_ids;
+                databaseSimilarityMatrix = rawData.database_matrix || [];
+                debug("Processed database similarity matrix", { rows: databaseSimilarityMatrix.length });
+            }
             
             // Store study details for tooltips if available
             studyDetailsCache = rawData.study_details || {};
             
-            debug("Extracted study IDs", { count: studyIds.length, first: studyIds[0], last: studyIds[studyIds.length-1] });
+            // Set the active similarity based on the current selection
+            setActiveSimilarityType(currentSimilarityType);
             
-            if (studyIds.length === 0) {
-                showStatus("No study IDs found in the similarity data.", true);
+            // Check if we have any data available
+            if ((abstractStudyIds.length === 0 && databaseStudyIds.length === 0) ||
+                (abstractSimilarityMatrix.length === 0 && databaseSimilarityMatrix.length === 0)) {
+                showStatus("No similarity data available. Please check if the data files exist and are properly formatted.", true);
                 return false;
             }
             
-            // Process the similarity matrix, now with abstract_ prefix
-            similarityMatrix = rawData.abstract_matrix || [];
-            // Cache original similarity matrix (deep copy)
-            originalSimilarityMatrix = similarityMatrix.map(row => [...row]);
-            
-            debug("Processed similarity matrix", { rows: similarityMatrix.length });
-            
-            if (similarityMatrix.length === 0) {
-                showStatus("Could not process similarity data. Matrix is empty.", true);
-                return false;
+            // If the current type has no data but the other type does, switch to the other type
+            if (currentSimilarityType === 'database' && databaseStudyIds.length === 0 && abstractStudyIds.length > 0) {
+                setActiveSimilarityType('abstract');
+                document.getElementById('abstractSimilarity').checked = true;
+            } else if (currentSimilarityType === 'abstract' && abstractStudyIds.length === 0 && databaseStudyIds.length > 0) {
+                setActiveSimilarityType('database');
+                document.getElementById('databaseSimilarity').checked = true;
             }
             
-            return true;
+            return studyIds.length > 0 && similarityMatrix.length > 0;
         } catch (error) {
             console.error("Error processing similarity data:", error);
             debug("Error processing similarity data", error.toString());
@@ -293,6 +347,15 @@
         if (!processSimilarityData()) {
             return; // Exit if data processing failed
         }
+
+        document.querySelectorAll('input[name="similarityType"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    setActiveSimilarityType(this.value);
+                    initializeVisualization(); // Re-initialize the visualization with new data
+                }
+            });
+        });
 
         // Populate the color category dropdown
         populateColorCategoryDropdown();
@@ -395,6 +458,33 @@
             }
         });
     });
+
+    function setActiveSimilarityType(type) {
+        currentSimilarityType = type;
+        
+        if (type === 'abstract') {
+            // Set abstract similarity as active
+            studyIds = [...abstractStudyIds];
+            similarityMatrix = abstractSimilarityMatrix.map(row => [...row]);
+            // Update tooltip text
+            document.querySelector('.bi-question-circle-fill').title = "This visualization shows semantic similarity between paper abstracts. Similarities were calculated using Google Gemini embeddings with cosine similarity and then z-standardized.";
+        } else {
+            // Set database similarity as active
+            studyIds = [...databaseStudyIds];
+            similarityMatrix = databaseSimilarityMatrix.map(row => [...row]);
+            // Update tooltip text
+            document.querySelector('.bi-question-circle-fill').title = "This visualization shows similarity between studies based on features extracted from the database. Features were normalized and similarity was calculated based on their values.";
+        }
+        
+        // Cache the current values as original values for filtering purposes
+        originalStudyIds = [...studyIds];
+        originalSimilarityMatrix = similarityMatrix.map(row => [...row]);
+        
+        debug(`Active similarity type set to ${type}`, { 
+            studyCount: studyIds.length, 
+            matrixRows: similarityMatrix.length 
+        });
+    }
 
     // Modified function to create a color legend without parenthetical content for specific fields
     function createColorLegend() {
@@ -2200,11 +2290,11 @@ function addInfoIconClickHandlers() {
                 csvContent += "\n";
             });
             
-            // Create download link
+            // Create download link with appropriate filename based on type
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "abstract_similarity_matrix.csv");
+            link.setAttribute("download", `${currentSimilarityType}_similarity_matrix.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -2220,9 +2310,14 @@ function addInfoIconClickHandlers() {
     // Filter visualization based on filtered data from main interface
     function filterSimilarityVisualization(filteredData) {
         try {
-            // First, reset to original data
-            studyIds = [...originalStudyIds];
-            similarityMatrix = originalSimilarityMatrix.map(row => [...row]);
+            // First, reset to original data based on the current similarity type
+            if (currentSimilarityType === 'abstract') {
+                studyIds = [...abstractStudyIds];
+                similarityMatrix = abstractSimilarityMatrix.map(row => [...row]);
+            } else {
+                studyIds = [...databaseStudyIds];
+                similarityMatrix = databaseSimilarityMatrix.map(row => [...row]);
+            }
             
             // Handle empty filtered data - just clear the visualization
             if (!filteredData || filteredData.length === 0) {
