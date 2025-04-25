@@ -225,13 +225,13 @@
             
             debug("Raw similarity data received", rawData);
             
-            if (!rawData || !rawData.study_ids || rawData.study_ids.length === 0) {
+            if (!rawData || !rawData.abstract_study_ids || rawData.abstract_study_ids.length === 0) {
                 showStatus("No similarity data available. Please check if the data file exists and is properly formatted.", true);
                 return false;
             }
             
-            // Extract study IDs from the provided data
-            studyIds = rawData.study_ids;
+            // Extract study IDs from the provided data, now with abstract_ prefix
+            studyIds = rawData.abstract_study_ids;
             // Cache original study IDs
             originalStudyIds = [...studyIds];
             
@@ -245,8 +245,8 @@
                 return false;
             }
             
-            // Process the similarity matrix
-            similarityMatrix = rawData.matrix || [];
+            // Process the similarity matrix, now with abstract_ prefix
+            similarityMatrix = rawData.abstract_matrix || [];
             // Cache original similarity matrix (deep copy)
             originalSimilarityMatrix = similarityMatrix.map(row => [...row]);
             
@@ -2204,7 +2204,7 @@ function addInfoIconClickHandlers() {
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "similarity_matrix.csv");
+            link.setAttribute("download", "abstract_similarity_matrix.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

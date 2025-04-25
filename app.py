@@ -52,13 +52,19 @@ def index():
     # Load similarity data
     try:
         # Read the similarity matrix with the first column as index
-        similarity_df = pd.read_csv("abstract_similarity_datasets/normalized_similarity.csv", index_col=0)
+        abstract_similarity_df = pd.read_csv("abstract_similarity_datasets/normalized_abstract_similarity.csv", index_col=0)
+        database_similarity_df = pd.read_csv("database_similarity_datasets/normalized_database_similarity.csv", index_col=0)
+
         
         # Prepare data structure that preserves row/column information
         similarity_data = {
-            'study_ids': similarity_df.columns.tolist(),
-            'matrix': similarity_df.values.tolist(),
-            'index_ids': similarity_df.index.tolist()
+            'abstract_study_ids': abstract_similarity_df.columns.tolist(),
+            'abstract_index_ids': abstract_similarity_df.index.tolist(),
+            'abstract_matrix': abstract_similarity_df.values.tolist(),
+
+            'database_study_ids': database_similarity_df.columns.tolist(),
+            'database_index_ids': database_similarity_df.index.tolist(),
+            'database_matrix': database_similarity_df.values.tolist(),
         }
         
         # Also prepare a mapping of study IDs to their metadata for tooltips
@@ -94,7 +100,7 @@ def index():
                     continue
             similarity_data['study_details'] = study_dict
     except Exception as e:
-        similarity_data = {'study_ids': [], 'matrix': [], 'index_ids': [], 'study_details': {}}
+        similarity_data = {'abstract_study_ids': [], 'abstract_matrix': [], 'abstract_index_ids': [], 'database_study_ids': [], 'database_matrix': [], 'database_index_ids': [], 'study_details': {}}
         print(f"Error loading similarity data: {e}")
 
     # Load citation and co-author matrices for timeline view
