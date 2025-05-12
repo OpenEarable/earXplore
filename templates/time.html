@@ -1294,245 +1294,266 @@
     }
     
     function timelineDrawLines(nodesLayer, linksLayer) {
-    // Get sorted years
-    const years = Object.keys(timelineYearGroups).sort((a, b) => parseInt(a) - parseInt(b));
-    
-    // Create scale for year positions
-    const yearScale = d3.scalePoint()
-        .domain(years)
-        .range([TIMELINE_PADDING, timelineWidth - TIMELINE_PADDING])
-        .padding(0.5);
-    
-    // Draw main timeline axis
-    const timelineAxisY = timelineHeight * 0.7; // Position line at 70% of height
-    
-    timelineSvg.append("line")
-        .attr("class", "timeline-axis")
-        .attr("x1", TIMELINE_PADDING)
-        .attr("y1", timelineAxisY)
-        .attr("x2", timelineWidth - TIMELINE_PADDING)
-        .attr("y2", timelineAxisY);
-    
-    // Draw year ticks and labels
-    years.forEach(year => {
-        const x = yearScale(year);
+        // Get sorted years
+        const years = Object.keys(timelineYearGroups).sort((a, b) => parseInt(a) - parseInt(b));
         
-        // Draw tick
+        // Create scale for year positions
+        const yearScale = d3.scalePoint()
+            .domain(years)
+            .range([TIMELINE_PADDING, timelineWidth - TIMELINE_PADDING])
+            .padding(0.5);
+        
+        // Draw main timeline axis
+        const timelineAxisY = timelineHeight * 0.7; // Position line at 70% of height
+        
         timelineSvg.append("line")
-            .attr("class", "timeline-tick")
-            .attr("x1", x)
-            .attr("y1", timelineAxisY - 10)
-            .attr("x2", x)
-            .attr("y2", timelineAxisY + 10);
+            .attr("class", "timeline-axis")
+            .attr("x1", TIMELINE_PADDING)
+            .attr("y1", timelineAxisY)
+            .attr("x2", timelineWidth - TIMELINE_PADDING)
+            .attr("y2", timelineAxisY);
         
-        // Draw year label
-        timelineSvg.append("text")
-            .attr("class", "timeline-label")
-            .attr("x", x)
-            .attr("y", timelineAxisY + 30)
-            .attr("text-anchor", "middle")
-            .text(year);
-    });
-    
-    // Position all nodes
-    const nodes = [];
-    
-    // Check if color category is selected
-    const category = document.getElementById('timelineColorCategory')?.value;
-    
-    // Helper function to get the proper category value for sorting
-    function getCategoryValue(study, category) {
-        if (!study || !study.details) return "";
-        
-        // Fields that should have parentheticals removed
-        const parentheticalRemovalFields = [
-            'Interaction_PANEL_Accuracy of Interaction Recognition',
-            'Interaction_PANEL_Robustness of Interaction Detection',
-            'Study_PANEL_Elicitation Study',
-            'Study_PANEL_Usability Evaluations',
-            'Study_PANEL_Cognitive Ease Evaluations',
-            'Study_PANEL_Discreetness of Interactions Evaluations',
-            'Study_PANEL_Social Acceptability of Interactions Evaluations',
-            'Study_PANEL_Accuracy of Interactions Evaluations',
-            'Study_PANEL_Alternative Interaction Validity Evaluations'
-        ];
-        
-        // Should we remove parentheticals for this category?
-        const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
-        
-        // Get the raw value for this category
-        let value = study.details[category];
-        if (value === undefined || value === null || value === "") return "";
-        
-        // Convert to string and trim
-        value = String(value).trim();
-        
-        // For multi-values, take the first one for sorting
-        if (value.includes(',')) {
-            const firstValue = value.split(',')[0].trim();
+        // Draw year ticks and labels
+        years.forEach(year => {
+            const x = yearScale(year);
             
-            // Handle parenthetical removal if needed
-            if (shouldRemoveParenthetical && firstValue.includes('(')) {
-                return firstValue.split('(')[0].trim();
-            }
-            return firstValue;
-        }
-        
-        // Handle parenthetical removal for single values
-        if (shouldRemoveParenthetical && value.includes('(')) {
-            return value.split('(')[0].trim();
-        }
-        
-        return value;
-    }
-    
-    // Process each year
-    years.forEach(year => {
-        const x = yearScale(year);
-        let studies = timelineYearGroups[year];
-        
-        // Sort studies within this year by the selected category if applicable
-        if (category && timelineCurrentColorScale) {
-            // Define special ordering for certain values
-            const specialOrders = {
-                'Yes': 1, 'Partly': 2, 'No': 3, 
-                'Low': 1, 'Medium': 2, 'High': 3, 
-                'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
-                'Yes (Performance Loss)': 2, 'Visual Attention': 2
-            };
+            // Draw tick
+            timelineSvg.append("line")
+                .attr("class", "timeline-tick")
+                .attr("x1", x)
+                .attr("y1", timelineAxisY - 10)
+                .attr("x2", x)
+                .attr("y2", timelineAxisY + 10);
             
-            // Helper function to get array of category values for a study
-            function getStudyCategoryValues(study, category) {
-                if (!study || !study.details) return [];
+            // Draw year label
+            timelineSvg.append("text")
+                .attr("class", "timeline-label")
+                .attr("x", x)
+                .attr("y", timelineAxisY + 30)
+                .attr("text-anchor", "middle")
+                .text(year);
+        });
+        
+        // Position all nodes
+        const nodes = [];
+        
+        // Check if color category is selected
+        const category = document.getElementById('timelineColorCategory')?.value;
+        
+        // Helper function to get the proper category value for sorting
+        function getCategoryValue(study, category) {
+            if (!study || !study.details) return "";
+            
+            // Fields that should have parentheticals removed
+            const parentheticalRemovalFields = [
+                'Interaction_PANEL_Accuracy of Interaction Recognition',
+                'Interaction_PANEL_Robustness of Interaction Detection',
+                'Study_PANEL_Elicitation Study',
+                'Study_PANEL_Usability Evaluations',
+                'Study_PANEL_Cognitive Ease Evaluations',
+                'Study_PANEL_Discreetness of Interactions Evaluations',
+                'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                'Study_PANEL_Accuracy of Interactions Evaluations',
+                'Study_PANEL_Alternative Interaction Validity Evaluations'
+            ];
+            
+            // Should we remove parentheticals for this category?
+            const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+            
+            // Get the raw value for this category
+            let value = study.details[category];
+            if (value === undefined || value === null || value === "") return "";
+            
+            // Convert to string and trim
+            value = String(value).trim();
+            
+            // For multi-values, take the first one for sorting
+            if (value.includes(',')) {
+                const firstValue = value.split(',')[0].trim();
                 
-                // Fields that should have parentheticals removed
-                const parentheticalRemovalFields = [
-                    'Interaction_PANEL_Accuracy of Interaction Recognition',
-                    'Interaction_PANEL_Robustness of Interaction Detection',
-                    'Study_PANEL_Elicitation Study',
-                    'Study_PANEL_Usability Evaluations',
-                    'Study_PANEL_Cognitive Ease Evaluations',
-                    'Study_PANEL_Discreetness of Interactions Evaluations',
-                    'Study_PANEL_Social Acceptability of Interactions Evaluations',
-                    'Study_PANEL_Accuracy of Interactions Evaluations',
-                    'Study_PANEL_Alternative Interaction Validity Evaluations'
-                ];
-                
-                // Should we remove parentheticals for this category?
-                const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
-                
-                // Get the raw value for this category
-                let value = study.details[category];
-                if (value === undefined || value === null || value === "") return [];
-                
-                // Convert to string and trim
-                value = String(value).trim();
-                
-                // Extract values
-                let values = [];
-                if (value.includes(',')) {
-                    values = value.split(',')
-                        .map(v => v.trim())
-                        .filter(v => v);
-                } else {
-                    values = [value];
+                // Handle parenthetical removal if needed
+                if (shouldRemoveParenthetical && firstValue.includes('(')) {
+                    return firstValue.split('(')[0].trim();
                 }
-                
-                // Clean values if needed (remove parentheticals)
-                if (shouldRemoveParenthetical) {
-                    values = values.map(v => {
-                        if (v.includes('(')) {
-                            return v.split('(')[0].trim();
-                        }
-                        return v;
-                    });
-                }
-                
-                return values;
+                return firstValue;
             }
             
-            // Clone the array before sorting to avoid modifying the original
-            studies = [...studies].sort((a, b) => {
-                // Get all values for the category (may be multiple for each study)
-                const valuesA = getStudyCategoryValues(a, category);
-                const valuesB = getStudyCategoryValues(b, category);
-                
-                // First, sort by number of different values (fewer values first)
-                if (valuesA.length !== valuesB.length) {
-                    return valuesA.length - valuesB.length;
-                }
-                
-                // For the same number of values, sort by the values themselves
-                // Check if this is the Number of Selected Gestures field
-                if (category === "Interaction_PANEL_Number of Selected Gestures") {
-                    // Sort numeric values
-                    const numA = parseFloat(valuesA[0]);
-                    const numB = parseFloat(valuesB[0]);
-                    
-                    if (!isNaN(numA) && !isNaN(numB)) {
-                        return numA - numB;
-                    }
-                }
-                
-                // For non-numeric values, use our special ordering if applicable
-                // Compare first values
-                if (valuesA.length > 0 && valuesB.length > 0) {
-                    const orderA = specialOrders[valuesA[0]] || 0;
-                    const orderB = specialOrders[valuesB[0]] || 0;
-                    
-                    if (orderA !== orderB) {
-                        return orderA - orderB;
-                    }
-                    
-                    // If special ordering doesn't distinguish, compare alphabetically
-                    const compareResult = valuesA[0].localeCompare(valuesB[0]);
-                    if (compareResult !== 0) {
-                        return compareResult;
-                    }
-                    
-                    // If first values are the same, compare second values if they exist
-                    if (valuesA.length > 1 && valuesB.length > 1) {
-                        const orderA2 = specialOrders[valuesA[1]] || 0;
-                        const orderB2 = specialOrders[valuesB[1]] || 0;
-                        
-                        if (orderA2 !== orderB2) {
-                            return orderA2 - orderB2;
-                        }
-                        
-                        // Compare second values alphabetically
-                        return valuesA[1].localeCompare(valuesB[1]);
-                    }
-                }
-                
-                // Fall back to ID for stable sort
-                return a.id.localeCompare(b.id);
-            });
+            // Handle parenthetical removal for single values
+            if (shouldRemoveParenthetical && value.includes('(')) {
+                return value.split('(')[0].trim();
+            }
             
-            console.log(`Sorted ${studies.length} studies for year ${year} by category ${category}`);
+            return value;
         }
         
-        // Stack nodes vertically above the line
-        studies.forEach((study, i) => {
-            // Start stacking ABOVE the timeline
-            const y = timelineAxisY - (i + 1) * TIMELINE_NODE_SPACING;
+        // Process each year
+        years.forEach(year => {
+            const x = yearScale(year);
+            let studies = timelineYearGroups[year];
             
-            // Add node data with index for matrix lookups
-            nodes.push({
-                id: study.id,
-                study: study,
-                x: x,
-                y: y,
-                index: timelineStudyIdToIndex[study.id]
+            // Sort studies within this year by the selected category if applicable
+            if (category && timelineCurrentColorScale) {
+                // Define special ordering for certain values
+                const specialOrders = {
+                    'Yes': 1, 'Partly': 2, 'No': 3, 
+                    'Low': 1, 'Medium': 2, 'High': 3, 
+                    'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 
+                    'Yes (Performance Loss)': 2, 'Visual Attention': 2
+                };
+                
+                // Helper function to get array of category values for a study
+                function getStudyCategoryValues(study, category) {
+                    if (!study || !study.details) return [];
+                    
+                    // Fields that should have parentheticals removed
+                    const parentheticalRemovalFields = [
+                        'Interaction_PANEL_Accuracy of Interaction Recognition',
+                        'Interaction_PANEL_Robustness of Interaction Detection',
+                        'Study_PANEL_Elicitation Study',
+                        'Study_PANEL_Usability Evaluations',
+                        'Study_PANEL_Cognitive Ease Evaluations',
+                        'Study_PANEL_Discreetness of Interactions Evaluations',
+                        'Study_PANEL_Social Acceptability of Interactions Evaluations',
+                        'Study_PANEL_Accuracy of Interactions Evaluations',
+                        'Study_PANEL_Alternative Interaction Validity Evaluations'
+                    ];
+                    
+                    // Should we remove parentheticals for this category?
+                    const shouldRemoveParenthetical = parentheticalRemovalFields.includes(category);
+                    
+                    // Get the raw value for this category
+                    let value = study.details[category];
+                    if (value === undefined || value === null || value === "") return [];
+                    
+                    // Convert to string and trim
+                    value = String(value).trim();
+                    
+                    // Extract values
+                    let values = [];
+                    if (value.includes(',')) {
+                        values = value.split(',')
+                            .map(v => v.trim())
+                            .filter(v => v);
+                    } else {
+                        values = [value];
+                    }
+                    
+                    // Clean values if needed (remove parentheticals)
+                    if (shouldRemoveParenthetical) {
+                        values = values.map(v => {
+                            if (v.includes('(')) {
+                                return v.split('(')[0].trim();
+                            }
+                            return v;
+                        });
+                    }
+                    
+                    return values;
+                }
+                
+                // Clone the array before sorting to avoid modifying the original
+                studies = [...studies].sort((a, b) => {
+                    // Get all values for the category (may be multiple for each study)
+                    const valuesA = getStudyCategoryValues(a, category);
+                    const valuesB = getStudyCategoryValues(b, category);
+                    
+                    // First, sort by number of different values (fewer values first)
+                    if (valuesA.length !== valuesB.length) {
+                        return valuesA.length - valuesB.length;
+                    }
+                    
+                    // For the same number of values, sort by the values themselves
+                    // Check if this is the Number of Selected Gestures field
+                    if (category === "Interaction_PANEL_Number of Selected Gestures") {
+                        // Sort numeric values
+                        const numA = parseFloat(valuesA[0]);
+                        const numB = parseFloat(valuesB[0]);
+                        
+                        if (!isNaN(numA) && !isNaN(numB)) {
+                            return numA - numB;
+                        }
+                    }
+                    
+                    // For non-numeric values, use our special ordering if applicable
+                    // Compare first values
+                    if (valuesA.length > 0 && valuesB.length > 0) {
+                        const orderA = specialOrders[valuesA[0]] || 0;
+                        const orderB = specialOrders[valuesB[0]] || 0;
+                        
+                        if (orderA !== orderB) {
+                            return orderA - orderB;
+                        }
+                        
+                        // If special ordering doesn't distinguish, compare alphabetically
+                        const compareResult = valuesA[0].localeCompare(valuesB[0]);
+                        if (compareResult !== 0) {
+                            return compareResult;
+                        }
+                        
+                        // If first values are the same, compare second values if they exist
+                        if (valuesA.length > 1 && valuesB.length > 1) {
+                            const orderA2 = specialOrders[valuesA[1]] || 0;
+                            const orderB2 = specialOrders[valuesB[1]] || 0;
+                            
+                            if (orderA2 !== orderB2) {
+                                return orderA2 - orderB2;
+                            }
+                            
+                            // Compare second values alphabetically
+                            return valuesA[1].localeCompare(valuesB[1]);
+                        }
+                    }
+                    
+                    // Fall back to ID for stable sort
+                    return a.id.localeCompare(b.id);
+                });
+            }
+            
+            // Check if we need multiple columns for this year
+            const MAX_NODES_PER_COLUMN = 15;
+            const useMultiColumn = studies.length > MAX_NODES_PER_COLUMN;
+            const columnWidth = 20; // Width between columns in pixels
+            
+            // Stack nodes vertically above the line
+            studies.forEach((study, i) => {
+                let xPos = x;
+                let rowIndex = i;
+                
+                // If using multiple columns
+                if (useMultiColumn) {
+                    // Determine which column this study belongs to
+                    const columnIndex = Math.floor(i / MAX_NODES_PER_COLUMN);
+                    rowIndex = i % MAX_NODES_PER_COLUMN;
+                    
+                    // Adjust x position based on column
+                    // For odd columns, go right; for even columns, go left
+                    const offset = columnIndex % 2 === 0 ? 
+                        columnWidth * Math.ceil(columnIndex / 2) * -1 : 
+                        columnWidth * Math.ceil(columnIndex / 2);
+                    
+                    xPos = x + offset;
+                }
+                
+                // Calculate y position - start stacking ABOVE the timeline
+                const y = timelineAxisY - (rowIndex + 1) * TIMELINE_NODE_SPACING;
+                
+                // Add node data with index for matrix lookups
+                nodes.push({
+                    id: study.id,
+                    study: study,
+                    x: xPos,
+                    y: y,
+                    index: timelineStudyIdToIndex[study.id]
+                });
             });
         });
-    });
-    
-    // Draw connections between nodes
-    timelineDrawConnections(linksLayer, nodes);
-    
-    // Draw nodes with color support
-    timelineDrawNodes(nodesLayer, nodes);
-}
+        
+        // Draw connections between nodes
+        timelineDrawConnections(linksLayer, nodes);
+        
+        // Draw nodes with color support
+        timelineDrawNodes(nodesLayer, nodes);
+    }
     
     // Fixed function to draw connections for index-based matrices
     function timelineDrawConnections(layer, nodes) {
