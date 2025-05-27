@@ -485,11 +485,6 @@
                 // At the end of this function, update the global state
                 window.earXploreState.updateFilteredData(filteredData);
                 
-                // Update row visibility directly (no need to repeat data processing for charts)
-                $('tbody tr').each(function(rowIndex) {
-                    const showRow = rowIndex < filteredData.length; // Only show rows in filteredData
-                    $(this).toggle(showRow);
-                });
             }
 
             applyFilters(); // Apply filters on page load - Important - please keep!
