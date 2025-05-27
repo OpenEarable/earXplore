@@ -243,7 +243,12 @@
                         
                         // Extract study link if present
                         if (colName === 'Study Link') {
-                            studyLink = $(this).text().trim();
+                            const $link = $(this).find('a');
+                            if ($link.length) {
+                                studyLink = $link.attr('href');
+                            } else {
+                                studyLink = $(this).text().trim();
+                            }
                         }
                     }
                 });
