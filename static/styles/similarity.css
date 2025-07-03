@@ -1,0 +1,130 @@
+/* General Container */
+#similarityContainer {
+  background: var(-color-gray-light);
+  border-radius: 8px;
+  padding: 1.5em;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  margin: 1.5em 0;
+}
+
+#categoryDropdownContainer {
+  max-width: 14em;
+}
+
+/* Filtering section */
+.controls {
+  margin-bottom: 2em;
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 0 auto;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.btn-check,
+.btn-outline-secondary {
+  font-size: 1em;
+}
+
+.btn-check:checked+.btn{
+  background-color: var(--color-accent);
+  border-color: var(--color-accent); 
+}
+
+.similarityControlContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.sliderContainer {
+  flex-basis: 30%;
+}
+
+.slider-explanation {
+  margin-bottom: 0.55em;
+}
+
+#thresholdSlider {
+  width: 100%;
+}
+
+#thresholdValue {
+  font-weight: bold;
+  color: var(--color-accent);
+}
+
+/* Graph Styles */
+#legend {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 2;
+  font-size: 0.8em;
+}
+
+#legendNote {
+  font-style: italic;
+  font-size: 0.8em;
+  margin-bottom: 0.5em
+}
+
+#legendItems {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  width: 100%;
+  gap: 1em;
+}
+
+.legendItem {
+  display: flex;
+  gap: 0.5em;
+  align-items: center;
+}
+
+.node {
+  cursor: pointer;
+  stroke: white;
+  stroke-width: 1px;
+}
+
+.link {
+  stroke: var(--color-link);
+  stroke-width: 1;
+  stroke-opacity: 0.6;
+  fill: none;
+}
+
+.link:hover,
+.highlighted-link {
+  stroke: var(--color-accent);
+  stroke-opacity: 1;
+  stroke-width: 1.5;
+}
+
+.blurred {
+  stroke-opacity: 0.45;
+  opacity: 0.3;
+}
+
+.info-circle {
+  font-weight: bold;
+  color: var(--color-accent);
+}
+
+/* Important: Set minimum dimensions for the graph container */
+#graphContainer {
+  width: 100%;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: visible;
+  margin-bottom: 1em; /* Add some space below the visualization */
+}
+
+@media (max-width: 850px) {
+  #visualization-warning {
+    display: flex;
+  }
+}

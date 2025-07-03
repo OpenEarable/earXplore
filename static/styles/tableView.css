@@ -1,0 +1,27 @@
+.centered-cell,
+.left-cell {
+  vertical-align: middle;
+  user-select: none;
+}
+
+.left-cell {
+  text-align: left;
+}
+
+.centered-cell {
+  text-align: center;
+}
+
+.download-button {
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+  font-size: 1em;
+  padding: 0.1em 0.2em;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.download-button:hover {
+  opacity: 0.6;
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {# Meta Information #}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  {# Links #}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/bootstrap.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/nouislider.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/base.css') }}">
+  {% block styles %}
+  {% endblock styles %}
+
+  {# Scripts #}
+  <script src="{{ url_for('static', filename='scripts/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/jQuery.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/nouislider.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='scripts/d3.v7.min.js') }}"></script>
+
+  {# Dynamic Section #}
+  {% block head %}
+    <title> {% block title %} earXplore - Earable Interaction Database {% endblock title %} </title>  
+  {% endblock head %}
+</head>
+<body data-data="{{ data }}" data-abstracts="{{ abstracts }}" data-filter-categories="{{ filter_categories }}" data-parenthical-categories="{{ parenthical_columns }}" data-explanations="{{ explanations }}">
+
+  {# Mask for the Sidebar #}
+  <div id="mask"></div>
+
+  {# Left Section #}
+  <div class="left-section">
+    <header class="mb-3">
+      <nav data-current-view="{{ current_view }}">
+        <a href="https://open-earable.teco.edu/" target="_blank">
+          <img id="open-earable-logo" src="{{ url_for('static', filename='images/OE_Logo_black_RGB.png') }}" alt="Open Earable Logo">
+        </a>
+        <div class="d-flex flex-column align-items-center">
+          <h3><a href="https://github.com/OpenEarable/earXplore/tree/master" target="_blank">EarXplore</a></h3>
+          <span class="text-muted" style="color: #B89491 !important;">Interaction</span>
+        </div>
+
+        {# Links to other Views #}
+        <div class="link-section">
+          <a href="{{ url_for('home') }}">
+            <div class="navbar-item" data-section="tableView">Tabular Overview</div>
+          </a>
+          <a href="{{ url_for('bar_chart') }}">
+            <div class="navbar-item" data-section="chartView">Distribution Charts</div>
+          </a>
+          <a href="{{ url_for('similarity') }}">
+            <div class="navbar-item" data-section="similarityView">Study Similarity</div>
+          </a>
+          <a href="{{ url_for('timeline') }}">
+            <div class="navbar-item" data-section="timeView">Study Timeline</div>
+          </a>
+        </div>
+      </nav>
+
+      {# Add Study Button #}
+      <a href="{{ url_for('add_study')}}">
+        <button class="add-study-button">
+          Add your study!
+          <br>
+          Report a Mistake!
+        </button>
+      </a>
+
+      <button id="toggle-sidebar">
+        <img id="filter-icon" src="{{ url_for('static', filename='images/filter-icon.svg')}}" alt="Filter Icon"/>
+      </button>
+
+    </header>
+
+    <main>
+      <div id="visualization-warning">
+        <img src="{{ url_for('static', filename='images/danger_icon.svg')}}" alt="Danger Icon"/>
+        <span>Warning: This visualization is optimized for larger screens and may not display correctly on smaller devices.</span>
+      </div>
+      {# Dynamic View Section #}
+      {% block content %}
+      {% endblock content %}
+    </main>
+  </div>
+
+  {# Sidebar #}
+  <aside id="sidebar">
+
+    {# Sidebar Close Button for smaller Screens #}
+    <div class="sidebar-buttons">
+      <button id="select-all-sidebar-button" class="select-button">Select All</button>
+      <button id="deselect-all-sidebar-button" class="select-button">Deselect All</button>
+
+      <button id="close-sidebar">
+        <img id="close-icon" src="{{ url_for('static', filename='images/close-icon.svg')}}" alt="Close Icon"/>
+      </button>
+    </div>
+
+    {% for panel in sidebar_panels %}
+      <div class="panel" data-panel-value="{{ panel.value }}">
+        {# Panel Header Section #}
+        <div class="d-flex justify-content-between align-items-center">
+          <h3> {{ panel.value }} </h3>
+          {% if panel.select_deselect_buttons == True%}
+            <div class="button-container">
+                <button type="button" class="select-all-panel select-button" data-panel="{{ panel.value }}">Select All</button>
+                <button type="button" class="deselect-all-panel select-button" data-panel="{{ panel.value }}">Deselect All</button>
+            </div>
+          {% endif %}
+
+          {# If panel is initially not visible, add button so visibility can be toggled #}
+          {% if panel.initial_visibility == "none" %}
+            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Show/Hide</button>
+          {% endif%}
+        </div>
+        <hr/>
+
+        {# Filter Section #}
+        <div class="filters {{ 'hidden-filters' if panel.initial_visibility == 'none' }}">
+
+          {# First create the Sliders #}
+          {% for slider in panel.sliders %}
+            <div class="filter-group" data-col="{{ slider.value }}">
+              <strong>{{ slider.value.split('_')[-1] }}</strong>
+              {% if slider.explanation is not none %}
+                  <span title="{{ slider.explanation }}" class="ms-1">
+                      <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle">
+                  </span>
+              {% endif %}
+              <br>
+              <div class="slider-container">
+                  <div class="range-slider" data-col="{{ slider.value }}" data-min="{{ slider.min_value }}" data-max="{{ slider.max_value }}"></div>
+              </div>
+            </div>
+          {% endfor %}
+
+          {# Create the normal filters here #}
+          {% for category in panel.filters %}
+            <div class="filter-group mt-2 category" data-col="{{ category.value }}">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+
+                {# Add an explanation circle for every category #}
+                <div>
+                  <strong>{{ category.value.split('_')[-1] }}</strong>
+                  {% if category.explanation is not none %}
+                    <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" title="{{ category.explanation }}">
+                  {% endif %}
+                </div>
+
+                {# For special categories add a select/deselect-all button #}
+                {% if category.select_deselect_all %}
+                  <div class="d-flex justify-content-end gap-2">
+
+                    {# Add a special button for the Sensors category #}
+                    {% if category.exclusive_filtering %}
+                      <button type="button" class="select-button exclusive-filter" data-col="{{ category.value }}"></button>
+                    {% endif %}
+
+                    <button type="button" class="select-button select-all" data-col="{{ category.value }}">Select All</button>
+                    <button type="button" class="select-button deselect-all" data-col="{{ category.value }}">Deselect All</button>
+                  </div>
+                {% endif %}
+              </div>
+
+              {# Add all the possible filters to the respective category #}
+              <div class="d-flex flex-wrap flex-row gap-1">
+                {% for value in category.unique_values %}
+                  <div class="checkbox-wrapper">
+                    {# IDs are not allowed to have whitespaces so they get replaced with a '€' #}
+                    <input type="checkbox" class="value-filter form-check-input" name="{{ value }}" value="{{ value }}" id="{{ value | replace(' ', '€') }}--{{ category.value | replace(' ', '€') }}" />
+                    <label for="{{ value | replace(' ', '€') }}--{{ category.value | replace(' ', '€') }}">{{ value }}</label>
+                  </div>          
+                {% endfor %}
+              </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </aside>
+
+  {# Modal for study information #}
+  <div class="modal fade" id="study-info-modal" tabindex="-1" aria-labelledby="studyInfo" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="study-info-header">Study Information Header</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="study-info-modal-body"></div>
+        <div class="modal-footer">
+          <button type="button" id="study-link-btn"><a id="study-link" target="_blank">Link to Study</a></button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {# Java Script #}
+  <script type="module" stc="{{ url_for('static', filename='scripts/dataUtility.mjs') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='scripts/d3DrawingUtility.mjs') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='scripts/base.mjs') }}"></script>
+
+  {% block scripts %}
+  {% endblock scripts %}
+</body>
+</html>

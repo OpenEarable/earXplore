@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block styles %}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/filter.css') }}">
+{% endblock styles %}
+
+{% block content %}
+
+  {# Only shown on smaller screens #}
+  <button id="select-filter-button">
+    Select Category Filters:
+    <img id="filter-icon" src="{{ url_for('static', filename='images/filter-icon.svg')}}" alt="Filter Icon"/>
+  </button>
+
+  <!-- Toggle Menu Select/Deselect All Buttons -->
+  <div id="toggle-menu-container" data-start-categories="{{ start_categories }}" data-question-circle-path="{{ url_for('static', filename='images/question-circle-fill.svg') }}">
+    <div class="select-buttons">
+      <button type="button" class="select-button" id="toggleSelectAllColumns">Select All</button>
+      <button type="button" class="select-button" id="toggleDeselectAllColumns">Deselect All</button>
+      <button type="button" class="select-button" id="reset-filters-button">Reset Category Filters</button>
+    </div>
+    <div class="mb-5">
+      <div id="columnToggles">
+        {% for col in data[0].keys() %}
+  
+          {# Wrapping in a div to make sure label and input are on same the row #}
+          <div class="filter-wrapper">
+            <input type="checkbox" class="form-check-input column-filter" id="{{ col }}" />
+            <label for="{{ col }}">{{ col.split("_").pop() }}</label>
+          </div>
+          
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+
+{% block scripts %}
+  <script type="module" src="{{ url_for('static', filename='scripts/filter.mjs') }}"></script>
+{% endblock scripts%}

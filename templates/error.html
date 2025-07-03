@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error Occured!</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/error.css') }}">
+</head>
+<body>
+  <main>
+    <h1>Error Occurred!</h1>
+    <p>Sorry, an error occurred while processing your request.</p>
+    <p>Error Message: {{ error }}</p>
+    <p>Please try again now or later!</p>
+    <p>Feel free to contact us to resolve the issue!</p>
+  </main>
+</body>
+</html>

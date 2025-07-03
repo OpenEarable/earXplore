@@ -1,553 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>earXplore - Add Study or Report Mistake</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <style>
-        body {
-            padding: 20px;
-            background-color: #f8f9fa;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .header img {
-            height: 40px;
-            margin-right: 15px;
-        }
-        
-        .option-card {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid #dee2e6;
-        }
-        
-        .option-card:hover {
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-            border-color: #B89491;
-        }
-        
-        .form-section {
-            display: none;
-            padding: 20px;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
-        
-        .btn-primary {
-            background-color: #6c757d;
-            border-color: #6c757d;
-        }
-        
-        .btn-primary:hover {
-            background-color: rgba(108, 117, 125, 0.8);
-            border-color: rgba(108, 117, 125, 0.8);
-        }
-        
-        .btn-warning {
-            background-color: #B89491;
-            border-color: #B89491;
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background-color: rgba(184, 148, 145, 0.8);
-            border-color: rgba(184, 148, 145, 0.8);
-            color: white;
-        }
-        
-        h3, h4 {
-            color: #B89491;
-        }
-        
-        .section-header {
-            margin-top: 20px;
-            margin-bottom: 15px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        
-        /* For the feedback message */
-        .success-message {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1050;
-            padding: 15px 25px;
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            border-radius: 4px;
-            color: #155724;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>earXplore - Add Study or Report Mistake</title>
 
-        .title-underline {
-            padding-bottom: 5px;
-            border-bottom: 2px solid #B89491;
-            margin-bottom: 20px;
-            display: inline-block;
-        }
+  {# Style sheets #}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/bootstrap.min.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/add_study.css') }}">
 
-        .form-label {
-            font-weight: 500;
-        }
+  {# Scripts #}
+  <script src="{{ url_for('static', filename='scripts/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='scripts/jQuery.js') }}"></script>
+  <script type="module" src="{{ url_for('static', filename='scripts/add_study.js') }}"></script>
 
-        .form-check-input:checked {
-            background-color: #B89491;
-            border-color: #B89491;
-        }
-
-        .home-link {
-            margin-top: 20px;
-            text-decoration: none;
-            color: #6c757d;
-            display: inline-flex;
-            align-items: center;
-        }
-
-        .home-link:hover {
-            color: #B89491;
-        }
-
-        .home-link i {
-            margin-right: 5px;
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <a href="https://open-earable.teco.edu/" target="_blank">
-                <img src="https://open-earable.teco.edu/assets/images/OE_Logo_black_RGB.png" alt="earXplore Logo">
-            </a>
-            <div>
-                <h2 class="m-0"><b><a href="https://github.com/OpenEarable/earXplore/tree/master" target="_blank" style="text-decoration: none; color: inherit;">EarXplore</a></b></h2>
-                <span class="text-muted" style="color: #B89491 !important;">Interaction</span>
-            </div>
-        </div>
-        
-        <a href="/" class="home-link mb-4">
-            <i class="bi bi-arrow-left"></i> Back to EarXplore
-        </a>
-        
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div id="reportMistakeCard" class="option-card h-100">
-                    <h4>Report a Mistake</h4>
-                    <p>Found an error or inconsistency in our database? Help us improve by reporting it.</p>
-                    <button id="reportMistakeBtn" class="btn btn-warning">Report Mistake</button>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div id="addStudyCard" class="option-card h-100">
-                    <h4>Add Your Study</h4>
-                    <p>Have you published a study on earable interactions that's not in our database? Submit your research for review and inclusion.</p>
-                    <button id="addStudyBtn" class="btn btn-warning">Add Study</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Report Mistake Form -->
-        <div id="reportMistakeForm" class="form-section">
-            <h4>Report a Mistake</h4>
-            <p>Please provide details about the error you found in our database.</p>
-            
-            <form id="mistakeForm">
-                <div class="mb-3">
-                    <label for="studyId" class="form-label">Study ID or Title (if known)</label>
-                    <input type="text" class="form-control" id="studyId" placeholder="e.g., 42 or 'EarGest: A Novel Ear Gesture Recognition System'">
-                </div>
-                <div class="mb-3">
-                    <label for="mistakeDescription" class="form-label">Description of Error*</label>
-                    <textarea class="form-control" id="mistakeDescription" rows="5" placeholder="Please describe the mistake in detail..." required></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="reporterEmail" class="form-label">Your Email (optional)</label>
-                    <input type="email" class="form-control" id="reporterEmail" placeholder="your.email@example.com">
-                    <div class="form-text">Provide your email if you'd like to receive updates about this report.</div>
-                </div>
-                <div class="d-flex justify-content-end">
-                    <button type="button" class="btn btn-secondary me-2 cancel-btn">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Send Report</button>
-                </div>
-            </form>
-        </div>
-        
-        <!-- Add Study Form -->
-        <div id="addStudyForm" class="form-section">
-            <h4>Add Your Study</h4>
-            <p>Please provide information about your published research on earable interaction. You don't have to provide all the information on your study, although this will make the process of reviewing your study and adding it to the database much faster.</p>
-            
-            <form id="studyForm">
-                <!-- Always include these essential fields -->
-                <h5 class="section-header">Essential Information</h5>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="title" class="form-label">Title*</label>
-                        <input type="text" class="form-control" id="title" required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="authors" class="form-label">Authors*</label>
-                        <input type="text" class="form-control" id="authors" placeholder="e.g., Smith, J., Jones, A., etc." required>
-                    </div>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label for="venue" class="form-label">Published Venue*</label>
-                        <input type="text" class="form-control" id="venue" placeholder="e.g., CHI, ISWC, etc." required>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="link" class="form-label">Link to Publication*</label>
-                        <input type="url" class="form-control" id="link" placeholder="https://..." required>
-                    </div>
-                </div>
-                
-                <!-- Dynamically generate form sections based on categories -->
-                {% if form_categories %}
-                    {% for panel_name, panel_data in form_categories.items() %}
-                        <h5 class="section-header">{{ panel_name }}</h5>
-                        {% for field_id, field in panel_data.items() %}
-                            {% if field.type == 'numeric' %}
-                                <div class="mb-3">
-                                    <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
-                                    <input type="number" class="form-control" id="{{ field_id }}" 
-                                           min="{{ field.min }}" max="{{ field.max }}" step="1">
-                                </div>
-                                {% elif field.type == 'checkbox' and field.options|length > 0 %}
-                                <div class="mb-3">
-                                    <label class="form-label">{{ field.name }}</label>
-                                    <div class="row">
-                                        {% for option in field.options %}
-                                            <div class="col-md-4 mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" 
-                                                           name="{{ field_id }}" value="{{ option }}" 
-                                                           id="{{ field_id }}_{{ loop.index }}">
-                                                    <label class="form-check-label" for="{{ field_id }}_{{ loop.index }}">
-                                                        {{ option }}
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                        
-                                        {% if field.options|length > 3 %}
-                                            <!-- Add "Other" option with text input field on the same line -->
-                                            <div class="col-md-12 mt-2">
-                                                <div class="d-flex align-items-center">
-                                                    <label for="{{ field_id }}_other" class="me-2 mb-0">Other:</label>
-                                                    <input type="text" class="form-control other-option-field" 
-                                                           id="{{ field_id }}_other" 
-                                                           placeholder="Please specify other options..."
-                                                           data-field="{{ field_id }}">
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            {% elif field.type == 'text' %}
-                                <div class="mb-3">
-                                    <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
-                                    <input type="text" class="form-control" id="{{ field_id }}">
-                                </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% endfor %}
-                {% else %}
-                    <!-- Fallback if categories couldn't be loaded -->
-                    <div class="alert alert-warning">
-                        Category options could not be loaded. Please fill in the basic information.
-                    </div>
-                {% endif %}
-                
-                <!-- Always include these final fields -->
-                <div class="mb-3">
-                    <label for="abstract" class="form-label">Abstract*</label>
-                    <textarea class="form-control" id="abstract" rows="4" required></textarea>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="keywords" class="form-label">Keywords</label>
-                    <input type="text" class="form-control" id="keywords" 
-                           placeholder="Enter keywords separated by commas">
-                </div>
-                
-                <div class="mb-3">
-                    <label for="submitterEmail" class="form-label">Your Email*</label>
-                    <input type="email" class="form-control" id="submitterEmail" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="additionalInfo" class="form-label">Additional Information</label>
-                    <textarea class="form-control" id="additionalInfo" rows="3" 
-                              placeholder="Any other details you'd like to share..."></textarea>
-                </div>
-                
-                <div class="d-flex justify-content-end">
-                    <button type="button" class="btn btn-secondary me-2 cancel-btn">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Submit Study</button>
-                </div>
-            </form>
-        </div>
-        
+<div class="container" data-categories="{{ form_categories }}">
+  <div class="header">
+    <a href="https://open-earable.teco.edu/" target="_blank">
+      <img src="{{ url_for('static', filename='images/OE_Logo_black_RGB.png')}}" alt="earXplore Logo">
+    </a>
+    <div>
+      <h2 class="m-0"><a href="https://github.com/OpenEarable/earXplore/tree/master" target="_blank" style="text-decoration: none; color: inherit;">EarXplore</a></h2>
+      <span class="text-muted" style="color: #B89491 !important;">Interaction</span>
     </div>
-
-    <script>
-        $(document).ready(function() {
-            // Handle clicking on the "Report Mistake" card
-            $("#reportMistakeBtn").click(function() {
-                $("#reportMistakeForm").show();
-                $("#addStudyForm").hide();
-                $('html, body').animate({
-                    scrollTop: $("#reportMistakeForm").offset().top - 20
-                }, 500);
-            });
-            
-            // Handle clicking on the "Add Study" card
-            $("#addStudyBtn").click(function() {
-                $("#addStudyForm").show();
-                $("#reportMistakeForm").hide();
-                $('html, body').animate({
-                    scrollTop: $("#addStudyForm").offset().top - 20
-                }, 500);
-            });
-            
-            // Handle cancel buttons
-            $(".cancel-btn").click(function() {
-                $(this).closest(".form-section").hide();
-                $('html, body').animate({
-                    scrollTop: 0
-                }, 500);
-            });
-            
-            // Add participant count fields to specific sections
-            // This needs to run after the form is rendered but before user interaction
-            const participantFields = [
-        'Accuracy of Interaction Recognition',
-        'Robustness of Interaction Detection',
-        'Elicitation Study',
-        'Usability Evaluations',
-        'Cognitive Ease Evaluations',
-        'Discreetness of Interactions Evaluations',
-        'Social Acceptability of Interactions Evaluations',
-        'Accuracy of Interactions Evaluations',
-        'Alternative Interaction Validity Evaluations'
-    ];
+  </div>
+  
+  <a href="/" class="home-link mb-4">
+    Back to EarXplore
+  </a>
+  
+  <div class="row mb-4">
+    <div class="col-md-6">
+      <div id="reportMistakeCard" class="option-card h-100">
+        <h4>Report a Mistake</h4>
+        <p>Found an error or inconsistency in our database? Help us improve by reporting it.</p>
+        <button id="reportMistakeBtn" class="btn btn-warning">Report Mistake</button>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div id="addStudyCard" class="option-card h-100">
+        <h4>Add Your Study</h4>
+        <p>Have you published a study on earable interactions that's not in our database? Submit your research for review and inclusion.</p>
+        <button id="addStudyBtn" class="btn btn-warning">Add Study</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Report Mistake Form -->
+  <div id="reportMistakeForm" class="form-section">
+    <h4>Report a Mistake</h4>
+    <p>Please provide details about the error you found in our database.</p>
     
-    participantFields.forEach(fieldName => {
-        // Find the section/label containing this field name
-        const fieldLabel = $(`label.form-label:contains("${fieldName}")`);
-        if (fieldLabel.length) {
-            // Create a unique ID for the participant count field
-            const idBase = fieldName.replace(/\s+/g, '_').toLowerCase();
-            const participantCountId = `${idBase}_participant_count`;
-            
-            // Create the participant count field in a style similar to "Other" option
-            const participantCountField = $(`
-                <div class="col-md-12 mt-2">
-                    <div class="d-flex align-items-center">
-                        <label for="${participantCountId}" class="me-2 mb-0" style="min-width: 200px;">Number of Participants (N):</label>
-                        <input type="number" class="form-control other-option-field" 
-                            id="${participantCountId}" 
-                            min="1" placeholder="Enter number of participants"
-                            data-field="${idBase}">
+    <form id="mistakeForm">
+      <div class="mb-3">
+        <label for="studyId" class="form-label">Study ID or Title (if known)</label>
+        <input type="text" class="form-control" id="studyId" placeholder="e.g., 42 or 'EarGest: A Novel Ear Gesture Recognition System'">
+      </div>
+      <div class="mb-3">
+        <label for="mistakeDescription" class="form-label">Description of Error*</label>
+        <textarea class="form-control" id="mistakeDescription" rows="5" placeholder="Please describe the mistake in detail..." required></textarea>
+      </div>
+      <div class="mb-3">
+        <label for="reporterEmail" class="form-label">Your Email (optional)</label>
+        <input type="email" class="form-control" id="reporterEmail" placeholder="your.email@example.com">
+        <div class="form-text">Provide your email if you'd like to receive updates about this report.</div>
+      </div>
+      <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-secondary me-2 cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-warning">Send Report</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Add Study Form -->
+  <div id="addStudyForm" class="form-section">
+    <h4>Add Your Study</h4>
+    <p>Please provide information about your published research on earable interaction. You don't have to provide all the information on your study, although this will make the process of reviewing your study and adding it to the database much faster.</p>
+    
+    <form id="studyForm">
+      <!-- Always include these essential fields -->
+      <h5 class="section-header">Essential Information</h5>
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="title" class="form-label">Title*</label>
+          <input type="text" class="form-control" id="title" required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="authors" class="form-label">Authors*</label>
+          <input type="text" class="form-control" id="authors" placeholder="e.g., Smith, J., Jones, A., etc." required>
+        </div>
+      </div>
+        
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label for="venue" class="form-label">Published Venue*</label>
+          <input type="text" class="form-control" id="venue" placeholder="e.g., CHI, ISWC, etc." required>
+        </div>
+        <div class="col-md-6 mb-3">
+          <label for="link" class="form-label">Link to Publication*</label>
+          <input type="url" class="form-control" id="link" placeholder="https://..." required>
+        </div>
+      </div>
+        
+      <!-- Dynamically generate form sections based on categories -->
+      {% if form_categories %}
+        {% for panel_name, panel_data in form_categories.items() %}
+          <h5 class="section-header">{{ panel_name }}</h5>
+          {% for field_id, field in panel_data.items() %}
+            {% if field.type == 'numeric' %}
+              <div class="mb-3">
+                  <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
+                  <input type="number" class="form-control" id="{{ field_id }}" 
+                          min="{{ field.min }}" max="{{ field.max }}" step="1">
+              </div>
+            {% elif field.type == 'checkbox' and field.options|length > 0 %}
+              <div class="mb-3">
+                <label class="form-label">{{ field.name }}</label>
+                <div class="row">
+                {% for option in field.options %}
+                  <div class="col-md-4 mb-2">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" 
+                              name="{{ field_id }}" value="{{ option }}" 
+                              id="{{ field_id }}_{{ loop.index }}">
+                      <label class="form-check-label" for="{{ field_id }}_{{ loop.index }}">
+                        {{ option }}
+                      </label>
                     </div>
-                </div>
-            `);
-            
-            // Find the right location to insert
-            const targetContainer = fieldLabel.closest('.mb-3');
-            // If this is a checkbox group with options, add to the end of the row
-            const rowContainer = targetContainer.find('.row');
-            
-            if (rowContainer.length) {
-                // Add to the end of the existing row container
-                rowContainer.append(participantCountField);
-            } else {
-                // Create a new row and add it after the field
-                const newRow = $('<div class="row"></div>').append(participantCountField);
-                targetContainer.append(newRow);
-            }
-        }
-    });
-            
-            // Handle report mistake form submission
-            $("#mistakeForm").submit(function(e) {
-                e.preventDefault();
-                
-                // Get form data
-                const studyId = $("#studyId").val();
-                const description = $("#mistakeDescription").val();
-                const email = $("#reporterEmail").val();
-                
-                // Prepare data for submission
-                const formData = {
-                    studyId: studyId,
-                    description: description,
-                    email: email
-                };
-                
-                // Show loading indicator
-                showSuccessMessage("Submitting your report...");
-                
-                // Send form data via AJAX
-                $.ajax({
-                    type: "POST",
-                    url: "/submit_mistake",  // New endpoint for mistake reports
-                    data: JSON.stringify(formData),
-                    contentType: "application/json",
-                    success: function(response) {
-                        showSuccessMessage("Thank you! Your mistake report has been submitted successfully.");
-                        
-                        // Reset form
-                        setTimeout(function() {
-                            $("#mistakeForm")[0].reset();
-                            $("#reportMistakeForm").hide();
-                            redirectToHomePage();
-                        }, 3000);
-                    },
-                    error: function(xhr, status, error) {
-                        showSuccessMessage("Error submitting report. Please try again later.", true);
-                        console.error("Form submission error:", error);
-                    }
-                });
-            });
-            
-            // Handle form with the new text-based "Other" fields
-            $("#studyForm").submit(function(e) {
-                e.preventDefault();
-                
-                // Get basic form data
-                const title = $("#title").val();
-                const authors = $("#authors").val();
-                const year = $("#Year").val() || $("#year").val();
-                const venue = $("#venue").val();
-                const link = $("#link").val();
-                const abstract = $("#abstract").val();
-                const keywords = $("#keywords").val();
-                const email = $("#submitterEmail").val();
-                const additionalInfo = $("#additionalInfo").val();
-                
-                // Collect all field values
-                let formData = {
-                    Title: title,
-                    Authors: authors,
-                    Venue: venue,
-                    Link: link,
-                    Abstract: abstract,
-                    Keywords: keywords,
-                    "Submitter Email": email,
-                    "Additional Info": additionalInfo
-                };
-                
-                // Add year if it exists
-                if (year) formData.Year = year;
-                
-                // Process all checkboxes
-                $('input[type="checkbox"]:checked').each(function() {
-                    const name = $(this).attr('name');
-                    const value = $(this).val();
+                  </div>
+                {% endfor %}
                     
-                    if (!formData[name]) {
-                        formData[name] = value;
-                    } else {
-                        formData[name] += ", " + value;
-                    }
-                });
-                
-                // Process all other input fields that aren't part of the basic data
-                $('input[type="text"], input[type="number"]').each(function() {
-                    const id = $(this).attr('id');
-                    if (!['title', 'authors', 'venue', 'link', 'keywords'].includes(id) && $(this).val()) {
-                        if (id.endsWith('_other') && $(this).val()) {
-                            const fieldName = $(this).data('field');
-                            const otherValue = $(this).val();
-                            
-                            if (otherValue) {
-                                if (!formData[fieldName]) {
-                                    formData[fieldName] = `Other: ${otherValue}`;
-                                } else {
-                                    formData[fieldName] += `, Other: ${otherValue}`;
-                                }
-                            }
-                        } else {
-                            formData[id] = $(this).val();
-                        }
-                    }
-                });
-                
-                // Show loading indicator
-                showSuccessMessage("Submitting your study...");
-                
-                // Send form data via AJAX
-                $.ajax({
-                    type: "POST",
-                    url: "/submit_study",  // Your server endpoint
-                    data: JSON.stringify(formData),
-                    contentType: "application/json",
-                    success: function(response) {
-                        showSuccessMessage("Thank you! Your study has been submitted successfully.");
-                        
-                        // Reset form
-                        setTimeout(function() {
-                            $("#studyForm")[0].reset();
-                            $("#addStudyForm").hide();
-                            redirectToHomePage();
-                        }, 3000);
-                    },
-                    error: function(xhr, status, error) {
-                        showSuccessMessage("Error submitting form. Please try again later.", true);
-                        console.error("Form submission error:", error);
-                    }
-                });
-            });
-
-            // Update the success message function to handle errors too
-            function showSuccessMessage(message, isError = false) {
-                // Remove any existing messages
-                $(".success-message").remove();
-                
-                // Create message with appropriate styling
-                const messageClass = isError ? "error-message" : "success-message";
-                const messageStyle = isError ? "background-color: #f8d7da; border-color: #f5c6cb; color: #721c24;" : "";
-                
-                const successMsg = $(`<div class="${messageClass}" style="${messageStyle}">${message}</div>`);
-                $("body").append(successMsg);
-                
-                // Remove after delay
-                setTimeout(function() {
-                    successMsg.fadeOut(500, function() {
-                        $(this).remove();
-                    });
-                }, 3000);
-            }
-            
-            function redirectToHomePage() {
-                window.location.href = "/";
-            }
-        });
-    </script>
+                {% if field.options|length > 3 %}
+                  <!-- Add "Other" option with text input field on the same line -->
+                  <div class="col-md-12 mt-2">
+                    <div class="d-flex align-items-center">
+                      <label for="{{ field_id }}_other" class="me-2 mb-0">Other:</label>
+                      <input type="text" class="form-control other-option-field" 
+                              id="{{ field_id }}_other" 
+                              placeholder="Please specify other options..."
+                              data-field="{{ field_id }}">
+                    </div>
+                  </div>
+                {% endif %}
+                </div>
+              </div>
+            {% elif field.type == 'text' %}
+              <div class="mb-3">
+                <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
+                <input type="text" class="form-control" id="{{ field_id }}">
+              </div>
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+      {% else %}
+        <!-- Fallback if categories couldn't be loaded -->
+        <div class="alert alert-warning">
+         Category options could not be loaded. Please fill in the basic information.
+        </div>
+      {% endif %}
+      
+      <!-- Always include these final fields -->
+      <div class="mb-3">
+        <label for="abstract" class="form-label">Abstract*</label>
+        <textarea class="form-control" id="abstract" rows="4" required></textarea>
+      </div>
+      
+      <div class="mb-3">
+        <label for="keywords" class="form-label">Keywords</label>
+        <input type="text" class="form-control" id="keywords" 
+                placeholder="Enter keywords separated by commas">
+      </div>
+      
+      <div class="mb-3">
+        <label for="submitterEmail" class="form-label">Your Email*</label>
+        <input type="email" class="form-control" id="submitterEmail" required>
+      </div>
+      
+      <div class="mb-3">
+        <label for="additionalInfo" class="form-label">Additional Information</label>
+        <textarea class="form-control" id="additionalInfo" rows="3" 
+                  placeholder="Any other details you'd like to share..."></textarea>
+      </div>
+      
+      <div class="d-flex justify-content-end">
+        <button type="button" class="btn btn-secondary me-2 cancel-btn">Cancel</button>
+        <button type="submit" class="btn btn-warning">Submit Study</button>
+      </div>
+    </form>
+  </div>
+</div>
+  
 </body>
 </html>

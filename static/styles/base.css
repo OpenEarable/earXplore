@@ -1,0 +1,288 @@
+:root {
+  --color-accent: #B89491; /* Earable's accent color */
+  --color-accent-dark: #a37c79;
+  --color-gray: #6c757d;
+  --color-gray-light: #f8f9fa;
+  --color-link: #999;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  font-size: clamp(0.75rem, 0.6642rem + 0.3661vw, 1.25rem);
+}
+
+#toggle-sidebar,
+#close-sidebar,
+#mask,
+#visualization-warning {
+  display: none;
+}
+
+#visualization-warning {
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(255, 255, 175);
+  border: 2px solid #B89230;
+  padding: 0.5em;
+  border-radius: 5px;
+  color: #B89230;
+}
+
+#visualization-warning span {
+  text-align: center;;
+}
+
+header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1em;
+}
+
+.left-section {
+  width: 80%;
+  padding: 1px 10px;
+  flex: 2;
+  max-height: 100vh;
+  overflow-y: scroll;
+}
+
+/* Navbar Styles */
+nav {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+  gap: 1em;
+}
+
+.link-section {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+}
+
+.navbar-item {
+  padding: 1em;
+  text-align: center;
+}
+
+.navbar-item:hover {
+  background-color: var(--color-accent); /* Use the same color with 60% opacity */
+  opacity: 0.6;
+  color: white;
+  border-radius: 5px;
+}
+
+.navbar-item-selected {
+  background-color: var(--color-accent);
+  font-weight: bold;
+  color: white;
+  border-radius: 5px;
+}
+
+#open-earable-logo {
+  width: 5em;
+}
+
+h3 {
+  font-size: 1.5em;
+  padding: 0;
+  margin: 0;
+}
+
+/* Styling the sidebar */
+#sidebar {
+  flex: 0.8;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 5px;
+  max-height: 100vh;
+  overflow-y: scroll;
+}
+
+.panel {
+  background-color: var(--color-gray-light);
+  padding: 1em;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+.sidebar-buttons {
+  display: flex;
+  justify-content: end;
+  gap: 0.5em;
+}
+
+.slider-container {
+  padding: 10px;
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
+
+.hidden-filters {
+  display: none;
+}
+
+/* Buttons */
+.add-study-button{
+  color: var(--color-accent);
+  background-color: white;
+  border: none;
+  padding: 0;
+}
+
+.select-button {
+  background-color: var(--color-gray);
+  border: 1px solid var(--color-gray);
+  color: white;
+  padding: 0 0.1em;
+  font-size: 1em;
+  border-radius: 5px;
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+  text-shadow: none;
+}
+
+.exclusive-filter{
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.select-button:hover,
+.btn-link:hover {
+  opacity: 0.6;
+}
+
+.btn-link,
+.toggle-visibility-button  {
+  background-color: var(--color-accent);
+  font-size: 1em;
+  color: white;
+  border: none;
+  text-decoration: none;
+  border-radius: 5px;
+}
+
+.btn-link:hover {
+  color: white;
+}
+
+/* Modal Styles */
+.study-info-panel-header {
+  color: rgba(184, 148, 145, 1);
+  font-weight: bold;
+}
+
+.study-info-panel-header:not(:first-child) {
+  margin-top: 20px;
+}
+
+.info-circle {
+  cursor: pointer;
+}
+
+#study-link-btn {
+  background-color: #B89491;
+  color: white;
+  border: none;
+  padding: 0.375em 0.75em;
+  border-radius: 5px;
+  text-decoration: none;
+  opacity: 1;
+}
+
+#study-link-btn:hover,
+#study-link:hover {
+  opacity: 0.6;
+}
+
+/* General Styles */
+
+/* Style checkboxes to match the grey color of the modal close button */
+input[type="checkbox"] {
+  accent-color: var(--color-gray); /* Bootstrap's secondary color */
+}
+
+.form-check-input:checked {
+  background-color: var(--color-gray);
+  border-color: var(--color-gray);
+}
+
+.form-check-input:hover {
+  opacity: 0.6;
+}
+
+.form-check-input:focus  {
+  outline: none;
+  box-shadow: none;
+  border: 1px solid var(--color-gray);
+}
+
+a:link, a:visited {
+  text-decoration: none;
+  color: inherit;
+}
+
+@media (max-width: 1050px) {
+  #sidebar.visible-sidebar {
+    right: 0;
+  }
+
+  #sidebar {
+    position: fixed;
+    width: 80%;
+    background-color: white;
+    border-radius: 5px;
+    gap: 1em;
+    right: -100%;
+    z-index: 2;
+    transition: right 0.3s ease;
+  }
+
+  #toggle-sidebar,
+  #close-sidebar {
+    display: block;
+    border: none;
+    background-color: var(--color-gray-light);
+    border-radius: 30%;
+    opacity: 0.5;
+  }
+
+  #close-sidebar {
+    background-color: var(--color-gray-light);
+    opacity: 0.7;
+  }
+
+  #close-icon,
+  #filter-icon {
+    width: 2em;
+  }
+
+  #mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+  }
+
+  header,
+  nav {
+    gap: 0.5em;
+  }
+
+  nav {
+    padding: 0.5em;
+  }
+}
+
+
+

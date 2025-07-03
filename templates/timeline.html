@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/timeline.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="timeline-container">
+  <div class="timeline-controls">
+    <div class="timeline-control-option">
+      <strong>Shared Authors:</strong>
+      <div class="form-check form-switch ms-2 d-inline-block">
+        <input class="form-check-input custom-control" type="checkbox" id="timeline-toggle-shared-authors">
+        <label class="form-check-label" for="timeline-toggle-shared-authors"></label>
+      </div>
+    </div>
+      
+    <div>
+      <strong>Citation Mode:</strong>
+      <div class="btn-group ms-2" role="group" aria-label="Citation mode selection">
+        <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-both" value="both" autocomplete="off">
+        <label class="btn btn-sm btn-timeline" for="timeline-mode-both">Both</label>
+          
+        <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-cites" value="cites" autocomplete="off">
+        <label class="btn btn-sm btn-timeline" for="timeline-mode-cites">Cites</label>
+        
+        <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-cited-by" value="cited-by" autocomplete="off">
+        <label class="btn btn-sm btn-timeline" for="timeline-mode-cited-by">Cited By</label>
+        
+        <input type="radio" class="btn-check" name="citation-mode" id="timeline-mode-none" value="none" autocomplete="off">
+        <label class="btn btn-sm btn-timeline" for="timeline-mode-none">None</label>
+      </div>
+    </div>
+      
+    <div class="timeline-legend">
+      <div class="timeline-legend-item">
+        <div class="timeline-legend-line">
+            <svg width="20" height="3">
+                <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#999" stroke-width="3" stroke-dasharray="5,3"/>
+            </svg>
+        </div>
+        <span>Shared Authors</span>
+      </div>
+      <div class="timeline-legend-item">
+        <div class="timeline-legend-line">
+          <svg width="20" height="3">
+            <line x1="0" y1="1.5" x2="20" y2="1.5" stroke="#999" stroke-width="3"/>
+          </svg>
+        </div>
+        <span>Citations</span>
+      </div>
+    </div>
+
+    <div class="category-dropdown-container" data-excluded-categories="{{ excluded_categories }}">
+      <label for="timelineColorCategory">
+        <strong>Color Nodes by:</strong>
+      </label>
+      <select id="timelineColorCategory" class="form-select" style="width: 200px;">
+        <option value="">None</option>
+        <!-- Category options will be populated dynamically -->
+      </select>
+    </div>
+  </div>
+    
+  <div id="timeline-graph-container" data-coauthor="{{ coauthor_matrix }}" data-citation="{{ citation_matrix }}" data-categories="{{ categories }}">
+    {# Graph will be added here #}
+  </div>
+
+  {# Legend for the graph #}
+  <div id="legend"></div>
+
+  <div class="modal fade" id="timelineConnectionsModal" tabindex="-1" aria-labelledby="connectionsModalLabel" aria-hidden="true" data-info-circle-path="{{ url_for('static', filename='images/info-circle.svg') }}">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-body">
+          <div id="timelineConnectionsContainer">
+            <!-- Connected studies will be populated here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="{{ url_for('static', filename='scripts/timeline.mjs') }}"></script>
+{% endblock %}

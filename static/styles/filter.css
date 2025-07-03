@@ -1,0 +1,51 @@
+.small-button {
+	font-size: 0.75rem; /* Adjust the font size as needed */
+	padding: 0.1rem 0.2rem; /* Adjust the padding as needed */
+}
+
+.select-buttons {
+	display: flex;
+	gap: 1em;
+	margin: 0.5em 0;
+}
+
+#select-filter-button {
+	display: none;
+}
+
+#reset-filters-button {
+	background-color: var(--color-accent);
+	border: 1px solid var(--color-accent);
+}
+
+#columnToggles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5em;
+}
+
+@media (max-width: 1050px) {
+	#toggle-menu-container {
+		height: 0;
+		overflow: hidden;
+		transition: height 0.3s ease;
+		interpolate-size: allow-keywords;
+	}
+
+	#toggle-menu-container.visible-filters {
+		height: auto;
+	}
+	
+	#select-filter-button {
+		display: block;
+		margin: 1em 0 1em auto;
+		border: none;
+		background-color: var(--color-gray-light);
+		border-radius: 5%;
+		opacity: 0.5;
+	}
+
+	.select-buttons {
+		justify-content: start;
+	}
+}

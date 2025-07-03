@@ -1,7 +1,29 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, request, jsonify, url_for
 from flask_mail import Mail, Message
 import pandas as pd
-import os  # Add this import for os.path.exists
+import json
+from typing import List
+
+EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link']
+ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
+SLIDER_CATEGORIES = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
+SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Applications_PANEL_Intended Applications', 'Main Author', 'Gesture', 'Keywords']
+EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors'] 
+SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study']
+INITIALLY_HIDDEN_PANELS = ['Advanced Filters']
+PARENTHICAL_COLUMNS = [
+                    'Interaction_PANEL_Accuracy of Interaction Recognition', 
+                    'Interaction_PANEL_Robustness of Interaction Detection', 
+                    'Study_PANEL_Elicitation Study', 
+                    'Study_PANEL_Usability Evaluations', 
+                    'Study_PANEL_Cognitive Ease Evaluations', 
+                    'Study_PANEL_Discreetness of Interactions Evaluations', 
+                    'Study_PANEL_Social Acceptability of Interactions Evaluations', 
+                    'Study_PANEL_Accuracy of Interactions Evaluations', 
+                    'Study_PANEL_Alternative Interaction Validity Evaluations'
+                ]
+START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", "Year", "Location", "Input Body Part", "Gesture"])
+SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", "Interaction_PANEL_Social Acceptability of Interaction Techniques", "Interaction_PANEL_Accuracy of Interaction Recognition", "Interaction_PANEL_Robustness of Interaction Detection", "Motivations_PANEL_Motivations"]
 
 app = Flask(__name__)
 
@@ -14,6 +36,31 @@ app.config['MAIL_PASSWORD'] = 'your-password'  # Replace with your password
 app.config['MAIL_DEFAULT_SENDER'] = 'earXplore@teco.edu'
 mail = Mail(app)
 
+# Template classes for sidebar panel
+class Slider:
+    def __init__(self, value:str, min_value:int, max_value:int, explanation:str = None):
+        self.value = value
+        self.min_value = min_value
+        self.max_value = max_value
+        self.explanation = explanation
+
+class Filter:
+    def __init__(self, value:str, explanation:str = None, unique_values:List[str] = None, exclusive_filtering:bool = False, select_deselect_all:bool = False):
+        self.value = value
+        self.explanation = explanation
+        self.unique_values = unique_values
+        self.exclusive_filtering = exclusive_filtering
+        self.select_deselect_all = select_deselect_all
+
+class Panel:
+    def __init__ (self, value:str, sliders:List[Slider] = None, filters:List[Filter] = None, select_deselect_buttons:bool = False, initial_visibility:str = "block"):
+        self.value = value
+        self.sliders = sliders if sliders is not None else []
+        self.filters = filters if filters is not None else []
+        self.select_deselect_buttons = select_deselect_buttons
+        self.initial_visibility = initial_visibility
+
+# custom sort the values of columns in the data
 def custom_sort(values):
     special_orders = {'Yes': 1, 'Partly': 2, 'No': 3, 'Low': 1, 'Medium': 2, 'High': 3, 
                      'Semantic': 1, 'Coarse': 2, 'Fine': 3, 'N/A': 4, 'Yes (Performance Loss)': 2, 'Visual Attention': 2}  # Changed from 'nan' to 'N/A'
@@ -21,41 +68,181 @@ def custom_sort(values):
                                                str(x).lower() if isinstance(x, str) else str(x)))
     return sorted_values
 
-app.jinja_env.filters['custom_sort'] = custom_sort
+def filter_categories(data):
+    # Filter out categories that should not be filtered for
+    return [category for category in data[0].keys() if category not in EXCLUDED_SIDEBAR_CATEGORIES]
 
-@app.route("/")
-def index():
+def load_data():
+    # Load data from CSV file into data variable
     try:
         df = pd.read_csv("data.csv")
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        data = df.to_dict(orient="records")    
+        data = df.to_dict(orient="records")
     except FileNotFoundError:
-        return "data.csv file not found", 500
+        return "data.csv file not found"
     except pd.errors.EmptyDataError:
-        return "data.csv file is empty", 500
+        return "data.csv file is empty"
     except Exception as e:
-        return f"Error loading data.csv: {e}", 500
+        return f"Error loading data.csv: {e}"
+    
+    # delete the 'Abstract' column from the data
+    for data_entry in data:
+        if 'Abstract' in data_entry:
+            del data_entry['Abstract']
+    
+    return data
 
+def load_explanations():
+    # Load explanations from CSV file into explanations variable
     try:
         explanations_df = pd.read_csv("explanations.csv")
         explanations = dict(zip(explanations_df["Column"], explanations_df["Explanation"]))
     except FileNotFoundError:
-        return "explanations.csv file not found", 500
+        return "explanations.csv file not found"
     except pd.errors.EmptyDataError:
-        return "explanations.csv file is empty", 500
+        return "explanations.csv file is empty"
     except KeyError:
-        return "explanations.csv file is missing required columns", 500
+        return "explanations.csv file is missing required columns"
     except Exception as e:
-        return f"Error loading explanations.csv: {e}", 500
+        return f"Error loading explanations.csv: {e}"
     
-    # Load similarity data
+    return explanations
+
+def load_abstracts():
+    try:
+        df = pd.read_csv("data.csv", usecols=["Abstract", "ID"])  # Load only the Abstract column
+        df = df.fillna('N/A')  # Replace actual NaN values
+        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
+        abstracts = df.to_dict(orient="records")
+    except FileNotFoundError:
+        return "data.csv file not found"
+    except pd.errors.EmptyDataError:
+        return "data.csv file is empty"
+    except Exception as e:
+        return f"Error loading data.csv: {e}"
+    
+    return abstracts
+
+def additional_data():
+    try:
+        df = pd.read_csv("data.csv", usecols=["Gesture", "Keywords"])
+        df = df.fillna('N/A')  # Replace actual NaN values
+        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
+        additional_data = df.to_dict(orient="records")
+    except FileNotFoundError:
+        return "data.csv file not found"
+    except pd.errors.EmptyDataError:
+        return "data.csv file is empty"
+    except Exception as e:
+        return f"Error loading data.csv: {e}"
+    
+    helper = {}
+    for entry in additional_data:
+        for key in entry.keys():
+            if key not in helper:
+                helper[key] = [entry[key]]
+            else:    
+                helper[key].append(entry[key])
+    
+    return helper
+
+def generate_sidebar_panels(data, explanations):
+    # Create a list for the panels on the side bar
+    sidebar_panels = []
+    panels = {}
+    for col in data[0].keys(): # all records in the database have the same keys = column headings = data[0].keys()
+        prefix = "Advanced Filters" if col in ADVANCED_SIDEBAR_CATEGORIES else (col.split("_")[0] if "_" in col else "General Information")
+        if prefix not in panels:
+            panels.update({prefix: []})
+        panels[prefix].append(col)
+    # now all column headings are grouped by their prefix and in panels dictionary
+
+    for panel, columns in panels.items():
+        new_panel = Panel(value=panel)
+        if panel in SELECT_DESELECT_ALL_PANELS:
+            new_panel.select_deselect_buttons = True
+
+        if panel in INITIALLY_HIDDEN_PANELS:
+            new_panel.initial_visibility = "none"
+        
+        for col in columns:
+          # skip all columns that are excluded
+          if col in EXCLUDED_SIDEBAR_CATEGORIES:
+            continue
+          
+          # for numerical columns, get min and max values and add Slider to the respective panel
+          if col in SLIDER_CATEGORIES:
+            # determine min and max values for the slider
+            min_value = min(list(map(lambda entry: entry[col], data)))
+            max_value = max(list(map(lambda entry: entry[col], data)))
+
+            # create a new slider
+            new_slider = Slider(value=col, min_value=min_value, max_value=max_value)
+            new_slider.explanation = explanations.get(col, None)
+
+            # add the slider to the respective panel
+            new_panel.sliders.append(new_slider)
+          else:
+            # for categorical columns, get unique values
+            unique_values = set()
+            for row in data:
+              # some cells contain multiple values separated by commas
+              cell_values = row[col].split(",")
+              for value in cell_values:
+                  # trim values
+                  trimmed_value = value.strip()
+
+                  # remove parentheses and choose the first value for values containing parentheses
+                  base_value = trimmed_value.split("(")[0].strip() if col in PARENTHICAL_COLUMNS else trimmed_value
+                  unique_values.add(base_value)
+
+            # sort the unique values using custom_sort function
+            sorted_unique_values = custom_sort(list(unique_values))
+
+            # create a new filter for the column and add it to the respective panel
+            if col in EXCLUSIVE_FILTERING_CATEGORIES:
+                new_filter = Filter(value=col, unique_values=sorted_unique_values, exclusive_filtering=True, select_deselect_all=True)
+            elif col in SELECT_DESELECT_ALL_CATEGORIES:
+                new_filter = Filter(value=col, unique_values=sorted_unique_values, select_deselect_all=True)
+            else:
+                new_filter = Filter(value=col, unique_values=sorted_unique_values)
+
+            # retrieve the explanation for the column from explanations dictionary
+            explanation = explanations.get(col, None)
+
+            # if the explanation is in SPECIAL_FORMAT_EXPLANATIONS, format it accordingly
+            if (col in SPECIAL_FORMAT_EXPLANATIONS):
+                # split the explanation by ".;" and trim each part
+                parts = [part.strip() for part in explanation.split(".;")]
+
+                # ensure the first part ends with a dot and the last part does not
+                if (len(parts) > 0 and not parts[0].endswith(".")):
+                    parts[0] += "."
+                if parts[-1].endswith("."):
+                    parts[-1] = parts[-1][:-1]
+
+                # combine the parts into a single explanation string
+                explanation = "\n".join(parts)
+            new_filter.explanation = explanation
+            new_panel.filters.append(new_filter)
+        sidebar_panels.append(new_panel)
+
+    # Panel for advanced filters should be at the end
+    sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
+
+    return sidebar_panels
+
+def load_similarity_data():
     try:
         # Read the similarity matrix with the first column as index
         abstract_similarity_df = pd.read_csv("abstract_similarity_datasets/normalized_abstract_similarity.csv", index_col=0)
+        abstract_similarity_df = abstract_similarity_df.fillna('N/A')  # Replace actual NaN values
+        abstract_similarity_df = abstract_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
         database_similarity_df = pd.read_csv("database_similarity_datasets/normalized_database_similarity.csv", index_col=0)
+        database_similarity_df = database_similarity_df.fillna('N/A')  # Replace actual NaN values
+        database_similarity_df = database_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
 
-        
         # Prepare data structure that preserves row/column information
         similarity_data = {
             'abstract_study_ids': abstract_similarity_df.columns.tolist(),
@@ -66,101 +253,146 @@ def index():
             'database_index_ids': database_similarity_df.index.tolist(),
             'database_matrix': database_similarity_df.values.tolist(),
         }
-        
-        # Also prepare a mapping of study IDs to their metadata for tooltips
-        if 'data' in locals():
-            # Create a dictionary mapping IDs to study information
-            study_dict = {}
-            for study in data:
-                try:
-                    study_id = str(study['ID'])  # Assuming 'ID' is the column name in data.csv
-                    
-                    # Create a copy of the entire study data for this ID
-                    study_details = {
-                        # Include all fields from the study
-                        **study,
-                        # Ensure these critical fields are always present with defaults
-                        'title': study.get('Title', f"Study {study_id}"),
-                        'authors': study.get('First Author', 'Unknown'),
-                        'year': study.get('Year', 'N/A'),
-                        'id': study_id
-                    }
-                    
-                    # Convert all values to strings to avoid JSON serialization issues
-                    for key, value in study_details.items():
-                        if pd.isna(value):
-                            study_details[key] = 'N/A'
-                        else:
-                            study_details[key] = str(value) if not isinstance(value, (int, float, bool, str, list, dict)) else value
-                    
-                    study_dict[study_id] = study_details
-                    
-                except (KeyError, TypeError) as e:
-                    print(f"Error processing study ID {study.get('ID', 'unknown')}: {e}")
-                    continue
-            similarity_data['study_details'] = study_dict
+    except FileNotFoundError:
+        return "similarity.csv file not found"
+    except pd.errors.EmptyDataError:
+        return "similarity.csv file is empty"
     except Exception as e:
-        similarity_data = {'abstract_study_ids': [], 'abstract_matrix': [], 'abstract_index_ids': [], 'database_study_ids': [], 'database_matrix': [], 'database_index_ids': [], 'study_details': {}}
-        print(f"Error loading similarity data: {e}")
+        return f"Error loading similarity.csv: {e}"
+    
+    return similarity_data
 
+def load_citation_data():
     # Load citation and co-author matrices for timeline view
     citation_matrix = []
     coauthor_matrix = []
     
     try:
-        citation_path = "interconnections_datasets/citation_matrix.csv"
-        if os.path.exists(citation_path):
-            # Read CSV - convert index to a column for proper processing in JS
-            citation_df = pd.read_csv(citation_path, index_col=0)
-            
-            # Get column names and index
-            col_headers = citation_df.columns.tolist()
-            row_indices = citation_df.index.tolist()
-            
-            # Create header row with empty first cell plus column names
-            header_row = [""] + col_headers
-            
-            # Create matrix with header row and data rows (index + values)
-            citation_matrix = [header_row]
-            for idx in row_indices:
-                row_data = [idx] + citation_df.loc[idx].tolist()
-                citation_matrix.append(row_data)
+        # Read CSV - convert index to a column for proper processing in JS
+        citation_df = pd.read_csv("interconnections_datasets/citation_matrix.csv", index_col=0)
+        
+        # Get column names and index
+        col_headers = citation_df.columns.tolist()
+        row_indices = citation_df.index.tolist()
+        
+        # Create header row with empty first cell plus column names
+        header_row = [""] + col_headers
+        
+        # Create matrix with header row and data rows (index + values)
+        citation_matrix = [header_row]
+        for idx in row_indices:
+            row_data = [idx] + citation_df.loc[idx].tolist()
+            citation_matrix.append(row_data)
                 
-            print(f"Processed citation matrix: {len(citation_matrix)} rows")
     except Exception as e:
-        print(f"Error loading citation matrix: {e}")
+        return f"Error loading citation matrix: {e}"
     
     try:
-        coauthor_path = "interconnections_datasets/coauthor_matrix.csv"
-        if os.path.exists(coauthor_path):
-            # Read CSV - convert index to a column for proper processing in JS
-            coauthor_df = pd.read_csv(coauthor_path, index_col=0)
+        # Read CSV - convert index to a column for proper processing in JS
+        coauthor_df = pd.read_csv("interconnections_datasets/coauthor_matrix.csv", index_col=0)
+        
+        # Get column names and index
+        col_headers = coauthor_df.columns.tolist()
+        row_indices = coauthor_df.index.tolist()
+        
+        # Create header row with empty first cell plus column names
+        header_row = [""] + col_headers
+        
+        # Create matrix with header row and data rows (index + values)
+        coauthor_matrix = [header_row]
+        for idx in row_indices:
+            row_data = [idx] + coauthor_df.loc[idx].tolist()
+            coauthor_matrix.append(row_data)
             
-            # Get column names and index
-            col_headers = coauthor_df.columns.tolist()
-            row_indices = coauthor_df.index.tolist()
-            
-            # Create header row with empty first cell plus column names
-            header_row = [""] + col_headers
-            
-            # Create matrix with header row and data rows (index + values)
-            coauthor_matrix = [header_row]
-            for idx in row_indices:
-                row_data = [idx] + coauthor_df.loc[idx].tolist()
-                coauthor_matrix.append(row_data)
-                
-            print(f"Processed coauthor matrix: {len(coauthor_matrix)} rows")
     except Exception as e:
-        print(f"Error loading coauthor matrix: {e}")
-
-    return render_template("index.html", 
-                          data=data, 
-                          explanations=explanations, 
-                          similarity_data=similarity_data,
-                          citation_matrix=citation_matrix,
-                          coauthor_matrix=coauthor_matrix)
+        return f"Error loading coauthor matrix: {e}"
     
-@app.route('/add_study')
+    return citation_matrix, coauthor_matrix
+
+@app.get("/")
+def home():
+    data = load_data()
+    if not isinstance(data, list):
+        return render_template("error.html", error=data), 500
+
+    explanations = load_explanations()
+    if not isinstance(explanations, dict):
+        return render_template("error.html", error=explanations), 500
+    
+    sidebar_panels = generate_sidebar_panels(data, explanations)
+
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS)
+
+@app.get("/bar-chart")
+def bar_chart():
+    data = load_data()
+    if not isinstance(data, list):
+        return render_template("error.html", error=data), 500
+
+    explanations = load_explanations()
+    if not isinstance(explanations, dict):
+        return render_template("error.html", error=explanations), 500
+    
+    sidebar_panels = generate_sidebar_panels(data, explanations)
+
+    categories = []
+    for category in data[0].keys():
+        if category in EXCLUDED_SIDEBAR_CATEGORIES:
+            continue
+        categories.append(category)
+
+
+    abstracts = load_abstracts()
+    if not isinstance(abstracts, list):
+        return render_template("error.html", error=abstracts), 500
+    
+    
+    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS,)
+
+@app.get("/similarity")
+def similarity():
+    data = load_data()
+    if not isinstance(data, list):
+        return render_template("error.html", error=data), 500
+
+    explanations = load_explanations()
+    if not isinstance(explanations, dict):
+        return render_template("error.html", error=explanations), 500
+    
+    sidebar_panels = generate_sidebar_panels(data, explanations)
+
+    similarity_data = load_similarity_data()
+    if not isinstance(similarity_data, dict):
+        return render_template("error.html", error=similarity_data), 500
+    
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
+
+    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories))
+
+@app.get("/timeline")
+def timeline():
+    data = load_data()
+    if not isinstance(data, list):
+        return render_template("error.html", error=data), 500
+
+    explanations = load_explanations()
+    if not isinstance(explanations, dict):
+        return render_template("error.html", error=explanations), 500
+    
+    sidebar_panels = generate_sidebar_panels(data, explanations)
+
+    categories = []
+    for category in data[0].keys():
+        if category in EXCLUDED_SIDEBAR_CATEGORIES or category == "Year":
+            continue
+        categories.append(category)
+
+    citation_matrix, coauthor_matrix = load_citation_data()
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
+
+    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories))
+
+@app.get('/add_study')
 def add_study():
     try:
         # Load the data
@@ -177,24 +409,11 @@ def add_study():
                 if panel_name not in panels:
                     panels[panel_name] = []
                 panels[panel_name].append(col)
-            elif col not in ['ID', 'First Author', 'Abstract', 'Study Link', 'Keywords']:
+            elif col not in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Keywords']:
                 # Add general columns not in panels
                 if 'General' not in panels:
                     panels['General'] = []
                 panels['General'].append(col)
-        
-        # Fields that need participant count fields and should have parentheticals removed
-        participant_count_fields = [
-            'Interaction_PANEL_Accuracy of Interaction Recognition',
-            'Interaction_PANEL_Robustness of Interaction Detection',
-            'Study_PANEL_Elicitation Study',
-            'Study_PANEL_Usability Evaluations',
-            'Study_PANEL_Cognitive Ease Evaluations',
-            'Study_PANEL_Discreetness of Interactions Evaluations',
-            'Study_PANEL_Social Acceptability of Interactions Evaluations',
-            'Study_PANEL_Accuracy of Interactions Evaluations',
-            'Study_PANEL_Alternative Interaction Validity Evaluations'
-        ]
         
         # Process each panel to extract unique values
         for panel, columns in panels.items():
@@ -202,7 +421,7 @@ def add_study():
             
             for col in columns:
                 # Skip certain columns that shouldn't be in the form
-                if col in ['ID', 'First Author', 'Abstract', 'Study Link']:
+                if col in ['ID', 'Main Author', 'Abstract', 'Study Link']:
                     continue
                 
                 # Get the display name (remove panel prefix if exists)
@@ -230,7 +449,7 @@ def add_study():
                             clean_value = value.strip()
                             
                             # For specific fields, remove parenthetical content
-                            if col in participant_count_fields and '(' in clean_value:
+                            if col in PARENTHICAL_COLUMNS and '(' in clean_value:
                                 base_value = clean_value.split('(')[0].strip()
                                 if base_value and base_value not in unique_values:
                                     unique_values.append(base_value)
@@ -252,20 +471,21 @@ def add_study():
                 }
                 
                 # For participant count fields, add a flag to include N input
-                if col in participant_count_fields:
+                if col in PARENTHICAL_COLUMNS:
                     field_data['needs_participant_count'] = True
                 
                 panel_options[col] = field_data
             
             if panel_options:  # Only add non-empty panels
                 form_categories[panel] = panel_options
+
         
         return render_template('add_study.html', form_categories=form_categories)
         
     except Exception as e:
         print(f"Error preparing add_study form: {e}")
         # Fallback to basic template if data processing fails
-        return render_template('add_study.html')
+        return render_template('error.html', error=str(e)), 500
     
 @app.route('/submit_study', methods=['POST'])
 def submit_study():
@@ -317,6 +537,6 @@ def submit_mistake():
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
         return jsonify({"success": False, "message": str(e)}), 500
-
+    
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=888)

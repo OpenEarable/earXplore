@@ -1,0 +1,125 @@
+body {
+  padding: 20px;
+  background-color: #f8f9fa;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header img {
+  height: 40px;
+  margin-right: 15px;
+}
+
+.option-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.option-card:hover {
+  box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+  border-color: #B89491;
+}
+
+.form-section {
+  display: none;
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.btn-primary {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+.btn-primary:hover {
+  background-color: rgba(108, 117, 125, 0.8);
+  border-color: rgba(108, 117, 125, 0.8);
+}
+
+.btn-warning {
+  background-color: #B89491;
+  border-color: #B89491;
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: rgba(184, 148, 145, 0.8);
+  border-color: rgba(184, 148, 145, 0.8);
+  color: white;
+}
+
+h3, h4 {
+  color: #B89491;
+}
+
+.section-header {
+  margin-top: 20px;
+  margin-bottom: 15px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* For the feedback message */
+.success-message {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  padding: 15px 25px;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  color: #155724;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.title-underline {
+  padding-bottom: 5px;
+  border-bottom: 2px solid #B89491;
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.form-check-input:checked {
+  background-color: #B89491;
+  border-color: #B89491;
+}
+
+.home-link {
+  margin-top: 20px;
+  text-decoration: none;
+  color: #6c757d;
+  display: inline-flex;
+  align-items: center;
+}
+
+.home-link:hover {
+  color: #B89491;
+}
+
+.home-link i {
+  margin-right: 5px;
+}
