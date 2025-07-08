@@ -240,27 +240,6 @@ function getFullCategory(category) {
   return categories.find((cat) => cat.includes(category));
 }
 
-function formatLabel(label, boundary) {
-  const parts = label.split(" ");
-  const title = [];
-  let beginning = 0;
-  let current;
-  if (label.length > boundary) {
-    for (let i = 1; i <= parts.length; i++) {
-      current = parts.slice(beginning, i).join(" ");
-      if (current.length > Math.floor(boundary / 2) && i !== parts.length) {
-        title.push(current);
-        beginning = i;
-      }
-    }
-    title.push(current);
-  } else {
-    title.push(label);
-  }
-
-  return title;
-}
-
 /*
   Section for the visibility of the charts
   - The visibility of the charts is updated based on the maximum number of bars set in the dropdown menu
@@ -302,7 +281,7 @@ function updateVisibility() {
       $("#hiddenChartsList").append(`<li id="message-${category}"><strong>${category.split("_").pop()}</strong>: ${chart.data.labels.length} bars (exceeds threshold of ${maxBars})</li>`);
     } else {
       // Show the chart if it does not exceed the maximum number of bars
-      chartWrapper.style.display = "inline-block";
+      chartWrapper.style.display = "flex";
     }
   }
   

@@ -35,41 +35,56 @@
         <a href="https://open-earable.teco.edu/" target="_blank">
           <img id="open-earable-logo" src="{{ url_for('static', filename='images/OE_Logo_black_RGB.png') }}" alt="Open Earable Logo">
         </a>
-        <div class="d-flex flex-column align-items-center">
-          <h3><a href="https://github.com/OpenEarable/earXplore/tree/master" target="_blank">EarXplore</a></h3>
-          <span class="text-muted" style="color: #B89491 !important;">Interaction</span>
+        <div id="earXplore-repo">
+          <a href="https://github.com/OpenEarable/earXplore/tree/master" target="_blank">
+            <h3>EarXplore</h3>
+            <span class="text-muted" style="color: #B89491 !important;">Interaction</span>
+          </a>
         </div>
 
         {# Links to other Views #}
         <div class="link-section">
           <a href="{{ url_for('home') }}">
-            <div class="navbar-item" data-section="tableView">Tabular Overview</div>
+            <div class="navbar-item" data-section="tableView">
+              <span class="navbar-text">Tabular Overview</span>
+              <img class="navbar-icon" src="{{ url_for('static', filename='images/table_chart_icon.svg') }}" alt="Table Icon"/>
+            </div>
           </a>
           <a href="{{ url_for('bar_chart') }}">
-            <div class="navbar-item" data-section="chartView">Distribution Charts</div>
+            <div class="navbar-item" data-section="chartView">
+              <span class="navbar-text">Distribution Charts</span>
+              <img class="navbar-icon" src="{{ url_for('static', filename='images/bar_chart_icon.svg') }}" alt="Chart Icon"/>
+            </div>
           </a>
           <a href="{{ url_for('similarity') }}">
-            <div class="navbar-item" data-section="similarityView">Study Similarity</div>
+            <div class="navbar-item" data-section="similarityView">
+              <span class="navbar-text">Study Similarity</span>
+              <img class="navbar-icon" src="{{ url_for('static', filename='images/similarity_icon.svg') }}" alt="Similarity Icon"/></div>
           </a>
           <a href="{{ url_for('timeline') }}">
-            <div class="navbar-item" data-section="timeView">Study Timeline</div>
+            <div class="navbar-item" data-section="timeView">
+              <span class="navbar-text">Study Timeline</span>
+              <img class="navbar-icon" src="{{ url_for('static', filename='images/timeline_icon.svg') }}" alt="Timeline Icon"/></div>
           </a>
         </div>
       </nav>
 
       {# Add Study Button #}
-      <a href="{{ url_for('add_study')}}">
-        <button class="add-study-button">
-          Add your study!
-          <br>
-          Report a Mistake!
+      <div class="d-flex align-items-center">
+        <a href="{{ url_for('add_study')}}">
+          <button class="add-study-button">
+            <span class="navbar-text">
+              Add your study!
+              <br>
+              Report a Mistake!
+            </span>
+            <img src="{{ url_for('static', filename='images/add_study_icon.svg')}}" alt="Add Study Icon" class="navbar-icon">
+          </button>
+        </a>
+        <button id="toggle-sidebar">
+          <img id="filter-icon" src="{{ url_for('static', filename='images/filter-icon.svg')}}" alt="Filter Icon" class="navbar-icon"/>
         </button>
-      </a>
-
-      <button id="toggle-sidebar">
-        <img id="filter-icon" src="{{ url_for('static', filename='images/filter-icon.svg')}}" alt="Filter Icon"/>
-      </button>
-
+      </div>
     </header>
 
     <main>

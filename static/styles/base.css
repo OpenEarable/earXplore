@@ -14,6 +14,7 @@ body {
   font-size: clamp(0.75rem, 0.6642rem + 0.3661vw, 1.25rem);
 }
 
+/* Hide elements that are only relevant for lower screen resolution */
 #toggle-sidebar,
 #close-sidebar,
 #mask,
@@ -60,6 +61,12 @@ nav {
   gap: 1em;
 }
 
+#earXplore-repo a {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
 .link-section {
   display: flex;
   flex-direction: row;
@@ -94,6 +101,10 @@ h3 {
   font-size: 1.5em;
   padding: 0;
   margin: 0;
+}
+
+.navbar-icon {
+  display: none;
 }
 
 /* Styling the sidebar */
@@ -230,10 +241,7 @@ a:link, a:visited {
 }
 
 @media (max-width: 1050px) {
-  #sidebar.visible-sidebar {
-    right: 0;
-  }
-
+  /* Hide the sidebar from the user */
   #sidebar {
     position: fixed;
     width: 80%;
@@ -245,6 +253,12 @@ a:link, a:visited {
     transition: right 0.3s ease;
   }
 
+  /* Make the sidebar appear when it should be visible */
+  #sidebar.visible-sidebar {
+    right: 0;
+  }
+
+  /* Add two buttons to open and close the sidebar */
   #toggle-sidebar,
   #close-sidebar {
     display: block;
@@ -254,16 +268,16 @@ a:link, a:visited {
     opacity: 0.5;
   }
 
-  #close-sidebar {
-    background-color: var(--color-gray-light);
-    opacity: 0.7;
-  }
-
-  #close-icon,
   #filter-icon {
+    display: block;
     width: 2em;
   }
 
+  #close-icon {
+    width: 2em;
+  }
+
+  /* Add a mask over the content when the sidebar is open */
   #mask {
     position: fixed;
     top: 0;
@@ -281,6 +295,30 @@ a:link, a:visited {
 
   nav {
     padding: 0.5em;
+  }
+}
+
+@media (max-width: 630px) {
+  /* Change the navbar links from text to icons */
+  .navbar-text {
+    display: none;
+  }
+
+  .navbar-icon {
+    display: block;
+    width: 2em;
+    height: 2em;
+    background-color: transparent;
+  }
+
+  .navbar-icon:not(#filter-icon) {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 450px) {
+  #earXplore-repo {
+    display: none;
   }
 }
 

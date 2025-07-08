@@ -32,12 +32,18 @@
 		interpolate-size: allow-keywords;
 	}
 
+	#filter-icon {
+		width: 2em;
+	}
+
 	#toggle-menu-container.visible-filters {
 		height: auto;
 	}
 	
 	#select-filter-button {
-		display: block;
+		display: flex;
+		align-items: center;
+		gap: 0.5em;
 		margin: 1em 0 1em auto;
 		border: none;
 		background-color: var(--color-gray-light);
