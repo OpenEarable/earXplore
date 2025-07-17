@@ -3,4 +3,4 @@
 <!-- change to white background version -->
 
 ## About the Project
-This Web Project was build as an additional to support the exploration of research on interaction with earables (as defined in the respective paper [Link to the public Open Earable Study]().
+This Web Project was build as an additional to support the exploration of research on interaction with earables (as defined in the respective paper [EarXplore: An Open Earable Research Database on Interaction]().
