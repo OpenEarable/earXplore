@@ -140,12 +140,29 @@ function selectAll(checkboxSelection) {
     changedCheckboxes.push(element);
   });
 
+  // Reset the slider to the default range by setting both handles to the minimum and maximum values
+  const changedSliders = [];
+  checkboxSelection.find(".range-slider").each((_, element) => {
+    const min = $(element).data('min');
+    const max = $(element).data('max');
+    element.noUiSlider.set([min, max]);
+    changedSliders.push(element);
+  });
+
   // Add the IDs of the changed checkboxes to the value filters if they are not already included
   changedCheckboxes.forEach((element) => {
     const id = convertToID($(element).attr("id"));
     if (!filters.valueFilters.includes(id)) {
       filters.valueFilters.push(id);
     };
+  });
+
+  // Update the range filters for the changed sliders
+  changedSliders.forEach((element) => {
+    const category = $(element).data('col');
+    const min = $(element).data('min');
+    const max = $(element).data('max');
+    filters.rangeFilters[category] = [min, max];
   });
 
   // Store the updated value filters in session storage
@@ -165,12 +182,27 @@ function deselectAll(checkboxSelection) {
     changedCheckboxes.push(element);
   });
 
+  // Change the slider to no selection by setting both handles to the minimum value
+  const changedSliders = [];
+  checkboxSelection.find(".range-slider").each((_, element) => {
+    const min = $(element).data('min');
+    element.noUiSlider.set([min, min]);
+    changedSliders.push(element);
+  });
+
   // Remove the IDs of the changed checkboxes to the value filters if they are included
   changedCheckboxes.forEach((element) => {
     const id = convertToID($(element).attr("id"));
     if (filters.valueFilters.includes(id)) {
       filters.valueFilters.splice(filters.valueFilters.indexOf(id), 1);
     };
+  });
+
+  // Update the range filters for the changed sliders
+  changedSliders.forEach((element) => {
+    const category = $(element).data('col');
+    const min = $(element).data('min');
+    filters.rangeFilters[category] = [min, min];
   });
 
   // Store the updated value filters in session storage
@@ -282,7 +314,5 @@ $(document).ready(function() {
     $("#sidebar").toggleClass("visible-sidebar");
     $("#mask").hide();
   });
-
-
 });
 
