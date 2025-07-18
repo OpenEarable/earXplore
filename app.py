@@ -114,7 +114,8 @@ def load_explanations():
 
 def load_abstracts():
     try:
-        df = pd.read_csv("data.csv", usecols=["Abstract", "ID"])  # Load only the Abstract column
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path, usecols=["Abstract", "ID"])  # Load only the Abstract column
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
         abstracts = df.to_dict(orient="records")
@@ -129,7 +130,8 @@ def load_abstracts():
 
 def additional_data():
     try:
-        df = pd.read_csv("data.csv", usecols=["Gesture", "Keywords"])
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path, usecols=["Gesture", "Keywords"])
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
         additional_data = df.to_dict(orient="records")
@@ -239,10 +241,12 @@ def generate_sidebar_panels(data, explanations):
 def load_similarity_data():
     try:
         # Read the similarity matrix with the first column as index
-        abstract_similarity_df = pd.read_csv("abstract_similarity_datasets/normalized_abstract_similarity.csv", index_col=0)
+        csv_path_as = os.path.join(os.path.dirname(__file__), "abstract_similarity_datasets/normalized_abstract_similarity.csv")
+        abstract_similarity_df = pd.read_csv(csv_path_as, index_col=0)
         abstract_similarity_df = abstract_similarity_df.fillna('N/A')  # Replace actual NaN values
         abstract_similarity_df = abstract_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
-        database_similarity_df = pd.read_csv("database_similarity_datasets/normalized_database_similarity.csv", index_col=0)
+        csv_path_ds = os.path.join(os.path.dirname(__file__), "database_similarity_datasets/normalized_database_similarity.csv")
+        database_similarity_df = pd.read_csv(csv_path_ds, index_col=0)
         database_similarity_df = database_similarity_df.fillna('N/A')  # Replace actual NaN values
         database_similarity_df = database_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
 
@@ -272,7 +276,8 @@ def load_citation_data():
     
     try:
         # Read CSV - convert index to a column for proper processing in JS
-        citation_df = pd.read_csv("interconnections_datasets/citation_matrix.csv", index_col=0)
+        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/citation_matrix.csv")
+        citation_df = pd.read_csv(csv_path, index_col=0)
         
         # Get column names and index
         col_headers = citation_df.columns.tolist()
@@ -292,7 +297,8 @@ def load_citation_data():
     
     try:
         # Read CSV - convert index to a column for proper processing in JS
-        coauthor_df = pd.read_csv("interconnections_datasets/coauthor_matrix.csv", index_col=0)
+        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/coauthor_matrix.csv")
+        coauthor_df = pd.read_csv(csv_path, index_col=0)
         
         # Get column names and index
         col_headers = coauthor_df.columns.tolist()
@@ -399,7 +405,8 @@ def timeline():
 def add_study():
     try:
         # Load the data
-        df = pd.read_csv("data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path)
         
         # Extract categories and their options for the form
         form_categories = {}
