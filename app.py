@@ -75,7 +75,8 @@ def filter_categories(data):
 def load_data():
     # Load data from CSV file into data variable
     try:
-        df = pd.read_csv("data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path)
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
         data = df.to_dict(orient="records")
