@@ -95,7 +95,7 @@ Currently there are no known issues. If you happen to encounter an issue with th
 
 ## 🪪 License
 
-⚠️ This Project is currently not licensed. <!-- TODO: Add license --> ⚠️
+⚠️ This project is currently licensed under the terms of the [MIT](./LICENSE) license. ⚠️
 
 ## 📩 Contact
 
