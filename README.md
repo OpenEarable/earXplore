@@ -72,7 +72,17 @@ START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", ...])
 # Categories whose explanations should be formatted in a special way
 SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", ...]
 ```
-This is the only case where you need to change the code to customize the website. Please make sure you spell the category exactly as in your data.csv file, otherwise it wont recognize it and therefore wont work as intended.
+This is the one of the two cases where you need to change the code to customize the website. Please make sure you spell the category exactly as in your data.csv file, otherwise it wont recognize it and therefore wont work as intended. Additionally you may want to configure the Mail-Server to your liking. Change the following code snippet for this use case:
+```python
+# Configure Flask-Mail
+app.config['MAIL_SERVER'] = 'your-smtp-server.example.com'  # Replace with your SMTP server
+app.config['MAIL_PORT'] = 587  # Common port for TLS
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Replace with your email
+app.config['MAIL_PASSWORD'] = 'your-password'  # Replace with your password
+app.config['MAIL_DEFAULT_SENDER'] = 'default-sender' # Replace with the default sender
+```
+If you are unsure about the some of the configurations, please refer to the [Flask Mail Documentation](https://pypi.org/project/Flask-Mail/).
 
 ## 🛠️ Usage
 
@@ -81,22 +91,22 @@ This is the only case where you need to change the code to customize the website
 Currently there are no known issues. If you happen to encounter an issue with the website or need some insight on the code there are two ways to let us know:
 
 1. This implementation of the website is currently hosted at earxplore.dmz.teco.edu <!-- Link not working, change to correct link -->. In the navigation bar you will find a button for reporting a mistake (or submitting an additional study). When clicked you are able to submit a form where you can specify your issue.
-2. You can contact us directly by going to the [Contact Section](#contact) and using a communication type of your choice.
+2. You can contact us directly by going to the [Contact Section](#-contact) and using a communication type of your choice.
 
 ## 🪪 License
 
-This Project is currently not licensed. <!-- TODO: Add license -->
+⚠️ This Project is currently not licensed. <!-- TODO: Add license --> ⚠️
 
 ## 📩 Contact
 
-You can contact us either via this [GitHub Profile](https://github.com/98JoHu) or via E-Mail: jonas.hummel@kit.edu.
+⚠️ You can contact us either via this [GitHub Profile](https://github.com/98JoHu) or via E-Mail: jonas.hummel@kit.edu.
 The full address of the institution which this project stems from is:
 
 Vincenz-Prießnitz-Str.1  
 Gebäude 07.07  
 2.OG [TECO]  
-76131 Karlsruhe  
+76131 Karlsruhe 
 
 Telefon: +49 721 608-41701  
 Fax: +49 721 608-41702  
-E-Mail: sekretariat@teco.edu  
+E-Mail: sekretariat@teco.edu ⚠️ 
