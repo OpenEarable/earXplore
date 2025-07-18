@@ -3,6 +3,7 @@ from flask_mail import Mail, Message
 import pandas as pd
 import json
 from typing import List
+import os
 
 EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link']
 ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
