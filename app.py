@@ -39,7 +39,8 @@ PARENTHICAL_COLUMNS = [
                     'Study_PANEL_Alternative Interaction Validity Evaluations'
                 ]
 
-# Categories that should be displayed initially in the tabular and bar chart views
+# Categories that should be displayed initially in the tabular and bar chart views 
+# Do not delete the "INFO" category !
 START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", "Year", "Location", "Input Body Part", "Gesture"])
 
 # Categories whose explanations should be formatted in a special way
