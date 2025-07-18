@@ -5,13 +5,28 @@ import json
 from typing import List
 import os
 
+# Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link']
+
+# Categories that go in the advanced filters panel
 ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
+
+# Categories that are displayed as sliders in the sidebar, should be numerical !
 SLIDER_CATEGORIES = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
+
+# Categories that should have a "select/deselect all" button in the sidebar
 SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Applications_PANEL_Intended Applications', 'Main Author', 'Gesture', 'Keywords']
-EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors'] 
+
+# Categories that should have an "exclusive filtering" button in the sidebar
+EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors']
+
+# Panels that should have a "select/deselect all" button in the sidebar
 SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study']
+
+# Panels that should be initially hidden in the sidebar
 INITIALLY_HIDDEN_PANELS = ['Advanced Filters']
+
+# Columns that contain parentheses but only the part before the parentheses should be used for filtering
 PARENTHICAL_COLUMNS = [
                     'Interaction_PANEL_Accuracy of Interaction Recognition', 
                     'Interaction_PANEL_Robustness of Interaction Detection', 
@@ -23,7 +38,11 @@ PARENTHICAL_COLUMNS = [
                     'Study_PANEL_Accuracy of Interactions Evaluations', 
                     'Study_PANEL_Alternative Interaction Validity Evaluations'
                 ]
+
+# Categories that should be displayed initially in the tabular and bar chart views
 START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", "Year", "Location", "Input Body Part", "Gesture"])
+
+# Categories whose explanations should be formatted in a special way
 SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", "Interaction_PANEL_Social Acceptability of Interaction Techniques", "Interaction_PANEL_Accuracy of Interaction Recognition", "Interaction_PANEL_Robustness of Interaction Detection", "Motivations_PANEL_Motivations"]
 
 app = Flask(__name__)
