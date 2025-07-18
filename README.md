@@ -14,9 +14,9 @@ This Web Project was build as an additional to support the exploration of resear
 
 Please refer to the [Usage Section](#%EF%B8%8F-usage) or [Forking Section](#-forking) for more information.
 
-## 🏁 Getting Started
+## 🚀 Getting Started
 
-### ⬇️ Installation
+### 💾 Installation
 We highly recommend using a [virtual environment](https://docs.python.org/3/library/venv.html) in python to install all the dependencies from the [requirements.txt](./requirements.txt).  
 In order to do that, activate your virtual environment in a terminal beforehand:  
 ```bash
