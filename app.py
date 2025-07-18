@@ -98,7 +98,8 @@ def load_data():
 def load_explanations():
     # Load explanations from CSV file into explanations variable
     try:
-        explanations_df = pd.read_csv("explanations.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "explanations.csv")
+        explanations_df = pd.read_csv(csv_path)
         explanations = dict(zip(explanations_df["Column"], explanations_df["Explanation"]))
     except FileNotFoundError:
         return "explanations.csv file not found"
