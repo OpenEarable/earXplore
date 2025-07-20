@@ -86,6 +86,24 @@ If you are unsure about the some of the configurations, please refer to the [Fla
 
 ## 🛠️ Usage
 
+This project is hosted under: earXplore.dmz.teco.edu. You may want to visit the site to try out all the features yourself. In this section there will be a quick introduction to the most important use cases for this project. You can navigate between the four different views and the "Report a mistake / Add a study" section via the navbar:
+
+![navbar_demonstration gif](https://github.com/user-attachments/assets/35882867-cc68-4fb3-a751-a620af3d7141)
+
+In the sidebar on the right you can choose the values for every category to filter the data. There is also the option to select or deselect all the values depending on how you have configured the sidebar (see [Forking Section](#-forking)):
+
+![sidebar_demonstration gif](https://github.com/user-attachments/assets/ebfe356d-436f-4bb1-b6f5-89214b0ef8a2)
+
+Similar to the sidebar filters for values of categories there are also individual filters for each view. For the Tabular and the Graphical View there are category filters to show or hide each category on its own. For the Similarity and Timeline View you can color the nodes representing a datapoint by category (choose the similarity type, citation mode, etc.). All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
+
+![filter_demonstration gif](https://github.com/user-attachments/assets/b41978e1-dd71-4031-ab6a-c6ee65fe1129)
+
+Every info icon on the website is clickable. When clicked it shows a modal with the respective study information. Additionally you can click on the bars in the Graphical View to get an overview for all studies that match the value of the bar in the specific category of the chart. In the Similarity and Timeline View the nodes are also clickable. Upon clicking you receive information about the relationship to other studies in this specific network:
+
+![modal_demonstration gif](https://github.com/user-attachments/assets/d4f809e5-bd01-49d7-857a-8685bd7ce8bd)
+
+There are some other minor functionalities (for example the download of the Tabular view as a .csv file) but those are the key features of this project. Feel free to let us know if you wish for additional functionalities.
+
 ## 🚩 Issues
 
 Currently there are no known issues. If you happen to encounter an issue with the website or need some insight on the code there are two ways to let us know:
