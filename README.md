@@ -5,7 +5,7 @@
 
 ## 📝 About the Project
 
-This Web Project was build as an additional to support the exploration of research on interaction with earables (as defined in the respective paper [EarXplore: An Open Earable Research Database on Interaction](https://github.com/OpenEarable/earXplore "Link to the Study which introduces this Repository")<!-- Add the right link -->. For the motivation and methodology of the review we therefore encourage anyone interested to read the paper themselves. The Web Project visualizes the EarXplore Database in four distinct views:
+This web project was build as an additional to support the exploration of research on interaction with earables (as defined in the respective paper [EarXplore: An Open Earable Research Database on Interaction](https://github.com/OpenEarable/earXplore "Link to the Study which introduces this Repository")<!-- Add the right link -->. For the motivation and methodology of the review we therefore encourage anyone interested to read the paper themselves. The Web Project visualizes the EarXplore Database in four distinct views:
 
 - Tabular View
 - Graphical View
