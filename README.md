@@ -1,6 +1,8 @@
 
 # 🎧 EarXplore
 
+![Paper Teaser Figure](./teaser_figure_interactive.png)
+
 ## 📝 About the Project
 
 EarXplore is a curated, structured, and interactive online database consolidating published work on interaction with earables. Beyond merely listing studies, EarXplore supports in-depth exploration through four dynamic and integrated views that enable filtering, comparison, and visualization. The Tabular View presents a structured overview of all included studies, allowing users to filter and query based on multiple categories and criteria. The Graphical View provides a visual summary of key study characteristics, supporting quick comparisons and high-level insights. The Similarity View highlights connections between studies that share similar attributes, helping users discover related work. Finally, the Timeline View visualizes the temporal evolution of the field, revealing trends, citation links, and author networks. These views are interconnected, enabling users to explore data from multiple perspectives while maintaining context through features such as persistent filtering across all views. For more information on the project, we refer to an accompanying arXiv publication !!! ADD LINK !!! and to the [EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository") website itself.
