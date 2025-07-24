@@ -1,11 +1,11 @@
 
 # 🎧 EarXplore
 
+![Paper Teaser Figure](./teaser_figure_interactive.png)
+
 ## 📝 About the Project
 
-EarXplore is a curated, structured, and interactive online database consolidating published work on interaction with earables. Beyond merely listing studies, EarXplore supports in-depth exploration through four dynamic and integrated views that enable filtering, comparison, and visualization. The Tabular View presents a structured overview of all included studies, allowing users to filter and query based on multiple categories and criteria. The Graphical View provides a visual summary of key study characteristics, supporting quick comparisons and high-level insights. The Similarity View highlights connections between studies that share similar attributes, helping users discover related work. Finally, the Timeline View visualizes the temporal evolution of the field, revealing trends, citation links, and author networks. These views are interconnected, enabling users to explore data from multiple perspectives while maintaining context through features such as persistent filtering across all views. For more information on the project, we refer to an accompanying arXiv publication !!! ADD LINK !!! and to the [EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository") website itself.
-
-Please refer to the [Usage Section](#%EF%B8%8F-usage) or [Forking Section](#-forking) for more information.
+*EarXplore* is a curated, structured, and interactive online database consolidating published work on interaction with earables. Beyond merely listing studies, it supports in-depth exploration through four dynamic and integrated views that enable filtering, comparison, and visualization. The *Tabular View* presents a structured overview of all included studies, allowing users to filter and query based on multiple categories and criteria. The *Graphical View* provides a visual summary of key study characteristics, supporting quick comparisons and high-level insights. The *Similarity View* highlights connections between studies that share similar attributes, helping users discover related work. Finally, the *Timeline View* visualizes the temporal evolution of the field, revealing trends, citation links, and author networks. These views are interconnected, enabling users to explore data from multiple perspectives while maintaining context through features such as persistent filtering across all views. For more information on the project, we refer to an accompanying arXiv publication !!! ADD LINK !!! and to the *[EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository")* website itself.
 
 ## 🚀 Getting Started
 
@@ -32,7 +32,8 @@ if __name__ == "__main__":
 ```
 
 ### 🔀 Forking
-Although this website was designed to visualize data from studies about earables, the code can be altered to visualize just about any data if provided correctly. To visualize your data you need to alter the [data.csv](./data.csv) file (if you would like explanations for your categories, you will also need to update the [explanations.csv](./explanations.csv) file accordingly). ⚠️ The project will then filter all the information it needs from your data and produce a website from it. <!-- TODO: Add explanation for similarity and timeline view --> ⚠️. There are some customization options for the sidebar (see [Usage Section](#%EF%B8%8F-usage)):
+
+While *EarXplore* was designed to visualize data from studies on earable interaction, its code can be reused to visualize just about any data with only minor additional configuration. To visualize your customized data, you need to adpat the [data.csv](./data.csv) according to your specific data points. Note that the header needs a special format that allows it to form different filter panels. If you would also like to have explanations for your categories, you will also need to update the [explanations.csv](./explanations.csv) file accordingly. The project will then extract all the information it needs from your data and produce a website from it. There are some customization options for the sidebar listed below (see [Usage Section](#%EF%B8%8F-usage)):
 ```python
 # Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = ['ID', ...]
@@ -65,6 +66,8 @@ START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", ...])
 # Categories whose explanations should be formatted in a special way
 SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", ...]
 ```
+Doing this will enable the full functionalit
+
 This is the one of the two cases where you need to change the code to customize the website. Please make sure you spell the category exactly as in your data.csv file, otherwise it wont recognize it and therefore wont work as intended. Additionally you may want to configure the Mail-Server to your liking. Change the following code snippet for this use case:
 ```python
 # Configure Flask-Mail
@@ -99,26 +102,16 @@ There are some other minor functionalities (for example the download of the Tabu
 
 ## 🚩 Issues
 
-Currently there are no known issues. If you happen to encounter an issue with the website or need some insight on the code there are two ways to let us know:
+Currently there are no known issues. If you happen to encounter an issue with the website or need some insight on the code, there are two ways to let us know:
 
-1. This implementation of the website is currently hosted at earxplore.dmz.teco.edu <!-- Link not working, change to correct link -->. In the navigation bar you will find a button for reporting a mistake (or submitting an additional study). When clicked you are able to submit a form where you can specify your issue.
-2. You can contact us directly by going to the [Contact Section](#-contact) and using a communication type of your choice.
+1. In the navigation bar of the *[EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository")* website, you will find a button for reporting a mistake (or submitting an additional study). Clicking it takes you to a where you can specify your issue.
+2. You can contact us directly by going to the [Contact Section](#-contact).
 
 ## 🪪 License
 
-⚠️ This project is currently licensed under the terms of the [MIT](./LICENSE) license. ⚠️
+This project is currently licensed under the terms of the [MIT](./LICENSE) license.
 
 ## 📩 Contact
 
-⚠️ You can contact us either via this [GitHub Profile](https://github.com/98JoHu) or via E-Mail: jonas.hummel@kit.edu.
-The full address of the institution which this project stems from is:
+You can contact us either via this [GitHub Profile](https://github.com/98JoHu) or via E-Mail: jonas.hummel@kit.edu.
 
-Vincenz-Prießnitz-Str.1  
-Gebäude 07.07  
-2.OG TECO 
-Karlsruhe Institute of Technology
-76131 Karlsruhe 
-
-Telefon: +49 721 608-41701  
-Fax: +49 721 608-41702  
-E-Mail: sekretariat@teco.edu ⚠️ 
