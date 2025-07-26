@@ -1,8 +1,9 @@
 from flask import Flask, render_template, request, jsonify, url_for
 from flask_mailman import Mail, EmailMessage
+from typing import List
+from dotenv import load_dotenv
 import pandas as pd
 import json
-from typing import List
 import os
 
 # Categories that should not be filtered for
@@ -48,13 +49,13 @@ SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Te
 
 app = Flask(__name__)
 
+load_dotenv() # Load environment variables from .env file
+
 # Configure Flask-Mail
-app.config['MAIL_SERVER'] = 'mail.teco.edu'  # Replace with your SMTP server
-app.config['MAIL_PORT'] = 587  # Common port for TLS
-app.config['MAIL_USE_TLS'] = True
-# app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Replace with your email
-# app.config['MAIL_PASSWORD'] = 'your-password'  # Replace with your password
-app.config['MAIL_DEFAULT_SENDER'] = 'earXplore@teco.edu'
+app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
+app.config['MAIL_PORT'] = os.getenv("MAIL_PORT")
+app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS")
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
 mail = Mail(app)
 
 # Template classes for sidebar panel
@@ -531,7 +532,7 @@ def submit_study():
         # Create and send the email
         msg = EmailMessage(
             subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
-            recipients=['majo.prill@gmail.com'],
+            recipients=[os.getenv("RECIPIENTS")],
             body=body
         )
         mail.send(msg)
@@ -557,7 +558,7 @@ def submit_mistake():
         # Create and send the email
         msg = EmailMessage(
             subject="earXplore: Mistake Report",
-            recipients=['majo.prill@gmail.com'],
+            recipients=[os.getenv("RECIPIENTS")],
             body=body
         )
         mail.send(msg)
