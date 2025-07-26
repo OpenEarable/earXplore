@@ -7,7 +7,6 @@ let filters = JSON.parse(window.sessionStorage.getItem("filters"));
 let categoryFilters = filters.categoryFilters || null;
 if (!categoryFilters) {
   categoryFilters = startCategories;
-  console.log(startCategories);
   filters.categoryFilters = categoryFilters;
 
   $(".column-filter").each((index, element) => {
