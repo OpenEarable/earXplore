@@ -531,7 +531,7 @@ def submit_study():
         # Create and send the email
         msg = EmailMessage(
             subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
-            recipients=['hummel@teco.edu'],
+            recipients=['majo.prill@gmail.com'],
             body=body
         )
         mail.send(msg)
@@ -557,7 +557,7 @@ def submit_mistake():
         # Create and send the email
         msg = EmailMessage(
             subject="earXplore: Mistake Report",
-            recipients=['hummel@teco.edu'],
+            recipients=['majo.prill@gmail.com'],
             body=body
         )
         mail.send(msg)
