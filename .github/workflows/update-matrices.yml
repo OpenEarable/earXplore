@@ -1,0 +1,35 @@
+# Name of the workflow
+name: Update Similarity Matrices
+
+on:
+  # Runs only when a pull request is merged so the data.csv has been altered
+  pull_request:
+    types: [closed]
+
+jobs:
+  update-matrices:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up a GitHub Bot that pushes the changes
+      - name: Set up GitHub Bot
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+      # Uncomment the two lines below and add the correct path for the script which is supposed to run
+      # - name: Run script
+      #   run: ./scripts/update-something.sh
+
+      # When changes have been made: stage, commit and push them to the repo
+      - name: Commit and push changes
+        run: |
+          git add -A
+          git diff --cached --quiet || git commit -m "Automated update from GitHub Actions"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
