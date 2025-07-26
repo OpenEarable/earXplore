@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, url_for
-from flask_mail import Mail, Message
+from flask_mailman import Mail, EmailMessage
 import pandas as pd
 import json
 from typing import List
@@ -49,11 +49,11 @@ SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Te
 app = Flask(__name__)
 
 # Configure Flask-Mail
-app.config['MAIL_SERVER'] = 'your-smtp-server.example.com'  # Replace with your SMTP server
+app.config['MAIL_SERVER'] = 'mail.teco.edu'  # Replace with your SMTP server
 app.config['MAIL_PORT'] = 587  # Common port for TLS
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Replace with your email
-app.config['MAIL_PASSWORD'] = 'your-password'  # Replace with your password
+# app.config['MAIL_USERNAME'] = 'your-email@example.com'  # Replace with your email
+# app.config['MAIL_PASSWORD'] = 'your-password'  # Replace with your password
 app.config['MAIL_DEFAULT_SENDER'] = 'earXplore@teco.edu'
 mail = Mail(app)
 
@@ -529,7 +529,7 @@ def submit_study():
             body += f"{key}: {value}\n\n"
         
         # Create and send the email
-        msg = Message(
+        msg = EmailMessage(
             subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
             recipients=['hummel@teco.edu'],
             body=body
@@ -555,7 +555,7 @@ def submit_mistake():
         body += f"Reporter Email: {mistake_data.get('email', 'No email provided')}"
         
         # Create and send the email
-        msg = Message(
+        msg = EmailMessage(
             subject="earXplore: Mistake Report",
             recipients=['hummel@teco.edu'],
             body=body
