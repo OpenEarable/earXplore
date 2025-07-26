@@ -20,7 +20,7 @@ To install the depencies simply type:
 ```venv
 pip install -r requirements.txt
 ```
-To host your own version of the project locally type:
+To host your own version of the project locally, type:
 ```terminal
 flask run --debug
 ```
