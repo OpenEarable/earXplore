@@ -4,3 +4,4 @@ Dimensions_250702.csv
 high_confidence_citations.xlsx
 .venv
 .env
+__pycache__
