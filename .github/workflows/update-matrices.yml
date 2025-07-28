@@ -30,10 +30,10 @@ jobs:
           python-version: '3.11'  # or another version if needed
 
       - name: Install update script dependencies
-        run: pip install -r requirements_update_similarity_matrices.txt
+        run: pip install -r .github/workflows/requirements_update_similarity_matrices.txt
 
       - name: Run update script
-        run: python scripts/update_similarity_matrix.py
+        run: python update_similarity_matrices.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
