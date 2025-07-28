@@ -552,8 +552,8 @@ def submit_study():
         import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
-    
-@app.route('/add_study', methods=['POST'])
+
+@app.route('/submit_mistake', methods=['POST'])
 def submit_mistake():
     try:
         # Get form data from request

@@ -52,19 +52,19 @@
   <div id="reportMistakeForm" class="form-section">
     <h4>Report a Mistake</h4>
     <p>Please provide details about the error you found in our database.</p>
-    
+
     <form id="mistakeForm" action="{{ url_for('submit_mistake') }}" method="POST">
       <div class="mb-3">
-        <label for="studyId" name="studyId" class="form-label">Study ID or Title (if known)</label>
+        <label for="studyId" class="form-label">Study ID or Title (if known)</label>
         <input type="text" class="form-control" id="studyId" name="studyId" placeholder="e.g., 42 or 'EarGest: A Novel Ear Gesture Recognition System'">
       </div>
       <div class="mb-3">
         <label for="mistakeDescription" class="form-label">Description of Error*</label>
-        <textarea class="form-control" id="mistakeDescription" name="mistakeDescription" rows="5" placeholder="Please describe the mistake in detail..." required></textarea>
+        <textarea class="form-control" id="mistakeDescription" name="description" rows="5" placeholder="Please describe the mistake in detail..." required></textarea>
       </div>
       <div class="mb-3">
         <label for="reporterEmail" class="form-label">Your Email (optional)</label>
-        <input type="email" class="form-control" id="reporterEmail" name="reporterEmail" placeholder="your.email@example.com">
+        <input type="email" class="form-control" id="reporterEmail" name="email" placeholder="your.email@example.com">
         <div class="form-text">Provide your email if you'd like to receive updates about this report.</div>
       </div>
       <div class="d-flex justify-content-end">
