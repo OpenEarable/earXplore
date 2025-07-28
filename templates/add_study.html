@@ -113,6 +113,7 @@
               <div class="mb-3">
                   <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
                   <input type="number" class="form-control" id="{{ field_id }}" 
+                          name="{{ field_id }}"
                           min="{{ field.min }}" max="{{ field.max }}" step="1">
               </div>
             {% elif field.type == 'checkbox' and field.options|length > 0 %}
@@ -139,6 +140,7 @@
                       <label for="{{ field_id }}_other" class="me-2 mb-0">Other:</label>
                       <input type="text" class="form-control other-option-field" 
                               id="{{ field_id }}_other" 
+                              name="{{ field_id }}_other"
                               placeholder="Please specify other options..."
                               data-field="{{ field_id }}">
                     </div>
@@ -149,7 +151,7 @@
             {% elif field.type == 'text' %}
               <div class="mb-3">
                 <label for="{{ field_id }}" class="form-label">{{ field.name }}</label>
-                <input type="text" class="form-control" id="{{ field_id }}">
+                <input type="text" class="form-control" id="{{ field_id }}" name="{{ field_id }}">
               </div>
             {% endif %}
           {% endfor %}
@@ -164,23 +166,23 @@
       <!-- Always include these final fields -->
       <div class="mb-3">
         <label for="abstract" class="form-label">Abstract*</label>
-        <textarea class="form-control" id="abstract" rows="4" required></textarea>
+        <textarea class="form-control" id="abstract" name="abstract" rows="4" required></textarea>
       </div>
       
       <div class="mb-3">
         <label for="keywords" class="form-label">Keywords</label>
-        <input type="text" class="form-control" id="keywords" 
+        <input type="text" class="form-control" id="keywords" name="keywords"
                 placeholder="Enter keywords separated by commas">
       </div>
       
       <div class="mb-3">
         <label for="submitterEmail" class="form-label">Your Email*</label>
-        <input type="email" class="form-control" id="submitterEmail" required>
+        <input type="email" class="form-control" id="submitterEmail" name="submitterEmail" required>
       </div>
       
       <div class="mb-3">
         <label for="additionalInfo" class="form-label">Additional Information</label>
-        <textarea class="form-control" id="additionalInfo" rows="3" 
+        <textarea class="form-control" id="additionalInfo" name="additionalInfo" rows="3" 
                   placeholder="Any other details you'd like to share..."></textarea>
       </div>
       
