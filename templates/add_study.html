@@ -79,7 +79,7 @@
     <h4>Add Your Study</h4>
     <p>Please provide information about your published research on earable interaction. You don't have to provide all the information on your study, although this will make the process of reviewing your study and adding it to the database much faster.</p>
     
-    <form id="studyForm">
+    <form id="studyForm" action="{{ url_for('submit_study') }}" method="POST">
       <!-- Always include these essential fields -->
       <h5 class="section-header">Essential Information</h5>
       <div class="row">

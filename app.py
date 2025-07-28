@@ -523,7 +523,7 @@ def add_study():
 def submit_study():
     try:
         # Get form data from request
-        form_data = request.json
+        form_data = request.form
         
         # Format email body
         body = "A new study has been submitted to earXplore:\n\n"
@@ -539,10 +539,10 @@ def submit_study():
         # Create and send the email
         msg = EmailMessage(
             subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
-            recipients=[os.getenv("RECIPIENTS")],
+            to=[os.getenv("RECIPIENTS")],
             body=body
         )
-        mail.send(msg)
+        msg.send()
         
         print("Email sent successfully!")
         return jsonify({"success": True, "message": "Study submitted successfully"})
