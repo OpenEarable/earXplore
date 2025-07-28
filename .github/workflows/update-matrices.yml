@@ -21,9 +21,18 @@ jobs:
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
-      # Uncomment the two lines below and add the correct path for the script which is supposed to run
-      # - name: Run script
-      #   run: ./scripts/update-something.sh
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'  # or another version if needed
+
+      - name: Install update script dependencies
+        run: pip install -r requirements_update_similarity_matrices.txt
+
+      - name: Run update script
+        run: python scripts/update_similarity_matrix.py
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       # When changes have been made: stage, commit and push them to the repo
       - name: Commit and push changes
