@@ -532,6 +532,18 @@ def submit_study():
         # Get form data from request
         form_data = request.form
         
+        # Handle multiple checkbox selections (process form_data)
+        processed_data = {}
+        for key in form_data:
+            # Check if this is an array field (ends with [])
+            if key.endswith('[]'):
+                base_key = key[:-2]  # Remove the [] suffix
+                if base_key not in processed_data:
+                    processed_data[base_key] = []
+                processed_data[base_key].append(form_data[key])
+            else:
+                processed_data[key] = form_data[key]
+        
         # Format email body with better organization
         body = "📚 NEW STUDY SUBMISSION TO EARXPLORE 📚\n"
         body += "=" * 50 + "\n\n"
@@ -540,19 +552,19 @@ def submit_study():
         body += "BASIC INFORMATION:\n"
         body += "-" * 20 + "\n"
         for field in ['title', 'authors', 'venue', 'year', 'link']:
-            if field in form_data:
-                body += f"{field.capitalize()}: {form_data.get(field)}\n"
+            if field in processed_data:
+                body += f"{field.capitalize()}: {processed_data[field]}\n"
         body += "\n"
         
         # Abstract section (if present)
-        if 'abstract' in form_data:
+        if 'abstract' in processed_data:
             body += "ABSTRACT:\n"
             body += "-" * 20 + "\n"
-            body += f"{form_data.get('abstract')}\n\n"
+            body += f"{processed_data.get('abstract')}\n\n"
         
         # Group other fields by their prefixes (based on panel structure)
         panels = {}
-        for key in form_data:
+        for key in processed_data:
             # Skip already processed fields
             if key in ['title', 'authors', 'venue', 'year', 'link', 'abstract']:
                 continue
@@ -581,12 +593,20 @@ def submit_study():
                     display_name = field
                     
                 display_name = display_name.replace("_", " ").capitalize()
-                body += f"{display_name}: {form_data.get(field)}\n"
+                
+                # Format the value based on whether it's a list or single value
+                value = processed_data.get(field)
+                if isinstance(value, list):
+                    formatted_value = ", ".join(value)
+                else:
+                    formatted_value = value
+                    
+                body += f"{display_name}: {formatted_value}\n"
             body += "\n"
         
         # Create and send the email
         msg = EmailMessage(
-            subject=f"earXplore: New Study - {form_data.get('title', 'Untitled')}",
+            subject=f"earXplore: New Study - {processed_data.get('title', 'Untitled')}",
             to=[os.getenv("RECIPIENTS")],
             body=body
         )
