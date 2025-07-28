@@ -589,17 +589,19 @@ def submit_study():
                 panels[panel] = []
             panels[panel].append(key)
         
-        # Add each panel's fields - without sorting to preserve original order
-        for panel, fields in panels.items():
+        # Add each panel's fields without sorting
+        for panel in panels:
             body += f"{panel.upper()}:\n"
             body += "-" * 20 + "\n"
             
-            for field in fields:  # Sort fields within panel for consistent ordering
+            for field in panels[panel]:
+                # Skip "other" fields as they're handled with their main fields
+                if field.endswith('_other'):
+                    continue
+                    
                 # Format the display name nicely
                 if "_PANEL_" in field:
                     display_name = field.split("_PANEL_")[1]
-                elif field.endswith('_other'):
-                    continue  # Skip the _other fields as they're handled with their main fields
                 else:
                     display_name = field
                     
@@ -610,18 +612,18 @@ def submit_study():
                 
                 # Handle special formatting for values
                 if isinstance(value, list):
-                    # For multiple selections, join with commas
-                    formatted_value = ", ".join(value)
-                    
                     # Check if there's an "other" field to include
                     other_field = f"{field}_other"
                     if other_field in processed_data and processed_data[other_field]:
-                        formatted_value += f", {processed_data[other_field]}"
+                        value.append(processed_data[other_field])
+                    
+                    # For multiple values, display each on its own line with proper indentation
+                    body += f"{display_name}:\n"
+                    for item in value:
+                        body += f"  • {item}\n"
                 else:
-                    formatted_value = value
-                
-                # Add each field on its own line
-                body += f"{display_name}: {formatted_value}\n"
+                    # For single values, display on one line
+                    body += f"{display_name}: {value}\n"
             
             body += "\n"  # Extra line break after each panel
         
