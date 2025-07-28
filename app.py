@@ -529,20 +529,24 @@ def add_study():
 @app.route('/submit_study', methods=['POST'])
 def submit_study():
     try:
-        # Get form data from request
+        # Get form data from request - use getlist for potential multiple values
         form_data = request.form
         
-        # Handle multiple checkbox selections (process form_data)
+        # Process the form data to handle multiple selections
         processed_data = {}
-        for key in form_data:
-            # Check if this is an array field (ends with [])
-            if key.endswith('[]'):
-                base_key = key[:-2]  # Remove the [] suffix
-                if base_key not in processed_data:
-                    processed_data[base_key] = []
-                processed_data[base_key].append(form_data[key])
+        
+        # First, get all unique field names (without the array notation)
+        field_names = set()
+        for key in form_data.keys():
+            field_names.add(key)
+        
+        # Then process each field, using getlist to capture multiple values if present
+        for field in field_names:
+            values = request.form.getlist(field)
+            if len(values) > 1:  # If multiple values were selected
+                processed_data[field] = values
             else:
-                processed_data[key] = form_data[key]
+                processed_data[field] = values[0] if values else ""
         
         # Format email body with better organization
         body = "📚 NEW STUDY SUBMISSION TO EARXPLORE 📚\n"
@@ -568,11 +572,15 @@ def submit_study():
             # Skip already processed fields
             if key in ['title', 'authors', 'venue', 'year', 'link', 'abstract']:
                 continue
+            
+            # Skip empty fields
+            if not processed_data[key]:
+                continue
                 
             # Determine panel for organization
             if "_PANEL_" in key:
                 panel = key.split("_PANEL_")[0]
-            elif key == 'submitterEmail' or key == 'additionalInfo':
+            elif key == 'submitterEmail' or key == 'additionalInfo' or key.endswith('_other'):
                 panel = "Submission Info"
             else:
                 panel = "General"
@@ -582,22 +590,32 @@ def submit_study():
             panels[panel].append(key)
         
         # Add each panel's fields
-        for panel, fields in panels.items():
+        for panel, fields in sorted(panels.items()):  # Sort panels for consistent ordering
             body += f"{panel.upper()}:\n"
             body += "-" * 20 + "\n"
-            for field in fields:
+            for field in sorted(fields):  # Sort fields within panel for consistent ordering
                 # Format the display name nicely
                 if "_PANEL_" in field:
                     display_name = field.split("_PANEL_")[1]
+                elif field.endswith('_other'):
+                    continue  # Skip the _other fields as they're handled with their main fields
                 else:
                     display_name = field
                     
-                display_name = display_name.replace("_", " ").capitalize()
+                display_name = display_name.replace("_", " ").title()
                 
                 # Format the value based on whether it's a list or single value
                 value = processed_data.get(field)
+                
+                # Handle special formatting for values
                 if isinstance(value, list):
+                    # For multiple selections, join with commas
                     formatted_value = ", ".join(value)
+                    
+                    # Check if there's an "other" field to include
+                    other_field = f"{field}_other"
+                    if other_field in processed_data and processed_data[other_field]:
+                        formatted_value += f", {processed_data[other_field]}"
                 else:
                     formatted_value = value
                     
