@@ -589,8 +589,15 @@ def submit_study():
                 panels[panel] = []
             panels[panel].append(key)
         
-        # Add each panel's fields without sorting
-        for panel in panels:
+        # Define a consistent order for panels - match your desired display order
+        panel_order = ["General", "Interaction", "Device", "Implementation", 
+                      "Sensing", "Applications", "Study", "Motivations", "Submission Info"]
+        
+        # Add each panel's fields in a consistent order
+        for panel in panel_order:
+            if panel not in panels:
+                continue  # Skip panels that weren't submitted
+                
             body += f"{panel.upper()}:\n"
             body += "-" * 20 + "\n"
             
@@ -610,6 +617,9 @@ def submit_study():
                 # Format the value based on whether it's a list or single value
                 value = processed_data.get(field)
                 
+                # Every field gets its own paragraph/section for clarity
+                body += f"{display_name}:"
+                
                 # Handle special formatting for values
                 if isinstance(value, list):
                     # Check if there's an "other" field to include
@@ -618,14 +628,18 @@ def submit_study():
                         value.append(processed_data[other_field])
                     
                     # For multiple values, display each on its own line with proper indentation
-                    body += f"{display_name}:\n"
+                    body += "\n"  # Start list on a new line
                     for item in value:
                         body += f"  • {item}\n"
                 else:
-                    # For single values, display on one line
-                    body += f"{display_name}: {value}\n"
+                    # For single values, display with a space after the field name
+                    body += f" {value}\n"
+                
+                # Add an empty line between fields for better readability
+                body += "\n"
             
-            body += "\n"  # Extra line break after each panel
+            # Remove extra line break at the end of the panel section
+            body = body.rstrip("\n") + "\n\n"
         
         # Create and send the email
         msg = EmailMessage(
