@@ -125,8 +125,14 @@
 
           {# If panel is initially not visible, add button so visibility can be toggled #}
           {% if panel.initial_visibility == "none" %}
-            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Show/Hide</button>
-          {% endif%}
+            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">
+              Show
+            </button>
+          {% else %}
+            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">
+              Hide
+            </button>
+          {% endif %}
         </div>
         <hr/>
 
