@@ -532,20 +532,61 @@ def submit_study():
         # Get form data from request
         form_data = request.form
         
-        # Format email body
-        body = "A new study has been submitted to earXplore:\n\n"
-        for key, value in form_data.items():
-            body += f"{key}: {value}\n\n"
+        # Format email body with better organization
+        body = "📚 NEW STUDY SUBMISSION TO EARXPLORE 📚\n"
+        body += "=" * 50 + "\n\n"
         
-        # Debug: Print configuration (remove in production)
-        print(f"Mail server: {app.config.get('MAIL_SERVER')}")
-        print(f"Mail port: {app.config.get('MAIL_PORT')}")
-        print(f"Mail TLS: {app.config.get('MAIL_USE_TLS')}")
-        print(f"Recipients: {os.getenv('RECIPIENTS')}")
+        # Basic information section (most important fields first)
+        body += "BASIC INFORMATION:\n"
+        body += "-" * 20 + "\n"
+        for field in ['title', 'authors', 'venue', 'year', 'link']:
+            if field in form_data:
+                body += f"{field.capitalize()}: {form_data.get(field)}\n"
+        body += "\n"
+        
+        # Abstract section (if present)
+        if 'abstract' in form_data:
+            body += "ABSTRACT:\n"
+            body += "-" * 20 + "\n"
+            body += f"{form_data.get('abstract')}\n\n"
+        
+        # Group other fields by their prefixes (based on panel structure)
+        panels = {}
+        for key in form_data:
+            # Skip already processed fields
+            if key in ['title', 'authors', 'venue', 'year', 'link', 'abstract']:
+                continue
+                
+            # Determine panel for organization
+            if "_PANEL_" in key:
+                panel = key.split("_PANEL_")[0]
+            elif key == 'submitterEmail' or key == 'additionalInfo':
+                panel = "Submission Info"
+            else:
+                panel = "General"
+                
+            if panel not in panels:
+                panels[panel] = []
+            panels[panel].append(key)
+        
+        # Add each panel's fields
+        for panel, fields in panels.items():
+            body += f"{panel.upper()}:\n"
+            body += "-" * 20 + "\n"
+            for field in fields:
+                # Format the display name nicely
+                if "_PANEL_" in field:
+                    display_name = field.split("_PANEL_")[1]
+                else:
+                    display_name = field
+                    
+                display_name = display_name.replace("_", " ").capitalize()
+                body += f"{display_name}: {form_data.get(field)}\n"
+            body += "\n"
         
         # Create and send the email
         msg = EmailMessage(
-            subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
+            subject=f"earXplore: New Study - {form_data.get('title', 'Untitled')}",
             to=[os.getenv("RECIPIENTS")],
             body=body
         )
