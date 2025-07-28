@@ -610,8 +610,8 @@ def submit_mistake():
         # Format email body
         body = "A mistake report has been submitted to earXplore:\n\n"
         body += f"Study ID/Title: {mistake_data.get('studyId', 'Not specified')}\n\n"
-        body += f"Description: {mistake_data.get('mistakeDescription', 'No description provided')}\n\n"
-        body += f"Reporter Email: {mistake_data.get('reporterEmail', 'No email provided')}"
+        body += f"Description: {mistake_data.get('description', 'No description provided')}\n\n"
+        body += f"Reporter Email: {mistake_data.get('email', 'No email provided')}"
 
         print(f"Body of the email:\n{body}\n")
 
