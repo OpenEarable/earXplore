@@ -53,8 +53,9 @@ load_dotenv() # Load environment variables from .env file
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
-app.config['MAIL_PORT'] = os.getenv("MAIL_PORT")
-app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS")
+app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
+app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
+app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
 mail = Mail(app)
 
@@ -529,6 +530,12 @@ def submit_study():
         for key, value in form_data.items():
             body += f"{key}: {value}\n\n"
         
+        # Debug: Print configuration (remove in production)
+        print(f"Mail server: {app.config.get('MAIL_SERVER')}")
+        print(f"Mail port: {app.config.get('MAIL_PORT')}")
+        print(f"Mail TLS: {app.config.get('MAIL_USE_TLS')}")
+        print(f"Recipients: {os.getenv('RECIPIENTS')}")
+        
         # Create and send the email
         msg = EmailMessage(
             subject=f"earXplore: New Study Submission - {form_data.get('Title', 'Untitled')}",
@@ -537,36 +544,46 @@ def submit_study():
         )
         mail.send(msg)
         
+        print("Email sent successfully!")
         return jsonify({"success": True, "message": "Study submitted successfully"})
     
     except Exception as e:
         print(f"Error processing form submission: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
     
-@app.route('/submit_mistake', methods=['POST'])
+@app.route('/add_study', methods=['POST'])
 def submit_mistake():
     try:
         # Get form data from request
-        mistake_data = request.json
+        mistake_data = request.form
         
         # Format email body
         body = "A mistake report has been submitted to earXplore:\n\n"
         body += f"Study ID/Title: {mistake_data.get('studyId', 'Not specified')}\n\n"
-        body += f"Description: {mistake_data.get('description', 'No description provided')}\n\n"
-        body += f"Reporter Email: {mistake_data.get('email', 'No email provided')}"
+        body += f"Description: {mistake_data.get('mistakeDescription', 'No description provided')}\n\n"
+        body += f"Reporter Email: {mistake_data.get('reporterEmail', 'No email provided')}"
+
+        print(f"Body of the email:\n{body}\n")
+
+        recipients = os.getenv("RECIPIENTS")
         
         # Create and send the email
         msg = EmailMessage(
             subject="earXplore: Mistake Report",
-            recipients=[os.getenv("RECIPIENTS")],
-            body=body
+            body=body,
+            to=[recipients],
         )
-        mail.send(msg)
+        msg.send()
         
+        print("Email sent successfully!")
         return jsonify({"success": True, "message": "Report submitted successfully"})
     
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
     
 if __name__ == "__main__":
