@@ -589,11 +589,12 @@ def submit_study():
                 panels[panel] = []
             panels[panel].append(key)
         
-        # Add each panel's fields
-        for panel, fields in sorted(panels.items()):  # Sort panels for consistent ordering
+        # Add each panel's fields - without sorting to preserve original order
+        for panel, fields in panels.items():
             body += f"{panel.upper()}:\n"
             body += "-" * 20 + "\n"
-            for field in sorted(fields):  # Sort fields within panel for consistent ordering
+            
+            for field in fields:  # Sort fields within panel for consistent ordering
                 # Format the display name nicely
                 if "_PANEL_" in field:
                     display_name = field.split("_PANEL_")[1]
@@ -618,9 +619,11 @@ def submit_study():
                         formatted_value += f", {processed_data[other_field]}"
                 else:
                     formatted_value = value
-                    
+                
+                # Add each field on its own line
                 body += f"{display_name}: {formatted_value}\n"
-            body += "\n"
+            
+            body += "\n"  # Extra line break after each panel
         
         # Create and send the email
         msg = EmailMessage(
