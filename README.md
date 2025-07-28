@@ -86,7 +86,7 @@ If you are unsure about the some of the configurations, please refer to the [Fla
 
 ## 🛠️ Usage
 
-This project is hosted under [earXplore.teco.edu](https://earxplore.teco.edu/). You may want to visit the site to try out all the features yourself. In this section there will be a quick introduction to the most important use cases for this project. You can navigate between the four different views and the *Add Your Study! / Report a Mistake!* section via the navbar:
+This project is hosted under [earXplore.teco.edu](https://earxplore.teco.edu/). You may want to visit the site to try out all the features yourself. In this section there will be a quick introduction to the most important use cases for this project. You can navigate between the four different views on the data and the Add Your Study! / Report a Mistake!-section via the navbar:
 
 ![navbar_demonstration gif](https://github.com/user-attachments/assets/35882867-cc68-4fb3-a751-a620af3d7141)
 
