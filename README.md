@@ -94,15 +94,40 @@ In the sidebar on the right you can choose the values for every category to filt
 
 ![sidebar_demonstration gif](https://github.com/user-attachments/assets/ebfe356d-436f-4bb1-b6f5-89214b0ef8a2)
 
-Similar to the sidebar filters for values of categories there are also individual filters for each view. For the *Tabular* and the *Graphical View* there are category filters to show or hide each category on its own. For the *Similarity* and *Timeline View* you can color the nodes representing a datapoint by category (choose the similarity type, citation mode, etc.). All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
+Similar to the sidebar filters, there are additional customization options applicable. For the *Tabular* and the *Graphical View*, the toggle menu can be used to show or hide the columns on each category. For the *Similarity* and *Timeline View*, you can color the nodes representing the studies by category. All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
 
 ![filter_demonstration gif](https://github.com/user-attachments/assets/b41978e1-dd71-4031-ab6a-c6ee65fe1129)
 
-Every info icon on the website is clickable. When clicked it shows a modal with the respective study information. Additionally you can click on the bars in the Graphical View to get an overview for all studies that match the value of the bar in the specific category of the chart. In the Similarity and Timeline View the nodes are also clickable. Upon clicking you receive information about the relationship to other studies in this specific network:
+Every info icon on the website is clickable. When clicked it shows a modal with the respective study information. Additionally you can click on the bars in the *Graphical View* to get an overview for all studies that match the value of the bar in the specific category of the chart. In the *Similarity* and *Timeline View*, the nodes are also clickable. Upon clicking you receive information about the relationship to other studies in this specific network:
 
 ![modal_demonstration gif](https://github.com/user-attachments/assets/d4f809e5-bd01-49d7-857a-8685bd7ce8bd)
 
-There are some other minor functionalities (for example the download of the Tabular view as a .csv file) but those are the key features of this project. Feel free to let us know if you wish for additional functionalities.
+After giving a general introductory overview on the functionalities of *EarXplore*, we detail the functionalities of each of the views in the following.
+
+#### Tabular View
+
+(1) The Tabular View serves as landing page and can also be selected via the view selection menu. (2) By default, key information on each study (Main Author, Year, Location, Input Body Part, and Gesture) is displayed. (3) The top toggle menu allows users to show or hide columns with additional information. (4) Filters in the sidebar enable users to refine the database by including or excluding specific attribute values. (5) Clicking the info icons at the beginning of each row opens a modal overlay that displays all available information for the selected study. (6 - not visible) The entire dataset or a selected subset can be downloaded as a CSV file.
+
+<img width="2513" height="969" alt="Tabular View" src="https://github.com/user-attachments/assets/afe5826d-585a-4bb2-b476-8557143a3df4" />
+
+#### Graphical View
+
+Graphical View -- (1) The Graphical View can be selected via the view selection menu. (2) The top toggle menu allows users to show or hide bar charts with additional information. (3) Filters in the sidebar enable users to refine the database by including or excluding specific attribute values. (4) For each selected criterion, a bar chart displays the distribution of answer options. Chart size automatically adapts to the number of bars. (5) Users can adjust the threshold for the maximum number of bars shown per chart. (6) Clicking on a bar opens a modal overlay showing key information on all studies represented by that bar. (7) Clicking on the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study.
+
+<img width="2507" height="968" alt="Graphical View" src="https://github.com/user-attachments/assets/a2d7f7aa-c1a5-4c09-92e5-5aebf63a8aab" />
+
+#### Similarity View
+
+(1) The Similarity View can be selected via the view selection menu. (2) Filters allow the user to refine the database along several criteria. (3) The user can choose between Database Similarity and Abstract Similarity. (4) A threshold slider controls which similarity connections are displayed. (5) The nodes representing the studies can be colored and sorted along several criteria. (6) Clicking on a node opens a modal overlay showing key information on all studies that meet the similarity threshold with the selected study. (7) Clicking the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study. The full information view can also be displayed via the info icons attached to each study node.
+
+<img width="2493" height="935" alt="Similarity View" src="https://github.com/user-attachments/assets/cb998750-08e0-404e-bbe1-2a3738c1f4d7" />
+
+#### Timeline View
+
+(1) The Timeline View can be selected via the view selection menu. (2) Filters allow the user to refine the database along several criteria. (3) The user can display shared author connections as dashed lines. (4) Citation connections, including their direction, can be shown as solid lines. (5) The nodes representing the studies can be colored and sorted along several criteria. (6) Clicking on a node opens a modal overlay displaying key information on all studies connected to the selected study through shared authorship or citations based on the user's selection. (7) Clicking the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study.
+
+<img width="2506" height="915" alt="Timeline View" src="https://github.com/user-attachments/assets/38d581a1-4386-4466-b338-990198b6af20" />
+
 
 ## 🚩 Issues
 
