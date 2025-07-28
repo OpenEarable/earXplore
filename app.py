@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, url_for
+from flask import Flask, render_template, request, jsonify, url_for, flash, redirect
 from flask_mailman import Mail, EmailMessage
 from typing import List
 from dotenv import load_dotenv
@@ -682,8 +682,9 @@ def submit_mistake():
         )
         msg.send()
         
-        print("Email sent successfully!")
-        return jsonify({"success": True, "message": "Report submitted successfully"})
+        # After successfully sending the email
+        flash('Your mistake report has been submitted successfully!', 'success')
+        return redirect(url_for('index'))  # Redirect to homepage
     
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
