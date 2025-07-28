@@ -5,7 +5,7 @@
 
 ## 📝 About the Project
 
-*EarXplore* is a curated, structured, and interactive online database consolidating published work on interaction with earables. Beyond merely listing studies, it supports in-depth exploration through four dynamic and integrated views that enable filtering, comparison, and visualization. The *Tabular View* presents a structured overview of all included studies, allowing users to filter and query based on multiple categories and criteria. The *Graphical View* provides a visual summary of key study characteristics, supporting quick comparisons and high-level insights. The *Similarity View* highlights connections between studies that share similar attributes, helping users discover related work. Finally, the *Timeline View* visualizes the temporal evolution of the field, revealing trends, citation links, and author networks. These views are interconnected, enabling users to explore data from multiple perspectives while maintaining context through features such as persistent filtering across all views. For more information on the project, we refer to an accompanying arXiv publication !!! ADD LINK !!! and to the *[EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository")* website itself.
+*EarXplore* is a curated, structured, and interactive online database consolidating published work on interaction with earables. Beyond merely listing studies, it supports in-depth exploration through four dynamic and integrated views that enable filtering, comparison, and visualization. The *Tabular View* presents a structured overview of all included studies, allowing users to filter and query based on multiple categories and criteria. The *Graphical View* provides a visual summary of key study characteristics, supporting quick comparisons and high-level insights. The *Similarity View* highlights connections between studies that share similar attributes, helping users discover related work. Finally, the *Timeline View* visualizes the temporal evolution of the field, revealing trends, citation links, and author networks. These views are interconnected, enabling users to explore data from multiple perspectives while maintaining context through features such as persistent filtering across all views. For more information on the project, we refer to an accompanying arXiv publication **!!! ADD LINK !!!** and to the *[EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository")* website itself.
 
 ## 🚀 Getting Started
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
 ### 🔀 Forking
 
-While *EarXplore* was designed to visualize data from studies on earable interaction, its code can be reused to visualize just about any data with only minor additional configuration. To visualize your customized data, you need to adpat the [data.csv](./data.csv) according to your specific data points. Note that the header needs a special format that allows it to form different filter panels. If you would also like to have explanations for your categories, you will also need to update the [explanations.csv](./explanations.csv) file accordingly. The project will then extract all the information it needs from your data and produce a website from it. There are some customization options for the sidebar listed below (see [Usage Section](#%EF%B8%8F-usage)):
+While *EarXplore* was designed to visualize data from studies on earable interaction, its code can be reused to visualize just about any data with only minor additional configuration. To visualize your customized data, you need to adapt the [data.csv](./data.csv) according to your specific data points. Note that the header needs a special format that allows it to form different filter panels. If you would also like to have explanations for your categories, you will also need to update the [explanations.csv](./explanations.csv) file accordingly. The project will then extract all the information it needs from your data and produce a website from it. There are some customization options for the sidebar listed below (see [Usage Section](#%EF%B8%8F-usage)):
 ```python
 # Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = ['ID', ...]
@@ -66,9 +66,13 @@ START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", ...])
 # Categories whose explanations should be formatted in a special way
 SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", ...]
 ```
-Doing this will enable the full functionalit
+Following these instructions will give the full functionalities for the *Tabular* and *Graphical View*. 
 
-This is the one of the two cases where you need to change the code to customize the website. Please make sure you spell the category exactly as in your data.csv file, otherwise it wont recognize it and therefore wont work as intended. Additionally you may want to configure the Mail-Server to your liking. Change the following code snippet for this use case:
+To add the *Database* and *Abstract Similarity* metrics to the *Similarity View*, it is moreover necessary to run the [database_similarity.ipynb](./database_similarity.ipynb) and the [abstract_similarity.ipynb](./abstract_similarity.ipynb) to calculate both metrics. The the former, the headers of the [data.csv](./data.csv) need to be copied and pasted into the code along their datatype. For the latter, an API key is needed for gemini-embedding-exp-03-07 model in order to obtain the text embeddings. Of course, any other text embedding model can be employed as well but requires an according adaptation of the code. 
+
+To add the citations and shared authors to the *Timeline View*, the grobid_citations_metadata.ipynb [grobid_citations_metadata.ipynb](./grobid_citations_metadata.ipynb) needs to be employed. [GROBID](https://grobid.readthedocs.io/en/latest/Introduction/) is a machine learning library that can extract scientific information from PDFs files. In order to run GROBID, you will need to employ Docker. More on this can be read in the relevant [GROBID documentation](https://grobid.readthedocs.io/en/latest/Run-Grobid/). To employ it your to data, you need to have a folder with the PDF files ready and specify their names in the notebook. In order to match them to you documents, you will also need to provide a file with the bibtexs of the studies. EXPAND
+
+Additionally you may want to configure the Mail-Server to your liking. Change the following code snippet for this use case:
 ```python
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = 'your-smtp-server.example.com'  # Replace with your SMTP server
@@ -82,7 +86,7 @@ If you are unsure about the some of the configurations, please refer to the [Fla
 
 ## 🛠️ Usage
 
-This project is hosted under: earXplore.dmz.teco.edu. You may want to visit the site to try out all the features yourself. In this section there will be a quick introduction to the most important use cases for this project. You can navigate between the four different views and the "Report a mistake / Add a study" section via the navbar:
+This project is hosted under: [earXplore.teco.edu](https://earxplore.teco.edu/). You may want to visit the site to try out all the features yourself. In this section there will be a quick introduction to the most important use cases for this project. You can navigate between the four different views and the *Add Your Study! / Report a Mistake!* section via the navbar:
 
 ![navbar_demonstration gif](https://github.com/user-attachments/assets/35882867-cc68-4fb3-a751-a620af3d7141)
 
@@ -90,7 +94,7 @@ In the sidebar on the right you can choose the values for every category to filt
 
 ![sidebar_demonstration gif](https://github.com/user-attachments/assets/ebfe356d-436f-4bb1-b6f5-89214b0ef8a2)
 
-Similar to the sidebar filters for values of categories there are also individual filters for each view. For the Tabular and the Graphical View there are category filters to show or hide each category on its own. For the Similarity and Timeline View you can color the nodes representing a datapoint by category (choose the similarity type, citation mode, etc.). All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
+Similar to the sidebar filters for values of categories there are also individual filters for each view. For the *Tabular* and the *Graphical View* there are category filters to show or hide each category on its own. For the *Similarity* and *Timeline View* you can color the nodes representing a datapoint by category (choose the similarity type, citation mode, etc.). All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
 
 ![filter_demonstration gif](https://github.com/user-attachments/assets/b41978e1-dd71-4031-ab6a-c6ee65fe1129)
 
