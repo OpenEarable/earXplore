@@ -57,6 +57,13 @@ app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
 app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
+
+print(os.getenv("MAIL_SERVER"))
+print(os.getenv("MAIL_SERVER"))
+print(os.getenv("MAIL_USE_TLS", "True").lower() == "true")
+print(os.getenv("MAIL_DEFAULT_SENDER"))
+
+
 mail = Mail(app)
 
 # Template classes for sidebar panel
