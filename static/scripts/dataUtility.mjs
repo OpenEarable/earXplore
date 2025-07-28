@@ -356,7 +356,7 @@ function showStudyModal(studyID) {
   const entry = getDataEntry(studyID.toString());
 
   // Set the header text of the modal
-  $("#study-info-header").text(`Paper Info (ID = ${studyID})`);
+  $("#study-info-header").text(`Paper Info (ID: ${studyID})`);
 
   // All the selections here are present because the modal is rendered in the base template which every page extends
   const infoHTML = $(".panel").map((index, panel) => {
