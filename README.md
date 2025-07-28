@@ -99,7 +99,7 @@ At the sidebar on the right, you can choose the values for every category to fil
 ![sidebar_demonstration gif](https://github.com/user-attachments/assets/ebfe356d-436f-4bb1-b6f5-89214b0ef8a2)
 
 #### Data Display Customization Options
-Similar to the sidebar filters, there are additional data display customization options available. For the *Tabular* and the *Graphical View*, the toggle menu can be used to show or hide the columns on each category. For the *Similarity* and *Timeline View*, you can color the nodes representing the studies by category. All the filter selections are consistent across all views. Here is a quick example on how you may use this feature:
+Similar to the sidebar filters, there are additional data display customization options available. For the *Tabular* and the *Graphical View*, the toggle menu can be used to show or hide the columns on each category. For the *Similarity* and *Timeline View*, you can color the nodes representing the studies by category. All the filter selections are consistent across all views. Here is a quick example on how you may use these features:
 
 ![filter_demonstration gif](https://github.com/user-attachments/assets/b41978e1-dd71-4031-ab6a-c6ee65fe1129)
 
