@@ -150,11 +150,13 @@
             </div>
           {% endif %}
 
-          {# If panel is initially not visible, add button so visibility can be toggled #}
-          {% if panel.initial_visibility == "none" %}
-            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Show</button>
-          {% else %}
-            <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Hide</button>
+          {# Toggle button only for Advanced Filters panel #}
+          {% if panel.value == "Advanced Filters" %}
+            {% if panel.initial_visibility == "none" %}
+              <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Show</button>
+            {% else %}
+              <button type="button" class="toggle-visibility-button" data-panel="{{ panel.value }}">Hide</button>
+            {% endif %}
           {% endif %}
         </div>
         <hr/>
