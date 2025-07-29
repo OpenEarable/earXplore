@@ -46,7 +46,7 @@ header {
 
 .left-section {
   width: 80%;
-  padding: 1px 10px;
+  padding: 15px 10px 1px 10px; /* Top padding increased to 15px */
   flex: 2;
   max-height: 100vh;
   overflow-y: scroll;
@@ -72,11 +72,13 @@ nav {
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
+  gap: 10px; /* Creates space between each button */
 }
 
 .navbar-item {
   padding: 1em;
   text-align: center;
+  border-radius: 5px; /* Rounded corners */
 }
 
 .navbar-item:hover {

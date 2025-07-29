@@ -26,6 +26,15 @@ const filterCategories = $("body").data("filter-categories");
 const abstracts = $("body").data("abstracts");
 
 /**
+ * The titles for the studies passed from the backend.
+ *
+ * @constant
+ * @type {Array}
+ */
+const titles = $("body").data("titles");
+
+
+/**
  * An object mapping specific string labels to their corresponding numeric order or priority.
  * Used for sorting or categorizing qualitative values in a standardized way.
  *
@@ -384,6 +393,7 @@ function showStudyModal(studyID) {
   // Add Study Summary to the infoHTML
   infoHTML.push(`
     <h5 class="study-info-panel-header">Study Summary</h5>
+    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
     <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}<br />
     <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
   `)

@@ -7,7 +7,7 @@ import json
 import os
 
 # Categories that should not be filtered for
-EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link']
+EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title']
 
 # Categories that go in the advanced filters panel
 ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
@@ -16,13 +16,13 @@ ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
 SLIDER_CATEGORIES = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
 
 # Categories that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Applications_PANEL_Intended Applications', 'Main Author', 'Gesture', 'Keywords']
+SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Main Author', 'Gesture', 'Keywords']
 
 # Categories that should have an "exclusive filtering" button in the sidebar
 EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors']
 
 # Panels that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study']
+SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study', 'Applications', 'Motivations', 'Device']
 
 # Panels that should be initially hidden in the sidebar
 INITIALLY_HIDDEN_PANELS = ['Advanced Filters']
@@ -119,7 +119,12 @@ def load_data():
     for data_entry in data:
         if 'Abstract' in data_entry:
             del data_entry['Abstract']
-    
+
+    # delete the 'Title' column from the data
+    for data_entry in data:
+        if 'Title' in data_entry:
+            del data_entry['Title']
+
     return data
 
 def load_explanations():
@@ -154,6 +159,22 @@ def load_abstracts():
         return f"Error loading data.csv: {e}"
     
     return abstracts
+
+def load_titles():
+    try:
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path, usecols=["Title", "ID"])  # Load only the Title column
+        df = df.fillna('N/A')  # Replace actual NaN values
+        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
+        titles = df.to_dict(orient="records")
+    except FileNotFoundError:
+        return "data.csv file not found"
+    except pd.errors.EmptyDataError:
+        return "data.csv file is empty"
+    except Exception as e:
+        return f"Error loading data.csv: {e}"
+    
+    return titles
 
 def additional_data():
     try:
@@ -362,7 +383,7 @@ def home():
     if success_message:
         print(f"Success message detected: {success_message}")
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, success_message=success_message)
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -386,7 +407,11 @@ def bar_chart():
     if not isinstance(abstracts, list):
         return render_template("error.html", error=abstracts), 500
     
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS,)
+    titles = load_titles()
+    if not isinstance(titles, list):
+        return render_template("error.html", error=titles), 500
+
+    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS,)
 
 @app.get("/similarity")
 def similarity():
@@ -406,7 +431,7 @@ def similarity():
     
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories))
+    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories))
 
 @app.get("/timeline")
 def timeline():
@@ -429,7 +454,7 @@ def timeline():
     citation_matrix, coauthor_matrix = load_citation_data()
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories))
+    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories))
 
 @app.get('/add_study')
 def add_study():
