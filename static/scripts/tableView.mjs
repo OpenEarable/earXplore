@@ -57,9 +57,24 @@ function showTableData(filters, sortCategory) {
           return "<th></th>"
         }
         const shortCategory = category.split("_").pop();
-        return shortCategory.length > 30 ?
-        `<th data-category="${category}" class="left-cell sortable">${shortCategory.slice(0, 30) + "..." + " ▲▼"}</th>` :
-        `<th data-category="${category}" class="left-cell sortable">${shortCategory + " ▲▼"}</th>`;
+        const isActiveSorted = sortCategory === category;
+        const sortDirection = isActiveSorted ? categoryOrder[category] : null;
+        const arrowClass = isActiveSorted ? 'active' : '';
+        
+        let arrowsHtml;
+        if (isActiveSorted) {
+          arrowsHtml = sortDirection === 'asc' ? 
+            `<span class="sort-arrows active">▲&nbsp;&nbsp;&nbsp;</span>` : 
+            `<span class="sort-arrows active">▼&nbsp;&nbsp;&nbsp;</span>`;
+        } else {
+          arrowsHtml = `<span class="sort-arrows">▲▼</span>`;
+        }
+        
+        const displayText = shortCategory.length > 30 ? 
+          shortCategory.slice(0, 30) + "..." : 
+          shortCategory;
+        
+        return `<th data-category="${category}" class="left-cell sortable">${displayText}${arrowsHtml}</th>`;
       }).join("\n")}
       </tr>
     </thead>`);

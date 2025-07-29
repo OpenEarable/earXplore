@@ -295,6 +295,10 @@ $(document).ready(function() {
 
     // Toggle the visibility of the filter section
     panelDiv.find(".filters").toggleClass("hidden-filters");
+    
+    // Change button text based on current state
+    const isHidden = panelDiv.find(".filters").hasClass("hidden-filters");
+    $(this).text(isHidden ? "Show" : "Hide");
   });
 
   $("#select-all-sidebar-button").on("click", function() {
