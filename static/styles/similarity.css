@@ -1,6 +1,6 @@
 /* General Container */
 #similarityContainer {
-  background: var(-color-gray-light);
+  background: var(--color-gray-light);
   border-radius: 8px;
   padding: 1.5em;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
@@ -24,10 +24,12 @@
 .btn-check,
 .btn-outline-secondary {
   font-size: 1em;
+  background-color: white;
 }
 
 .btn-check:checked+.btn{
   background-color: var(--color-accent);
+  color: white;
   border-color: var(--color-accent); 
 }
 
@@ -36,6 +38,24 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5em;
+}
+
+.btn-similarity {
+  background: white;
+  border: 1px solid var(--color-accent);
+  color: #666;
+}
+
+.btn-check:checked + .btn-similarity:hover {
+  background-color: var(--color-accent) !important; 
+  border-color: var(--color-accent) !important;
+  color: white !important;
+}
+
+.btn-similarity:hover {
+  background-color: #f8e6e6 !important; 
+  border-color: var(--color-accent) !important;
+  color: #666 !important;
 }
 
 .sliderContainer {
@@ -117,8 +137,8 @@
 /* Important: Set minimum dimensions for the graph container */
 #graphContainer {
   width: 100%;
-  border: 1px solid #ddd;
-  border-radius: 5px;
+  border: 0px solid #ddd;
+  border-radius: 0px;
   overflow: visible;
   margin-bottom: 1em; /* Add some space below the visualization */
 }
