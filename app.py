@@ -709,8 +709,8 @@ def submit_mistake():
         msg.send()
         
         print("Email sent successfully!")
-        return jsonify({"success": True, "message": "Report submitted successfully"})
-    
+        return redirect(url_for('home', success='Mistake report submitted successfully'))
+
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
         import traceback
