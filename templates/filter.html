@@ -17,10 +17,10 @@
     <div class="select-buttons">
       <button type="button" class="select-button" id="toggleSelectAllColumns">Select All</button>
       <button type="button" class="select-button" id="toggleDeselectAllColumns">Deselect All</button>
-      <button type="button" class="select-button" id="reset-filters-button">Reset Category Filters</button>
+      <button type="button" class="select-button" id="reset-filters-button">Reset Filters</button>
     </div>
     <div class="mb-5">
-      <div id="columnToggles">
+      <div id="columnToggles" >
         {% for col in data[0].keys() %}
   
           {# Wrapping in a div to make sure label and input are on same the row #}

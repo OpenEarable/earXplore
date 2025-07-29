@@ -34,14 +34,14 @@
   <div class="row mb-4">
     <div class="col-md-6">
       <div id="reportMistakeCard" class="option-card h-100">
-        <h4>Report a Mistake</h4>
+        <h4>Report Mistake</h4>
         <p>Found an error or inconsistency in our database? Help us improve by reporting it.</p>
         <button id="reportMistakeBtn" class="btn btn-warning">Report Mistake</button>
       </div>
     </div>
     <div class="col-md-6">
       <div id="addStudyCard" class="option-card h-100">
-        <h4>Add Your Study</h4>
+        <h4>Add Study</h4>
         <p>Have you published a study on earable interactions that's not in our database? Submit your research for review and inclusion.</p>
         <button id="addStudyBtn" class="btn btn-warning">Add Study</button>
       </div>
@@ -50,7 +50,7 @@
   
   <!-- Report Mistake Form -->
   <div id="reportMistakeForm" class="form-section">
-    <h4>Report a Mistake</h4>
+    <h4>Report Mistake</h4>
     <p>Please provide details about the error you found in our database.</p>
 
     <form id="mistakeForm" action="{{ url_for('submit_mistake') }}" method="POST">
@@ -76,7 +76,7 @@
   
   <!-- Add Study Form -->
   <div id="addStudyForm" class="form-section">
-    <h4>Add Your Study</h4>
+    <h4>Add Study</h4>
     <p>Please provide information about your published research on earable interaction. You don't have to provide all the information on your study, although this will make the process of reviewing your study and adding it to the database much faster.</p>
     
     <form id="studyForm" action="{{ url_for('submit_study') }}" method="POST">

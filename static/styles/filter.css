@@ -24,6 +24,10 @@
 	gap: 0.5em;
 }
 
+#toggle-menu-container {
+	font-size: medium;
+}
+
 @media (max-width: 1050px) {
 	#toggle-menu-container {
 		height: 0;
