@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, url_for
+from flask import Flask, render_template, request, jsonify, url_for, redirect
 from flask_mailman import Mail, EmailMessage
 from typing import List
 from dotenv import load_dotenv
@@ -58,11 +58,9 @@ app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
 
-print(os.getenv("MAIL_SERVER"))
-print(os.getenv("MAIL_SERVER"))
-print(os.getenv("MAIL_USE_TLS", "True").lower() == "true")
-print(os.getenv("MAIL_DEFAULT_SENDER"))
-
+print(f"Mail server: {os.getenv('MAIL_SERVER')}")
+print(f"TLS enabled: {os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'}")
+print(f"Default sender: {os.getenv('MAIL_DEFAULT_SENDER')}")
 
 mail = Mail(app)
 
@@ -359,7 +357,12 @@ def home():
     
     sidebar_panels = generate_sidebar_panels(data, explanations)
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS)
+    # Check for success message
+    success_message = request.args.get('success')
+    if success_message:
+        print(f"Success message detected: {success_message}")
+
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -379,11 +382,9 @@ def bar_chart():
             continue
         categories.append(category)
 
-
     abstracts = load_abstracts()
     if not isinstance(abstracts, list):
         return render_template("error.html", error=abstracts), 500
-    
     
     return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS,)
 
@@ -650,8 +651,8 @@ def submit_study():
         msg.send()
         
         print("Email sent successfully!")
-        return jsonify({"success": True, "message": "Study submitted successfully"})
-    
+        return redirect(url_for('home', success='Study submitted successfully'))
+
     except Exception as e:
         print(f"Error processing form submission: {str(e)}")
         import traceback
