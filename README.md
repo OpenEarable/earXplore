@@ -107,15 +107,15 @@ pdf_path_dict = {
 ```
 Prepare an Excel file with paper IDs and their BibTeX entries (see [bibtex_mapping_of_ids.xlsx](./interconnections_datasets/bibtex_mapping_of_ids.xlsx)) that will be needed to map the extracted metadata from the references to the paper of your corpus. Then you can run the GROBID server via Docker (typically on port 8070). For the citations, the notebook uses a confidence-based approach for citation matching, automatically accepting high-confidence matches while flagging uncertain ones for manual review in an Excel file. After reviewing the uncertain matches, run the final cells to create the completed matrices saved as CSV files.
 
-Additionally you may want to configure the Mail-Server to your liking. The configuration is pulled from your .env file. It has the following parameters:
+Additionally you may want to configure the Mail-Server to your liking. The configuration is pulled from the .env file that you must create inside the repository. It has the following parameters:
 ```bash
-MAIL_SERVER = "your-smtp-server.example.com"
-MAIL_PORT = 587
-MAIL_USE_TLS = True
-MAIL_USERNAME = "your-email@example.com"
-MAIL_PASSWORD = "your-password"
-MAIL_DEFAULT_SENDER = "default-sender'
-RECIPIENTS= "an-email@example.com"
+MAIL_SERVER="your-smtp-server.example.com"
+MAIL_PORT=587
+MAIL_USE_TLS=True
+MAIL_USERNAME="your-email@example.com"
+MAIL_PASSWORD="your-password"
+MAIL_DEFAULT_SENDER="default-sender'
+RECIPIENTS="an-email@example.com"
 ```
 If you are unsure about the some of the configurations, please refer to the [Flask Mail Documentation](https://pypi.org/project/Flask-Mail/).
 
