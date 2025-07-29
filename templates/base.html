@@ -42,6 +42,13 @@
           bsAlert.close();
         }
       }, 5000);
+      
+      // Clean URL parameters after showing the message
+      if (window.history.replaceState) {
+        const url = new URL(window.location);
+        url.searchParams.delete('success');
+        window.history.replaceState({}, document.title, url.toString());
+      }
     </script>
   {% endif %}
 
