@@ -109,13 +109,13 @@ Prepare an Excel file with paper IDs and their BibTeX entries (see [bibtex_mappi
 
 Additionally you may want to configure the Mail-Server to your liking. The configuration is pulled from your .env file. It has the following parameters:
 ```bash
-MAIL_SERVER = "your-smtp-server.example.com"  # Replace with your SMTP server
+MAIL_SERVER = "your-smtp-server.example.com"
 MAIL_PORT = 587
 MAIL_USE_TLS = True
 MAIL_USERNAME = "your-email@example.com"
 MAIL_PASSWORD = "your-password"
 MAIL_DEFAULT_SENDER = "default-sender'
-RECIPIENTS= "an-email@example.come"
+RECIPIENTS= "an-email@example.com"
 ```
 If you are unsure about the some of the configurations, please refer to the [Flask Mail Documentation](https://pypi.org/project/Flask-Mail/).
 
