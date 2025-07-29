@@ -68,7 +68,7 @@ SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Te
 ```
 Following these instructions will give the full functionalities for the *Tabular* and *Graphical View*. 
 
-To add the *Database* and *Abstract Similarity* metrics to the *Similarity View*, it is moreover necessary to run the [database_similarity.ipynb](./database_similarity.ipynb) and the [abstract_similarity.ipynb](./abstract_similarity.ipynb) to calculate both metrics, saved in the [normalized_database_similarity.csv](./database_similarity_datasets/normalized_database_similarity.csv) and [normalized_abstract_similarity.csv](./abstract_similarity_datasets/normalized_abstract_similarity.csv). For the latter, an API key is needed for `gemini-embedding-exp-03-07` model in order to obtain the text embeddings. Of course, any other text embedding model can be employed as well but requires an according adaptation of the code. The the former, the headers of the [data.csv](./data.csv) need to be copied and pasted into the code along their datatype as shown below. 
+To add the *Database* and *Abstract Similarity* metrics to the *Similarity View*, it is moreover necessary to run the [database_similarity.ipynb](./database_similarity.ipynb) and the [abstract_similarity.ipynb](./abstract_similarity.ipynb) to calculate both metrics, saved in the [normalized_database_similarity.csv](./database_similarity_datasets/normalized_database_similarity.csv) and [normalized_abstract_similarity.csv](./abstract_similarity_datasets/normalized_abstract_similarity.csv). For the latter, an API key is needed for `gemini-embedding-exp-03-07` model in order to obtain the text embeddings. Of course, any other text embedding model can be employed as well but requires an according adaption of the code. For the former, the headers of the [data.csv](./data.csv) need to be copied and pasted into the code along their datatype as shown below. 
 
 ```python
 single_value_columns = [
@@ -85,13 +85,27 @@ numerical_columns_log_transformed = [
     'Interaction_PANEL_Number of Selected Gestures'
 ]
 
-single_value_columns_special_treatment = [
+# the special treatment is due this being the only category with two different "Yes" options
+single_value_columns_special_treatment = [ 
     'Interaction_PANEL_Possible on One Ear'
 ]
 
 ```
 
-To add the citations and shared authors to the *Timeline View*, the grobid_citations_metadata.ipynb [grobid_citations_metadata.ipynb](./grobid_citations_metadata.ipynb) needs to be employed. [GROBID](https://grobid.readthedocs.io/en/latest/Introduction/) is a machine learning library that can extract scientific information from PDFs files. In order to run GROBID, you will need to employ Docker. More on this can be read in the relevant [GROBID documentation](https://grobid.readthedocs.io/en/latest/Run-Grobid/). To employ it your to data, you need to have a folder with the PDF files ready and specify their names in the notebook. In order to match them to you documents, you will also need to provide a file with the bibtexs of the studies. EXPAND
+To add the citations and shared authors to the *Timeline View*, the grobid_citations_metadata.ipynb [grobid_citations_metadata.ipynb](./grobid_citations_metadata.ipynb) needs to be employed. [GROBID](https://grobid.readthedocs.io/en/latest/Introduction/) is a machine learning library that extracts structured information from scholarly PDFs. Running GROBID requires Docker - refer to the [GROBID documentation](https://grobid.readthedocs.io/en/latest/Run-Grobid/) for setup instructions. The notebook creates the [coauthor_matrix.csv](./interconnections_datasets/coauthor_matrix.csv) and the [citation_matrix.csv](./interconnections_datasets/citation_matrix.csv). These matrices identify which papers cite each other and which share authors, enabling visualization of research communities and knowledge flow in the *Timeline View*. To use it with your data, first prepare a folder with your corpus PDFs. Then create a dictionary mapping IDs to filenames in the notebook.
+
+```python
+path_constant_part = "YOUR PATH"
+
+pdf_path_dict = {
+    1: '33_weisenberger.pdf',
+    2: '714_brewster.pdf',
+    3: '32_metzger.pdf',
+    4: '40_buil.pdf', 
+    5: '84_buil.pdf',
+    ...
+```
+Prepare an Excel file with paper IDs and their BibTeX entries (see [bibtex_mapping_of_ids.xlsx](./interconnections_datasets/bibtex_mapping_of_ids.xlsx)) that will be needed to map the extracted metadata from the references to the paper of your corpus. Then you can run the GROBID server via Docker (typically on port 8070). For the citations, the notebook uses a confidence-based approach for citation matching, automatically accepting high-confidence matches while flagging uncertain ones for manual review in an Excel file. After reviewing the uncertain matches, run the final cells to create the completed matrices saved as CSV files.
 
 Additionally you may want to configure the Mail-Server to your liking. Change the following code snippet for this use case:
 ```python
