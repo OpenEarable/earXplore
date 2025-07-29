@@ -128,8 +128,10 @@
 
     {# Sidebar Close Button for smaller Screens #}
     <div class="sidebar-buttons">
-      <button id="select-all-sidebar-button" class="select-button">Select All</button>
-      <button id="deselect-all-sidebar-button" class="select-button">Deselect All</button>
+      <div class="d-flex gap-2 w-100 mt-3">
+        <button id="select-all-sidebar-button" class="select-button flex-fill" style="padding-top: 5px; padding-bottom: 5px;">Select All</button>
+        <button id="deselect-all-sidebar-button" class="select-button flex-fill" style="padding-top: 5px; padding-bottom: 5px;">Deselect All</button>
+      </div>
 
       <button id="close-sidebar">
         <img id="close-icon" src="{{ url_for('static', filename='images/close-icon.svg')}}" alt="Close Icon"/>
