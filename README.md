@@ -68,7 +68,28 @@ SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Te
 ```
 Following these instructions will give the full functionalities for the *Tabular* and *Graphical View*. 
 
-To add the *Database* and *Abstract Similarity* metrics to the *Similarity View*, it is moreover necessary to run the [database_similarity.ipynb](./database_similarity.ipynb) and the [abstract_similarity.ipynb](./abstract_similarity.ipynb) to calculate both metrics. The the former, the headers of the [data.csv](./data.csv) need to be copied and pasted into the code along their datatype. For the latter, an API key is needed for gemini-embedding-exp-03-07 model in order to obtain the text embeddings. Of course, any other text embedding model can be employed as well but requires an according adaptation of the code. 
+To add the *Database* and *Abstract Similarity* metrics to the *Similarity View*, it is moreover necessary to run the [database_similarity.ipynb](./database_similarity.ipynb) and the [abstract_similarity.ipynb](./abstract_similarity.ipynb) to calculate both metrics, saved in the [normalized_database_similarity.csv](./database_similarity_datasets/normalized_database_similarity.csv) and [normalized_abstract_similarity.csv](./abstract_similarity_datasets/normalized_abstract_similarity.csv). For the latter, an API key is needed for <span style="font-family: 'ui-monospace';">gemini-embedding-exp-03-07</span> model in order to obtain the text embeddings. Of course, any other text embedding model can be employed as well but requires an according adaptation of the code. The the former, the headers of the [data.csv](./data.csv) need to be copied and pasted into the code along their datatype. 
+
+```python
+single_value_columns = [
+    'Sensing_PANEL_No Additional Sensing', 'Interaction_PANEL_Hands-Free', 'Interaction_PANEL_Eyes-Free', 
+    ...
+]
+
+multi_value_and_string_columns = [
+    'Location', 'Input Body Part', 'Gesture', 'Sensing_PANEL_Sensors', 'Interaction_PANEL_Resolution',
+    ...
+]
+
+numerical_columns_log_transformed = [
+    'Interaction_PANEL_Number of Selected Gestures'
+]
+
+single_value_columns_special_treatment = [
+    'Interaction_PANEL_Possible on One Ear'
+]
+
+```
 
 To add the citations and shared authors to the *Timeline View*, the grobid_citations_metadata.ipynb [grobid_citations_metadata.ipynb](./grobid_citations_metadata.ipynb) needs to be employed. [GROBID](https://grobid.readthedocs.io/en/latest/Introduction/) is a machine learning library that can extract scientific information from PDFs files. In order to run GROBID, you will need to employ Docker. More on this can be read in the relevant [GROBID documentation](https://grobid.readthedocs.io/en/latest/Run-Grobid/). To employ it your to data, you need to have a folder with the PDF files ready and specify their names in the notebook. In order to match them to you documents, you will also need to provide a file with the bibtexs of the studies. EXPAND
 
