@@ -25,3 +25,28 @@
 .download-button:hover {
   opacity: 0.6;
 }
+
+/* Sortable table headers */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: #f8f9fa;
+}
+
+/* Style for sort arrows */
+.sort-arrows {
+  color: #6c757d;
+  opacity: 0.5;
+  margin-left: 5px;
+  font-size: 0.8em;
+  white-space: pre; /* Preserves whitespace */
+}
+
+/* Active sort arrow styling */
+.sort-arrows.active {
+  color: inherit;
+  opacity: 1;
+}
