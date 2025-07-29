@@ -59,15 +59,35 @@
   min-width: 10em;
 }
 
-.btn-timeline:hover {
-  background-color: #a37c79;
-  border-color: #a37c79;
+/* More specific selectors for Bootstrap's btn-check pattern */
+.btn-check:checked + .btn-timeline {
+  background-color: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: white !important;
 }
 
-.btn-timeline:not(.active) {
+.btn-check:not(:checked) + .btn-timeline {
   background-color: white;
   color: #666;
   border-color: var(--color-accent);
+}
+
+.btn-check:not(:checked) + .btn-timeline:hover {
+  background-color: #f8e6e6;
+  border-color: var(--color-accent);
+  color: #666;
+}
+
+.btn-check:checked + .btn-timeline:hover {
+  background-color: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: white !important;
+}
+
+.btn-check:checked + .btn-timeline:hover {
+  background-color: #a37c79;
+  border-color: #a37c79;
+  color: white;
 }
 
 /* Timeline axis styling */
