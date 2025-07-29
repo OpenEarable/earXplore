@@ -171,12 +171,9 @@ Graphical View -- (1) The Graphical View can be selected via the view selection 
 <img width="2506" height="915" alt="Timeline View" src="https://github.com/user-attachments/assets/38d581a1-4386-4466-b338-990198b6af20" />
 
 
-## 🚩 Issues
+## 🚩 Contribute
 
-Currently there are no known issues. If you happen to encounter an issue with the website or need some insight on the code, there are two ways to let us know:
-
-1. In the navigation bar of the *[EarXplore](https://earXplore.teco.edu "Link to the Study which introduces this Repository")* website, you will find a button for reporting a mistake (or submitting an additional study). Clicking it takes you to a where you can specify your issue.
-2. You can contact us directly by going to the [Contact Section](#-contact).
+EXPAND
 
 ## 🪪 License
 
