@@ -124,7 +124,7 @@ If you are unsure about the some of the configurations, please refer to the [Fla
 This project is hosted under [earXplore.teco.edu](https://earxplore.teco.edu/). You may want to visit the site to try out all the features yourself. In this section, we interactively give a quick intro into the main features of the platform before introducing each of its four views in detail.
 
 #### View Selection Menu
-You can navigate between the four different views (*Tabular*, *Graphical*, *Similarity*, *Timeline*) and the *Add Your Study! / Report a Mistake!*-section via the navigation bar at the top of the page:
+You can navigate between the four different views (*Tabular*, *Graphical*, *Similarity*, *Timeline*) and the *Add study or report mistake*-section via the navigation bar at the top of the page:
 
 ![navbar_demonstration gif](https://github.com/user-attachments/assets/35882867-cc68-4fb3-a751-a620af3d7141)
 
