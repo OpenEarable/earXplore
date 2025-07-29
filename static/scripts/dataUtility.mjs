@@ -26,6 +26,15 @@ const filterCategories = $("body").data("filter-categories");
 const abstracts = $("body").data("abstracts");
 
 /**
+ * The titles for the studies passed from the backend.
+ *
+ * @constant
+ * @type {Array}
+ */
+const titles = $("body").data("titles");
+
+
+/**
  * An object mapping specific string labels to their corresponding numeric order or priority.
  * Used for sorting or categorizing qualitative values in a standardized way.
  *
