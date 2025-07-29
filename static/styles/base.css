@@ -72,11 +72,15 @@ nav {
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
+  gap: 15px; /* Creates space between each button */
+  margin-left: 20px; /* Creates space from the left edge */
+  margin-right: 20px; /* Creates space from the right edge */
 }
 
 .navbar-item {
   padding: 1em;
   text-align: center;
+  border-radius: 5px; /* Rounded corners */
 }
 
 .navbar-item:hover {
