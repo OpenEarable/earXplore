@@ -119,7 +119,12 @@ def load_data():
     for data_entry in data:
         if 'Abstract' in data_entry:
             del data_entry['Abstract']
-    
+
+    # delete the 'Title' column from the data
+    for data_entry in data:
+        if 'Title' in data_entry:
+            del data_entry['Title']
+
     return data
 
 def load_explanations():
@@ -154,6 +159,22 @@ def load_abstracts():
         return f"Error loading data.csv: {e}"
     
     return abstracts
+
+def load_titles():
+    try:
+        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        df = pd.read_csv(csv_path, usecols=["Title", "ID"])  # Load only the Title column
+        df = df.fillna('N/A')  # Replace actual NaN values
+        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
+        titles = df.to_dict(orient="records")
+    except FileNotFoundError:
+        return "data.csv file not found"
+    except pd.errors.EmptyDataError:
+        return "data.csv file is empty"
+    except Exception as e:
+        return f"Error loading data.csv: {e}"
+    
+    return titles
 
 def additional_data():
     try:
