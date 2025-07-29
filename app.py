@@ -7,7 +7,7 @@ import json
 import os
 
 # Categories that should not be filtered for
-EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link']
+EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title']
 
 # Categories that go in the advanced filters panel
 ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
@@ -16,13 +16,13 @@ ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
 SLIDER_CATEGORIES = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
 
 # Categories that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Applications_PANEL_Intended Applications', 'Main Author', 'Gesture', 'Keywords']
+SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Main Author', 'Gesture', 'Keywords']
 
 # Categories that should have an "exclusive filtering" button in the sidebar
 EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors']
 
 # Panels that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study']
+SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study', 'Applications', 'Motivations', 'Device']
 
 # Panels that should be initially hidden in the sidebar
 INITIALLY_HIDDEN_PANELS = ['Advanced Filters']
