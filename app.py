@@ -474,7 +474,7 @@ def add_study():
                 if panel_name not in panels:
                     panels[panel_name] = []
                 panels[panel_name].append(col)
-            elif col not in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Keywords']:
+            elif col not in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Keywords', 'Title']:
                 # Add general columns not in panels
                 if 'General' not in panels:
                     panels['General'] = []
