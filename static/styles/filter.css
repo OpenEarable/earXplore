@@ -59,3 +59,12 @@
 		justify-content: start;
 	}
 }
+
+.filter-wrapper {
+	 background: #eee; 
+	 border: 1px solid transparent; 
+	 border-radius: 20px; 
+	 overflow: hidden; 
+	 margin: 0.5px; 
+	 padding: 2px 10px;
+}
