@@ -171,9 +171,9 @@ Graphical View -- (1) The Graphical View can be selected via the view selection 
 <img width="2506" height="915" alt="Timeline View" src="https://github.com/user-attachments/assets/38d581a1-4386-4466-b338-990198b6af20" />
 
 
-## 🚩 Contribute
+## 💡 Contribute
 
-EXPAND
+*EarXplore* is designed not as a static, one-time release, but as a dynamic, extensible resource that evolves alongside ongoing developments in earable interaction research. Its architecture includes updating mechanisms that support long-term sustainability and flexible data integration. Both the structure of the website and its individual views enable seamless incorporation of new content. In addition to updates made by the maintainers, *EarXplore* supports two mechanisms for community contributions. First, researchers can suggest the incorporation of additional studies via the contact form embedded in the platform. Second, they can fork the GitHub repository and propose additions directly. In both cases, submissions undergo review by the maintainers before being automatically integrated into all views of the database via backend scripts. These mechanisms position *EarXplore* as a sustainable, community-driven resource that supports the ongoing curation, comparison, and exploration of earable interaction research.
 
 ## 🪪 License
 
