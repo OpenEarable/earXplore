@@ -80,9 +80,9 @@ h3, h4 {
 /* For the feedback message */
 .success-message {
   position: fixed;
-  top: 20px;
+  top: 50%;  /* Changed from 20px to 50% */
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);  /* Changed to translate both X and Y */
   z-index: 1050;
   padding: 15px 25px;
   background-color: #d4edda;
@@ -90,6 +90,8 @@ h3, h4 {
   border-radius: 4px;
   color: #155724;
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  max-width: 80%;
 }
 
 .title-underline {
