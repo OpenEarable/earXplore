@@ -27,19 +27,22 @@
 
   {# Success Message Alert #}
   {% if success_message %}
-    <div class="success-message">
+    <div class="alert alert-success alert-dismissible fade show position-fixed" 
+         style="top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; min-width: 300px;" 
+         role="alert" id="successAlert">
       {{ success_message }}
       <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
     <script>
       // Auto-hide success message after 5 seconds
       setTimeout(function() {
-        const successMessage = document.querySelector('.success-message');
-        if (successMessage) {
-          successMessage.style.display = 'none';
+        const alert = document.getElementById('successAlert');
+        if (alert) {
+          const bsAlert = new bootstrap.Alert(alert);
+          bsAlert.close();
         }
       }, 5000);
-
+      
       // Clean URL parameters after showing the message
       if (window.history.replaceState) {
         const url = new URL(window.location);
@@ -98,8 +101,9 @@
         <a href="{{ url_for('add_study')}}">
           <button class="add-study-button">
             <span class="navbar-text">
-              Add study or
-              report mistake.
+              Add your study!
+              <br>
+              Report a Mistake!
             </span>
             <img src="{{ url_for('static', filename='images/add_study_icon.svg')}}" alt="Add Study Icon" class="navbar-icon">
           </button>
@@ -125,11 +129,9 @@
   <aside id="sidebar">
 
     {# Sidebar Close Button for smaller Screens #}
-    <div class="sidebar-buttons mt-2">
-      <div class="d-flex gap-2 w-100">
-        <button id="select-all-sidebar-button" class="select-button flex-fill">Select All</button>
-        <button id="deselect-all-sidebar-button" class="select-button flex-fill">Deselect All</button>
-      </div>
+    <div class="sidebar-buttons">
+      <button id="select-all-sidebar-button" class="select-button">Select All</button>
+      <button id="deselect-all-sidebar-button" class="select-button">Deselect All</button>
 
       <button id="close-sidebar">
         <img id="close-icon" src="{{ url_for('static', filename='images/close-icon.svg')}}" alt="Close Icon"/>
