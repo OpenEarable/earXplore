@@ -97,13 +97,21 @@
       </nav>
 
       {# Add Study Button #}
-      <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center gap-4">
         <a href="{{ url_for('add_study')}}">
           <button class="add-study-button">
             <span class="navbar-text">
               Add study or report mistake!
             </span>
             <img src="{{ url_for('static', filename='images/add_study_icon.svg')}}" alt="Add Study Icon" class="navbar-icon">
+          </button>
+        </a>
+        <a href="https://arxiv.org/abs/2507.20656" target="_blank">
+          <button class="add-study-button">
+            <span class="navbar-text">
+              EarXplore Paper
+            </span>
+            <img src="{{ url_for('static', filename='images/add_study_icon.svg')}}" alt="Paper Icon" class="navbar-icon">
           </button>
         </a>
         <button id="toggle-sidebar">
