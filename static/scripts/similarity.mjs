@@ -36,7 +36,7 @@ filterCategories.forEach(category => {
 let colorCategory = window.sessionStorage.getItem("colorCategory") || "";
 $(`#similarityColorCategory > option[value="${colorCategory}"]`).prop("selected", true);
 
-let similarityThreshold = parseFloat(window.sessionStorage.getItem("similarityThreshold")) || 1;
+let similarityThreshold = 1;
 // Set the displayed threshold value in the UI
 $("#thresholdValue").text(similarityThreshold.toFixed(2));
 
@@ -66,7 +66,7 @@ noUiSlider.create(slider, {
   $("#thresholdValue").text(similarityThreshold.toFixed(2));
   // Draw the graph with the new threshold
   drawGraph(similarityThreshold);
-  window.sessionStorage.setItem("similarityThreshold", similarityThreshold);
+  // Storage line removed
 });
 
 /*
