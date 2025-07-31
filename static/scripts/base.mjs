@@ -63,7 +63,7 @@ if (!rangeFilters) {
     const category = $(this).data('col');
   
     noUiSlider.create(this, getSliderConfig([min, max], min, max))
-    .on("end", function(values, handle) {
+    .on("change", function(values, handle) {
       const filters = JSON.parse(window.sessionStorage.getItem("filters"));
       filters.rangeFilters[category] = values;
       updateFilters(filters);
@@ -82,7 +82,7 @@ if (!rangeFilters) {
 
     // Recreate the slider with the stored configuartion
     noUiSlider.create(slider[0], getSliderConfig(values, min, max))
-      .on("end", function(values, handle) {
+      .on("change", function(values, handle) {
         const filters = JSON.parse(window.sessionStorage.getItem("filters"));
         filters.rangeFilters[category] = values;
         updateFilters(filters);

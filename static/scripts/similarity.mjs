@@ -60,7 +60,7 @@ noUiSlider.create(slider, {
     }
   },
 })
-.on("end", function(values, handle) {
+.on("change", function(values, handle) {
   similarityThreshold = parseFloat(values[handle]);
   // Update the threshold text
   $("#thresholdValue").text(similarityThreshold.toFixed(2));
