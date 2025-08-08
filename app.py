@@ -7,7 +7,7 @@ import json
 import os
 
 # Categories that should not be filtered for
-EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title']
+EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title', 'Authors']
 
 # Categories that go in the advanced filters panel
 ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
@@ -474,7 +474,7 @@ def add_study():
                 if panel_name not in panels:
                     panels[panel_name] = []
                 panels[panel_name].append(col)
-            elif col not in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Keywords', 'Title']:
+            elif col not in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Keywords', 'Title', 'Authors']:
                 # Add general columns not in panels
                 if 'General' not in panels:
                     panels['General'] = []
@@ -486,7 +486,7 @@ def add_study():
             
             for col in columns:
                 # Skip certain columns that shouldn't be in the form
-                if col in ['ID', 'Main Author', 'Abstract', 'Study Link']:
+                if col in ['ID', 'Main Author', 'Abstract', 'Study Link', 'Title', 'Authors']:
                     continue
                 
                 # Get the display name (remove panel prefix if exists)
