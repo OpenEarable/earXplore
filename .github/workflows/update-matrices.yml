@@ -33,7 +33,7 @@ jobs:
         run: pip install -r .github/workflows/requirements_update_similarity_matrices.txt
 
       - name: Run update script
-        run: python update_similarity_matrices.py
+        run: python update_similarity_matrices_and_author_connections.py
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
