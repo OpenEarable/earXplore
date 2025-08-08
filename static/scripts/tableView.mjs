@@ -1,7 +1,7 @@
 import { data, showStudyModal, filterData } from "./dataUtility.mjs";
 
 const table = $("#table");
-const categories = ["INFO", "ID", ...$("body").data("filter-categories"), "Study Link"];
+const categories = ["INFO", "ID", ...$("body").data("filter-categories"), "Study Link", "Authors"];
 const infoCirclePath = table.data("info-circle-path");
 
 let categoryOrder = JSON.parse(window.sessionStorage.getItem("sortByCategory")) || null;
