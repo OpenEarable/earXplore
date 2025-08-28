@@ -79,12 +79,12 @@ nav {
   padding: 1em;
   text-align: center;
   border-radius: 5px; /* Rounded corners */
+  border: 3px solid var(--color-accent);
 }
 
-.navbar-item:hover {
-  background-color: var(--color-accent); /* Use the same color with 60% opacity */
-  opacity: 0.6;
-  color: white;
+.navbar-item:hover:not(.navbar-item-selected) {
+  background-color: #f8e6e6;
+  border-color: var(--color-accent);
   border-radius: 5px;
 }
 
