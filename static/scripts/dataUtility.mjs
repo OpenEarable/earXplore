@@ -361,6 +361,9 @@ function createColorScale(uniqueValues) {
  * @param {string|number} studyID - The unique identifier of the study to display information for.
  */
 function showStudyModal(studyID) {
+  // Set the modal parameter
+  window.sessionStorage.setItem("modalID", studyID);
+
   // Find the data entry for the given ID
   const entry = getDataEntry(studyID.toString());
 

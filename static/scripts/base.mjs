@@ -318,5 +318,9 @@ $(document).ready(function() {
     $("#sidebar").toggleClass("visible-sidebar");
     $("#mask").hide();
   });
+
+  $("button[data-bs-dismiss='modal']").on("click", function() {
+    window.sessionStorage.removeItem("modalID");
+  });
 });
 

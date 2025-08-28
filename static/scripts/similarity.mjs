@@ -184,6 +184,13 @@ function openNetworkDetails(nodeID, links) {
   $("#connectionsModal").modal("show");
 }
 
+function findSimilarStudies(links) {
+  const modalID = window.sessionStorage.getItem("modalID");
+  if (modalID) {
+    openNetworkDetails(modalID, links);
+  }
+}
+
 /*
   Section for preparing the data for the similarity graph
   - The data needs to be available with respect to the current filters
@@ -286,6 +293,8 @@ function drawGraph(threshold) {
 
   // Draw the legend
   createLegend(nodes, colorScale, $("#similarityColorCategory").val(), $("#legend"));
+
+  findSimilarStudies(links);
 }
 
 function drawULayout(container, graphData, colorScale) {
