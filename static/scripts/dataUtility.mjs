@@ -369,9 +369,19 @@ function showStudyModal(studyID) {
 
   // Set the header text of the modal
   $("#study-info-header").text(`Paper Info (ID: ${studyID})`);
+  const infoHTML = [];
+
+  // Add Study Summary to the infoHTML
+  infoHTML.push(`
+    <h5 class="study-info-panel-header">Study Summary</h5>
+    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
+    <strong>Authors</strong>: ${entry["Authors"] || "N/A"}<br />
+    <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
+    <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}
+  `)
 
   // All the selections here are present because the modal is rendered in the base template which every page extends
-  const infoHTML = $(".panel").map((index, panel) => {
+  $(".panel").each((index, panel) => {
       // Skip the "Advanced Filters" panel
       if ($(panel).data("panel-value") === "Advanced Filters") {
         return;
@@ -390,16 +400,8 @@ function showStudyModal(studyID) {
 
       const panelHTML = `<h5 class="study-info-panel-header">${heading}</h5>` + filtersHTML;
       
-      return panelHTML;
-  }).get();
-
-  // Add Study Summary to the infoHTML
-  infoHTML.push(`
-    <h5 class="study-info-panel-header">Study Summary</h5>
-    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
-    <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}<br />
-    <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
-  `)
+      infoHTML.push(panelHTML);
+  });
 
   $(`#study-info-modal-body`).html(infoHTML.join("<br />"));
 
