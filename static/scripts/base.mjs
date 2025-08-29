@@ -1,4 +1,4 @@
-import { convertToID, updateFilters } from "./dataUtility.mjs";
+import { convertToID, updateFilters, processQuery } from "./dataUtility.mjs";
 
 // Highlight the current view in the navbar
 const selectedView = $("nav").data("current-view");

@@ -79,6 +79,16 @@ function updateFilters(filters) {
 }
 
 /**
+ * Processes a search query over the titles and returns the matching studies.
+ * @param {string} query - The search query entered by the user.
+ * @returns {Array} An array of matching studies.
+ */
+function processQuery(query) {
+  const results = titles.filter(entry => entry["Title"].includes(query));
+  return results;
+}
+
+/**
  * Converts all occurrences of the "€" character in the given HTML ID to spaces.
  *
  * @param {string} htmlID - The HTML ID string to convert.
@@ -412,4 +422,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery};
