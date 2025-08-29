@@ -373,6 +373,7 @@ function createColorScale(uniqueValues) {
 function showStudyModal(studyID) {
   // Set the modal parameter
   window.sessionStorage.setItem("modalID", studyID);
+  window.sessionStorage.setItem("similarityThreshold", 1);
 
   // Find the data entry for the given ID
   const entry = getDataEntry(studyID.toString());

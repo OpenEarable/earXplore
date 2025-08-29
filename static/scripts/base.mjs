@@ -319,7 +319,7 @@ $(document).ready(function() {
     $("#mask").hide();
   });
 
-  $("button[data-bs-dismiss='modal']").on("click", function() {
+  $("#study-info-modal").on("hidden.bs.modal", function() {
     window.sessionStorage.removeItem("modalID");
   });
 });

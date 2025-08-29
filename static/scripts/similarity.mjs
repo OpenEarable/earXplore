@@ -613,5 +613,9 @@ $(document).ready(function() {
     this.noUiSlider.on("end", function(values, handle) {    
       drawGraph(similarityThreshold);
     });
-  })
-})
+  });
+
+  $("#connectionsModal").on("hidden.bs.modal", function () {
+    window.sessionStorage.removeItem("modalID");
+  });
+});
