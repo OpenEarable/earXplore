@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import re
+import ast
 
 from google import genai
 from google.genai import types
@@ -247,6 +248,21 @@ def standard_normalize(df):
     result.values[mask] = (df.values[mask] - mean_val) / std_val
     
     return result
+
+
+# Assuming df_data_dimensions has a column 'Gemini-Embedding' with string representations of lists
+def convert_string_to_list(embedding_str):
+    try:
+        if isinstance(embedding_str, str):
+            # Convert string representation to actual list
+            return ast.literal_eval(embedding_str)
+        else:
+            # Already in correct format
+            return embedding_str
+    except (ValueError, SyntaxError):
+        # Handle malformed strings
+        print(f"Error parsing: {embedding_str[:30]}...")
+        return []
     
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
@@ -264,9 +280,11 @@ def get_gemini_embeddings(abstract):
     return result.embeddings[0].values
 
 abstract_embeddings_df = pd.read_csv('abstract_similarity_datasets/data_with_embeddings.csv')
+abstract_embeddings_df['Gemini-Embedding'] = abstract_embeddings_df['Gemini-Embedding'].apply(convert_string_to_list)
 ids_with_embeddings = abstract_embeddings_df['ID'].to_numpy(dtype=int)
 dataset_ids = df['ID'].to_numpy(dtype=int)
-missing_ids = ids_with_embeddings[~np.isin(ids_with_embeddings, dataset_ids)]
+missing_ids = dataset_ids[~np.isin(dataset_ids, ids_with_embeddings)]
+print(f'Missing IDs {missing_ids}')
 
 new_rows = []
 
@@ -284,9 +302,11 @@ for missing_id in missing_ids:
 
 # Create new DataFrame with the same column structure
 new_abstract_embeddings = pd.DataFrame(new_rows, columns=['ID', 'Abstract', 'Gemini-Embedding'])
+print(len(new_abstract_embeddings))
 
 # Append to the existing embeddings DataFrame
 abstract_embeddings_df = pd.concat([abstract_embeddings_df, new_abstract_embeddings], ignore_index=True)
+print(len(abstract_embeddings_df))
 abstract_embeddings_df.to_csv('abstract_similarity_datasets/data_with_embeddings.csv')
 
 # Calculate cosine sims again
