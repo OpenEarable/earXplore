@@ -254,7 +254,6 @@ function drawTimelineGraph() {
   const innerWidth = $("#timeline-graph-container").width() - margin.left - margin.right;
   const nodeRadius = innerWidth / 150;
   const height = Math.max(250, maxYearsCount * (nodeRadius * 4));
-  console.log({height, maxYearsCount, nodeRadius});
   const innerHeight = height - margin.top - margin.bottom;
   const axisHeight = innerHeight;
 

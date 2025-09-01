@@ -79,6 +79,16 @@ function updateFilters(filters) {
 }
 
 /**
+ * Processes a search query over the titles and returns the matching studies.
+ * @param {string} query - The search query entered by the user.
+ * @returns {Array} An array of matching studies.
+ */
+function processQuery(query) {
+  const results = titles.filter(entry => entry["Title"].includes(query));
+  return results;
+}
+
+/**
  * Converts all occurrences of the "€" character in the given HTML ID to spaces.
  *
  * @param {string} htmlID - The HTML ID string to convert.
@@ -361,14 +371,28 @@ function createColorScale(uniqueValues) {
  * @param {string|number} studyID - The unique identifier of the study to display information for.
  */
 function showStudyModal(studyID) {
+  // Set the modal parameter
+  window.sessionStorage.setItem("modalID", studyID);
+  window.sessionStorage.setItem("similarityThreshold", 1);
+
   // Find the data entry for the given ID
   const entry = getDataEntry(studyID.toString());
 
   // Set the header text of the modal
   $("#study-info-header").text(`Paper Info (ID: ${studyID})`);
+  const infoHTML = [];
+
+  // Add Study Summary to the infoHTML
+  infoHTML.push(`
+    <h5 class="study-info-panel-header">Study Summary</h5>
+    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
+    <strong>Authors</strong>: ${entry["Authors"] || "N/A"}<br />
+    <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
+    <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}
+  `)
 
   // All the selections here are present because the modal is rendered in the base template which every page extends
-  const infoHTML = $(".panel").map((index, panel) => {
+  $(".panel").each((index, panel) => {
       // Skip the "Advanced Filters" panel
       if ($(panel).data("panel-value") === "Advanced Filters") {
         return;
@@ -387,16 +411,8 @@ function showStudyModal(studyID) {
 
       const panelHTML = `<h5 class="study-info-panel-header">${heading}</h5>` + filtersHTML;
       
-      return panelHTML;
-  }).get();
-
-  // Add Study Summary to the infoHTML
-  infoHTML.push(`
-    <h5 class="study-info-panel-header">Study Summary</h5>
-    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
-    <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}<br />
-    <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
-  `)
+      infoHTML.push(panelHTML);
+  });
 
   $(`#study-info-modal-body`).html(infoHTML.join("<br />"));
 
@@ -407,4 +423,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery};

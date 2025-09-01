@@ -1,4 +1,4 @@
-import { convertToID, updateFilters } from "./dataUtility.mjs";
+import { convertToID, updateFilters, processQuery } from "./dataUtility.mjs";
 
 // Highlight the current view in the navbar
 const selectedView = $("nav").data("current-view");
@@ -317,6 +317,10 @@ $(document).ready(function() {
   $("#close-sidebar, #mask").on("click", function() {
     $("#sidebar").toggleClass("visible-sidebar");
     $("#mask").hide();
+  });
+
+  $("#study-info-modal").on("hidden.bs.modal", function() {
+    window.sessionStorage.removeItem("modalID");
   });
 });
 

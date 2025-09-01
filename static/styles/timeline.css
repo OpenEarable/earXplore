@@ -1,8 +1,5 @@
 #timeline-container {
-  background: var(--color-gray-light);
-  border-radius: 8px;
   padding: 1.5em;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   margin: 1.5em 0;
 }
     
@@ -109,12 +106,13 @@
 /* Container dimensions */
 #timeline-graph-container {
   width: 100%;
-  height: 600px;
-  border-radius: 5px;
   overflow: visible;
   margin-bottom: 1.5em;
   text-align: center;
   align-items: center;
+  background: var(--color-gray-light);
+  border-radius: 8px;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Legend styling */
