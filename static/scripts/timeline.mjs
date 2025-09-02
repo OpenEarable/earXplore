@@ -81,10 +81,10 @@ function showNetworkModal(id) {
           <tr>
             <th class="centered-cell" ></th>
             <th class="centered-cell" >ID</th>
-            <th class="centered-cell" >Authors</th>
+            <th class="centered-cell" >Main Author</th>
             <th class="centered-cell" >Year</th>
             <th class="centered-cell" >Location</th>
-            <th class="centered-cell" >Body Part</th>
+            <th class="centered-cell" >Input Body Part</th>
             <th class="centered-cell" >Gesture</th>
             <th class="centered-cell" ></th> <!-- Empty header for alignment -->
           </tr>
