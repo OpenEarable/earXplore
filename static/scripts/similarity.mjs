@@ -108,10 +108,10 @@ function openNetworkDetails(nodeID, links) {
           <tr>
             <th></th>
             <th>ID</th>
-            <th>Authors</th>
+            <th>Main Author</th>
             <th>Year</th>
             <th>Location</th>
-            <th>Body Part</th>
+            <th>Input Body Part</th>
             <th>Gesture</th>
             <th></th> <!-- Empty column for alignment -->
           </tr>
