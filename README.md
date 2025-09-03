@@ -10,22 +10,66 @@
 ## 🚀 Getting Started
 
 ### 💾 Installation
-We highly recommend using a [virtual environment](https://docs.python.org/3/library/venv.html) in python to install all the dependencies from the [requirements.txt](./requirements.txt).  
-In order to do that, activate your virtual environment in a terminal beforehand:  
+
+We recommend using a [Python virtual environment](https://docs.python.org/3/library/venv.html) to keep dependencies isolated. The project was developed with **Python 3.12**, but should work with **Python 3.11+**. Flask requires at least **Python 3.9**.  
+
+#### Step 1: Create a virtual environment
+Open a terminal/command prompt and navigate into the project folder (the one containing `requirements.txt` and `app.py`).  
+Run one of the following commands depending on your system:
+
+- **Windows (PowerShell or CMD):**
+  ```bash
+  py -m venv venv
+  ```
+- **macOS/Linux:**
+  ```bash
+  python3 -m venv venv
+  ```
+
+#### Step 2: Activate the virtual environment
+
+- **Windows (CMD):**
+  ```cmd
+  venv\Scripts\activate.bat
+  ```
+- **Windows (PowerShell):**
+  ```powershell
+  .\venv\Scripts\Activate.ps1
+  ```
+- **macOS/Linux (bash/zsh):**
+  ```bash
+  source venv/bin/activate
+  ```
+Once activated, your terminal prompt should show (venv) at the beginning. If it doesn’t, the virtual environment may not have activated correctly.
+
+#### Step 3: Install dependencies
+With the virtual environment activated, run the following commands depending on your system:
+
+  ```bash
+  pip install -r requirements.txt
+  ```
+#### Step 4: Running the App
+To start the website locally, run 
+
+- **Windows (PowerShell or CMD):**
+  ```bash
+  python app.py
+  ```
+- **macOS/Linux:**
+  ```bash
+  python3 app.py
+  ```
+
+Now open your browser at [http://localhost:888](http://localhost:888).
+
+You can also use Flask’s built-in runner:
 ```bash
-# venv is the usual name for your virtual environment
-path\to\venv\Scripts\activate
+  flask run --debug
 ```
-To install the depencies simply type:
-```venv
-pip install -r requirements.txt
-```
-To host your own version of the project locally, type:
-```terminal
-flask run --debug
-```
-The `--debug` flag will apply any change you make to your project directly and restart the website on your machine. You can omit this flag.  
-You can also change the host address and the port in the code and the bottom of the [app.py](./app.py) file:
+The `--debug` flag automatically reloads the server when you make changes (optional).
+
+You can also change the host, port, or debug mode at the bottom of [app.py](./app.py):
+
 ```python
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=888) # you can change the debug mode, host and port
