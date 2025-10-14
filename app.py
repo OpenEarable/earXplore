@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import pandas as pd
 import json
 import os
+import mimetypes
+mimetypes.add_type('application/javascript', '.mjs')
 
 # Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title', 'Authors']
