@@ -24,10 +24,10 @@
   background-color: white;
 }
 
-.btn-check:checked+.btn{
+.btn-check:checked + .btn {
   background-color: var(--color-accent);
   color: white;
-  border-color: var(--color-accent); 
+  border-color: var(--color-accent);
 }
 
 .similarityControlContainer {
@@ -35,6 +35,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5em;
+  font-size: var(--font-md);
 }
 
 .btn-similarity {
@@ -44,13 +45,13 @@
 }
 
 .btn-check:checked + .btn-similarity:hover {
-  background-color: var(--color-accent) !important; 
+  background-color: var(--color-accent) !important;
   border-color: var(--color-accent) !important;
   color: white !important;
 }
 
 .btn-similarity:hover {
-  background-color: #f8e6e6 !important; 
+  background-color: #f8e6e6 !important;
   border-color: var(--color-accent) !important;
   color: #666 !important;
 }
@@ -84,7 +85,7 @@
 #legendNote {
   font-style: italic;
   font-size: 0.8em;
-  margin-bottom: 0.5em
+  margin-bottom: 0.5em;
 }
 
 #legendItems {

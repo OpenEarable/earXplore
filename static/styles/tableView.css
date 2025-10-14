@@ -50,3 +50,11 @@
   color: inherit;
   opacity: 1;
 }
+
+#table thead {
+  font-size: var(--font-bg);
+}
+
+#table tbody {
+  font-size: var(--font-md);
+}

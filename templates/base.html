@@ -314,7 +314,9 @@
             class="filter-group mt-2 category"
             data-col="{{ category.value }}"
           >
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div
+              class="d-flex justify-content-between align-items-center gap-2 mb-2"
+            >
               {# Add an explanation circle for every category #}
               <div>
                 <strong>{{ category.value.split('_')[-1] }}</strong>
