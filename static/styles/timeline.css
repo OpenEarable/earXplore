@@ -14,6 +14,16 @@
   font-size: var(--font-md);
 }
 
+.timeline-controls label {
+  font-size: var(--font-md);
+  padding: calc(var(--resp-padding) * 0.5) calc(var(--resp-padding) * 2);
+  min-width: fit-content;
+}
+
+label[for="timelineColorCategory"] {
+  padding: 0;
+}
+
 .category-dropdown-container {
   display: flex;
   align-items: center;
@@ -204,5 +214,9 @@
 @media (max-width: 750px) {
   #visualization-warning {
     display: flex;
+  }
+
+  .timeline-controls {
+    flex-direction: column;
   }
 }
