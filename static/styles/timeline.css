@@ -20,6 +20,10 @@
   min-width: fit-content;
 }
 
+.form-select {
+  font-size: var(--font-md);
+}
+
 label[for="timelineColorCategory"] {
   padding: 0;
 }
@@ -109,11 +113,6 @@ label[for="timelineColorCategory"] {
   stroke-width: 1;
 }
 
-.timeline-label {
-  font-size: 12px;
-  fill: #666;
-}
-
 /* Container dimensions */
 #timeline-graph-container {
   width: 100%;
@@ -136,7 +135,7 @@ label[for="timelineColorCategory"] {
 .timeline-legend-item {
   display: flex;
   align-items: center;
-  font-size: 1em;
+  font-size: var(--font-md);
 }
 
 .timeline-legend-line {
@@ -164,16 +163,16 @@ label[for="timelineColorCategory"] {
   flex-direction: column;
   align-items: center;
   flex-shrink: 2;
-  font-size: 0.8em;
+  font-size: var(--font-md);
 }
 
 #legend h4 {
-  font-size: 1.2em;
+  font-size: var(--font-xl);
 }
 
 #legendNote {
   font-style: italic;
-  font-size: 0.8em;
+  font-size: var(--font-sm);
   margin-bottom: 0.5em;
 }
 
@@ -214,6 +213,10 @@ label[for="timelineColorCategory"] {
 @media (max-width: 750px) {
   #visualization-warning {
     display: flex;
+  }
+
+  #timeline-container {
+    padding: var(--resp-padding);
   }
 
   .timeline-controls {

@@ -2,7 +2,11 @@
 #similarityContainer {
   padding: 1.5em;
   margin: 1.5em 0;
-  font-size: calc(var(--font-sm) * 1);
+  font-size: var(--font-md);
+}
+
+.form-select {
+  font-size: var(--font-md);
 }
 
 #categoryDropdownContainer {
@@ -21,7 +25,6 @@
 
 .btn-check,
 .btn-outline-secondary {
-  font-size: 1em;
   background-color: white;
 }
 
@@ -80,12 +83,16 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 2;
-  font-size: 0.8em;
+  font-size: var(--font-md);
+}
+
+#legend h4 {
+  font-size: var(--font-xl);
 }
 
 #legendNote {
   font-style: italic;
-  font-size: 0.8em;
+  font-size: var(--font-sm);
   margin-bottom: 0.5em;
 }
 
