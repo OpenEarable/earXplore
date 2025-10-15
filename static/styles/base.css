@@ -199,7 +199,7 @@ h3 {
 .btn-link,
 .toggle-visibility-button {
   background-color: var(--color-accent);
-  font-size: 1em;
+  font-size: var(--font-md);
   color: white;
   border: none;
   text-decoration: none;
@@ -232,7 +232,7 @@ h3 {
   border-radius: 5px;
   text-decoration: none;
   opacity: 1;
-  font-size: 1rem;
+  font-size: var(--font-md);
   border: 1px solid var(--color-accent);
 }
 
