@@ -402,7 +402,7 @@ function drawTimelineGraph() {
         .append("line")
         .attr("class", "tick-line")
         .attr("y1", isAbove ? 0.5 : -0.5)
-        .attr("y2", isAbove ? -5 : 5)
+        .attr("y2", isAbove ? "-0.5rem" : "0.5rem")
         .attr("stroke", "#000");
 
       // Add year text
@@ -410,7 +410,7 @@ function drawTimelineGraph() {
         .append("text")
         .attr("class", "tick-text")
         .attr("text-anchor", "middle")
-        .attr("dy", isAbove ? "-0.71em" : "1.4em")
+        .attr("dy", isAbove ? "-0.5rem" : "1rem")
         .style("font-size", responsiveFontSize)
         .style("user-select", "none")
         .text(d);
