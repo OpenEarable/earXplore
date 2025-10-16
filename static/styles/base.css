@@ -14,6 +14,7 @@ body {
 
   --resp-font-size: clamp(0.75rem, 0.6642rem + 0.3661vw, 1.25rem);
   --resp-font-ticks: clamp(0.25rem, 0.1213rem + 0.5492vw, 1rem);
+  --resp-font-ticks-bg: calc(clamp(0.25rem, 0.1213rem + 0.5492vw, 1rem) * 1.5);
   --font-xl: calc(var(--resp-font-size) * 1.25);
   --font-bg: calc(var(--resp-font-size) * 1.15);
   --font-md: var(--resp-font-size);

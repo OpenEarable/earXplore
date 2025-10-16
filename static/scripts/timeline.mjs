@@ -338,7 +338,7 @@ function drawTimelineGraph() {
 
   // get the current font size
   const responsiveFontSize = getComputedStyle(document.body)
-    .getPropertyValue("--resp-font-ticks")
+    .getPropertyValue("--resp-font-ticks-bg")
     .trim();
 
   // Create the svg container for the timeline graph with responsive viewBox
