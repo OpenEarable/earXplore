@@ -298,7 +298,6 @@ function drawGraph(threshold) {
   $("#graphContainer").height("auto");
   $("#legend").empty();
 
-  // TODO: change to slider value
   const { sortedNodes, links, colorScale } = generateGraphData(threshold);
   const nodes = [...sortedNodes];
 
@@ -313,7 +312,7 @@ function drawGraph(threshold) {
   // Determine graph dimensions
   const useULayout = nodes.length > 50; // Use U-Layout for larger graphs
 
-  const height = useULayout ? 800 : 500;
+  const height = useULayout ? 1000 : 500;
 
   $("#graphContainer").height(height);
 
@@ -322,7 +321,6 @@ function drawGraph(threshold) {
     .select("#graphContainer")
     .append("svg")
     .attr("width", "100%")
-    .attr("height", height)
     .attr("viewBox", `0 0 ${$("#graphContainer").width()} ${height}`);
 
   if (useULayout) {
@@ -351,7 +349,7 @@ function drawULayout(container, graphData, colorScale) {
   if (window.innerWidth <= 650) {
     margin = { top: 5, right: 5, bottom: 5, left: 5 };
   } else {
-    margin = { top: 20, right: 20, bottom: 20, left: 20 };
+    margin = { top: 50, right: 20, bottom: 50, left: 20 };
   }
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
   const width = parseInt($("svg").width()) - margin.left - margin.right;
@@ -399,20 +397,18 @@ function drawULayout(container, graphData, colorScale) {
     .tickSize(0)
     .tickPadding(-4);
 
+  // Append group element for zooming
+  const g = container.append("g");
+
   // Draw the top axis
-  container
-    .append("g")
-    .attr(
-      "transform",
-      `translate(${margin.left}, ${topAxisHeight + margin.top})`
-    ) // Position the axis at the top
+  g.append("g")
+    .attr("transform", `translate(0, ${topAxisHeight})`) // Position the axis at the top
     .attr("class", "top-axis")
     .call(topAxis);
 
   // Draw the bottom axis
-  container
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${height - topAxisHeight})`) // Position the axis at the bottom
+  g.append("g")
+    .attr("transform", `translate(0, ${3 * topAxisHeight})`) // Position the axis at the bottom
     .attr("class", "bottom-axis")
     .call(bottomAxis);
 
@@ -462,16 +458,10 @@ function drawULayout(container, graphData, colorScale) {
     .style("user-select", "none"); // Change cursor to pointer for better UX
 
   // Create a group for the links
-  const linkGroup = container
-    .append("g")
-    .attr("class", "links")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  const linkGroup = g.append("g").attr("class", "links");
 
   // Create a group for the top and bottom nodes
-  const nodeGroup = container
-    .append("g")
-    .attr("class", "nodes")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  const nodeGroup = g.append("g").attr("class", "nodes");
 
   // Draw the top nodes and add click and hover events
   nodeGroup
@@ -501,10 +491,7 @@ function drawULayout(container, graphData, colorScale) {
     .attr("class", "node")
     .attr(
       "transform",
-      (d) =>
-        `translate(${bottomScale(d)}, ${
-          height - topAxisHeight - margin.bottom
-        })`
+      (d) => `translate(${bottomScale(d)}, ${3 * topAxisHeight})`
     )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
@@ -538,12 +525,8 @@ function drawULayout(container, graphData, colorScale) {
         : bottomScale(d.targetID);
 
       // Retrieve the correct y position based on the axis
-      const sourceY = isSourceTop
-        ? topAxisHeight
-        : height - topAxisHeight - margin.bottom;
-      const targetY = isTargetTop
-        ? topAxisHeight
-        : height - topAxisHeight - margin.bottom;
+      const sourceY = isSourceTop ? topAxisHeight : 3 * topAxisHeight;
+      const targetY = isTargetTop ? topAxisHeight : 3 * topAxisHeight;
 
       if (sourceX === targetX && isSourceTop) {
         return `M ${sourceX} ${sourceY} Q ${(sourceX + targetX) / 2} ${
@@ -570,6 +553,19 @@ function drawULayout(container, graphData, colorScale) {
           d.targetID
         }]`
     );
+
+  const zoom = d3.zoom().scaleExtent([0.8, 10]).on("zoom", zoomed);
+
+  container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+
+  function zoomed({ transform }) {
+    g.attr(
+      "transform",
+      `translate (${margin.left + transform.x}, ${
+        margin.top + transform.y
+      }) scale(${transform.k})`
+    );
+  }
 }
 
 // Draws the standard layout for the similarity graph
@@ -594,11 +590,17 @@ function drawStandardLayout(container, graphData, colorScale) {
     .tickSize(0)
     .tickPadding(-4);
 
+  const responsiveFontSize = getComputedStyle(document.body)
+    .getPropertyValue("--resp-font-ticks")
+    .trim();
+
+  // Append group element for zooming
+  const g = container.append("g");
+
   // Draw the axis
-  container
-    .append("g")
+  g.append("g")
     .attr("class", "axis")
-    .attr("transform", `translate(${margin.left}, ${axisHeight + margin.top})`) // Position the axis in the middle of the graph
+    .attr("transform", `translate(0, ${axisHeight})`) // Position the axis in the middle of the graph
     .call(axis);
 
   d3.selectAll("text").html(
@@ -624,15 +626,12 @@ function drawStandardLayout(container, graphData, colorScale) {
     .style("cursor", "pointer"); // Change cursor to pointer for better UX
 
   // Create a group for the links
-  const linkGroup = container
-    .append("g")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`)
-    .attr("class", "links");
+  const linkGroup = g.append("g").attr("class", "links");
 
   // Create a group for the nodes
-  const nodeGroup = container
+  const nodeGroup = g
     .append("g")
-    .attr("transform", `translate(${margin.left}, ${axisHeight + margin.top})`)
+    .attr("transform", `translate(0, ${axisHeight})`)
     .attr("class", "nodes");
 
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
@@ -685,6 +684,19 @@ function drawStandardLayout(container, graphData, colorScale) {
           d.targetID
         }]`
     );
+
+  const zoom = d3.zoom().scaleExtent([1, 10]).on("zoom", zoomed);
+
+  container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+
+  function zoomed({ transform }) {
+    g.attr(
+      "transform",
+      `translate(${margin.left + transform.x}, ${
+        margin.top + transform.y
+      }) scale(${transform.k})`
+    );
+  }
 }
 
 /*

@@ -362,30 +362,68 @@ function drawTimelineGraph() {
     .domain([0, maxYears])
     .range([axisHeight - margin.bottom, 0]);
 
-  // Create an x axis for the years
-  const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")).tickSize(5);
+  // Append group element to svg for zooming
+  const g = svg.append("g");
 
-  // Draw the x axis
-  svg
-    .append("g")
+  // Create an x axis for the years
+  const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")).tickSize(0); // Set tickSize to 0 as we'll draw our own ticks
+
+  // Draw just the x axis line
+  g.append("g")
     .attr("class", "x-axis")
     .attr("transform", `translate(${margin.left}, ${axisHeight + margin.top})`)
-    .call(xAxis);
+    .call(xAxis)
+    .call((g) => {
+      // Keep only the domain line and remove default ticks
+      g.select(".domain").attr("stroke", "#000");
+      g.selectAll(".tick text").remove();
+      g.selectAll(".tick line").remove();
+    });
 
-  // Format the labels for the axis
-  svg
-    .selectAll(".x-axis text")
-    .style("font-size", responsiveFontSize)
-    .style("user-select", "none");
+  // Add custom alternating ticks
+  const yearValues = Object.keys(years)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  g.selectAll(".custom-tick")
+    .data(yearValues)
+    .join("g")
+    .attr("class", "custom-tick")
+    .attr(
+      "transform",
+      (d) => `translate(${margin.left + xScale(d)}, ${axisHeight + margin.top})`
+    )
+    .each(function (d, i) {
+      const isAbove = i % 2 === 0; // Alternates based on index
+      const tick = d3.select(this);
+
+      // Add tick line
+      tick
+        .append("line")
+        .attr("class", "tick-line")
+        .attr("y1", isAbove ? 0.5 : -0.5)
+        .attr("y2", isAbove ? -5 : 5)
+        .attr("stroke", "#000");
+
+      // Add year text
+      tick
+        .append("text")
+        .attr("class", "tick-text")
+        .attr("text-anchor", "middle")
+        .attr("dy", isAbove ? "-0.71em" : "1.4em")
+        .style("font-size", responsiveFontSize)
+        .style("user-select", "none")
+        .text(d);
+    });
 
   // Create a link group for the links
-  const linkGroup = svg
+  const linkGroup = g
     .append("g")
     .attr("class", "links")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
   // Create a node group for the nodes
-  const nodeGroup = svg
+  const nodeGroup = g
     .append("g")
     .attr("class", "nodes")
     .attr("transform", `translate(${margin.left}, ${margin.top})`);
@@ -523,6 +561,22 @@ function drawTimelineGraph() {
     colorCategory,
     $("#legend")
   );
+
+  // Add zooming functionality
+  const zoom = d3
+    .zoom()
+    .scaleExtent([1, 10])
+    .translateExtent([
+      [0, 0],
+      [containerWidth, height],
+    ])
+    .on("zoom", zoomed);
+
+  svg.call(zoom);
+
+  function zoomed({ target, type, transform, sourceEvent }) {
+    g.attr("transform", transform);
+  }
 }
 
 $(document).ready(function () {
