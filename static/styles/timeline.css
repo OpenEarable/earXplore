@@ -102,17 +102,6 @@ label[for="timelineColorCategory"] {
   color: white;
 }
 
-/* Timeline axis styling */
-.timeline-axis {
-  stroke: #ccc;
-  stroke-width: 2;
-}
-
-.timeline-tick {
-  stroke: #ccc;
-  stroke-width: 1;
-}
-
 /* Container dimensions */
 #timeline-graph-container {
   width: 100%;
@@ -229,5 +218,9 @@ label[for="timelineColorCategory"] {
 
   .timeline-controls {
     flex-direction: column;
+  }
+
+  .link {
+    stroke-width: 0.5;
   }
 }

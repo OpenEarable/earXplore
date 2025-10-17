@@ -312,9 +312,13 @@ function drawGraph(threshold) {
   // Determine graph dimensions
   const useULayout = nodes.length > 50; // Use U-Layout for larger graphs
 
-  const height = useULayout ? 1000 : 500;
+  // Define constants for the layout
+  const margin =
+    window.innerWidth <= 750
+      ? { top: 5, right: 5, bottom: 5, left: 5 }
+      : { top: 50, right: 20, bottom: 50, left: 20 };
 
-  $("#graphContainer").height(height);
+  const height = $("#graphContainer").width();
 
   // Create SVG with calculated dimensions
   const svg = d3
@@ -324,10 +328,10 @@ function drawGraph(threshold) {
     .attr("viewBox", `0 0 ${$("#graphContainer").width()} ${height}`);
 
   if (useULayout) {
-    drawULayout(svg, { nodes, links }, colorScale);
+    drawULayout(svg, margin, { nodes, links }, colorScale);
   } else {
     // Draw links, nodes, and labels for standard layout
-    drawStandardLayout(svg, { nodes, links }, colorScale);
+    drawStandardLayout(svg, margin, { nodes, links }, colorScale);
   }
 
   // Draw the legend
@@ -341,21 +345,18 @@ function drawGraph(threshold) {
   findSimilarStudies(links);
 }
 
-function drawULayout(container, graphData, colorScale) {
+function drawULayout(container, margin, graphData, colorScale) {
   const { nodes, links } = graphData;
 
-  // Define constants for the layout
-  let margin;
-  if (window.innerWidth <= 650) {
-    margin = { top: 5, right: 5, bottom: 5, left: 5 };
-  } else {
-    margin = { top: 50, right: 20, bottom: 50, left: 20 };
-  }
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
   const width = parseInt($("svg").width()) - margin.left - margin.right;
-  const nodeRadius = Math.floor(width / 150);
   const topAxisHeight = height / 4;
   const axisMiddle = height / 2;
+
+  // Base node radius
+  const baseNodeRadius = 5;
+  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
+  const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
 
   // Split the nodes into two groups based on their IDs
   const topNodes = nodes.filter(
@@ -569,15 +570,18 @@ function drawULayout(container, graphData, colorScale) {
 }
 
 // Draws the standard layout for the similarity graph
-function drawStandardLayout(container, graphData, colorScale) {
+function drawStandardLayout(container, margin, graphData, colorScale) {
   const { nodes, links } = graphData;
 
   // Define constants for the layout
-  const margin = { top: 20, right: 20, bottom: 20, left: 20 };
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
   const width = parseInt($("svg").width()) - margin.left - margin.right;
   const axisHeight = height / 2;
-  const nodeRadius = Math.floor(width / 150);
+
+  // Base node radius
+  const baseNodeRadius = 5;
+  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
+  const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
 
   // Create a scale for the node positions
   const xScale = d3.scalePoint().domain(nodes).rangeRound([0, width]);

@@ -301,40 +301,22 @@ function drawTimelineGraph() {
   }
 
   // Set up layout dimensions for the graph
-  let margin;
-  if (window.innerWidth <= 650) {
-    margin = { top: 5, right: 10, bottom: 30, left: 10 };
-  } else {
-    margin = { top: 20, right: 50, bottom: 50, left: 50 };
-  }
+  let margin =
+    window.innerWidth <= 750
+      ? { top: 5, right: 10, bottom: 30, left: 10 }
+      : { top: 20, right: 50, bottom: 20, left: 50 };
   const containerWidth = $("#timeline-graph-container").width();
   const innerWidth = containerWidth - margin.left - margin.right;
 
-  // Base node radius scaled to container width
-  const baseNodeRadius = innerWidth / 150;
+  // Base node radius
+  const baseNodeRadius = 5;
+  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
+  const nodeRadius = Math.min(7, baseNodeRadius + 800 / containerWidth);
 
   // Calculate height based on max years count
-  const height = Math.max(400, maxYearsCount * (baseNodeRadius * 4));
+  const height = Math.max(400, maxYearsCount * (nodeRadius * 4));
   const innerHeight = height - margin.top - margin.bottom;
   const axisHeight = innerHeight;
-
-  // Determine zoom factor based on screen width
-  let zoomFactor = 1;
-  let nodeRadius = baseNodeRadius;
-
-  if (window.innerWidth >= 1200) {
-    // Medium desktop screens
-    zoomFactor = 0.85;
-    nodeRadius = baseNodeRadius * 0.95;
-  }
-
-  // Calculate adjusted viewBox dimensions
-  const viewBoxWidth = containerWidth / zoomFactor;
-  const viewBoxHeight = height / zoomFactor;
-
-  // Calculate viewBox offset to center the content
-  const xOffset = (containerWidth - viewBoxWidth) / 2;
-  const yOffset = (height - viewBoxHeight) / 2;
 
   // get the current font size
   const responsiveFontSize = getComputedStyle(document.body)
@@ -347,7 +329,7 @@ function drawTimelineGraph() {
     .append("svg")
     .attr("width", containerWidth)
     .attr("height", height)
-    .attr("viewBox", `${xOffset} ${yOffset} ${viewBoxWidth} ${viewBoxHeight}`)
+    .attr("viewBox", `${margin.left} ${margin.top} ${innerWidth} ${height}`)
     .attr("preserveAspectRatio", "xMidYMid meet");
 
   // Create an x scale for the years
@@ -560,14 +542,7 @@ function drawTimelineGraph() {
   );
 
   // Add zooming functionality
-  const zoom = d3
-    .zoom()
-    .scaleExtent([1, 10])
-    .translateExtent([
-      [0, 0],
-      [containerWidth, height],
-    ])
-    .on("zoom", zoomed);
+  const zoom = d3.zoom().scaleExtent([0.5, 10]).on("zoom", zoomed);
 
   svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
 
