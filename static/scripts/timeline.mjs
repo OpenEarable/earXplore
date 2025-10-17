@@ -366,67 +366,64 @@ function drawTimelineGraph() {
   const g = svg.append("g");
 
   // Create an x axis for the years
-  const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d")).tickSize(0); // Set tickSize to 0 as we'll draw our own ticks
+  const xAxis = d3
+    .axisBottom(xScale)
+    .tickFormat(d3.format("d"))
+    .tickSize(window.innerWidth <= 750 ? 0 : 5); // Set tickSize to 0 as we'll draw our own ticks
 
   // Draw just the x axis line
   g.append("g")
     .attr("class", "x-axis")
-    .attr("transform", `translate(${margin.left}, ${axisHeight + margin.top})`)
+    .attr("transform", `translate(0, ${axisHeight})`)
     .call(xAxis)
     .call((g) => {
-      // Keep only the domain line and remove default ticks
-      g.select(".domain").attr("stroke", "#000");
-      g.selectAll(".tick text").remove();
-      g.selectAll(".tick line").remove();
-    });
+      // Keep only the domain line and remove default ticks when screen is small
+      if (window.innerWidth <= 750) {
+        g.select(".domain").attr("stroke", "#000");
+        g.selectAll(".tick").remove();
 
-  // Add custom alternating ticks
-  const yearValues = Object.keys(years)
-    .map(Number)
-    .sort((a, b) => a - b);
+        // Add custom alternating ticks
+        const yearValues = Object.keys(years)
+          .map(Number)
+          .sort((a, b) => a - b);
 
-  g.selectAll(".custom-tick")
-    .data(yearValues)
-    .join("g")
-    .attr("class", "custom-tick")
-    .attr(
-      "transform",
-      (d) => `translate(${margin.left + xScale(d)}, ${axisHeight + margin.top})`
-    )
-    .each(function (d, i) {
-      const isAbove = i % 2 === 0; // Alternates based on index
-      const tick = d3.select(this);
+        g.selectAll(".custom-tick")
+          .data(yearValues)
+          .join("g")
+          .attr("class", "custom-tick")
+          .attr("transform", (d) => `translate(${xScale(d)}, 0)`)
+          .each(function (d, i) {
+            const isAbove = i % 2 === 0; // Alternates based on index
+            const tick = d3.select(this);
 
-      // Add tick line
-      tick
-        .append("line")
-        .attr("class", "tick-line")
-        .attr("y1", isAbove ? 0.5 : -0.5)
-        .attr("y2", isAbove ? "-0.5rem" : "0.5rem")
-        .attr("stroke", "#000");
+            const tickSize = 5;
+            const textOffset = 8;
 
-      // Add year text
-      tick
-        .append("text")
-        .attr("class", "tick-text")
-        .attr("text-anchor", "middle")
-        .attr("dy", isAbove ? "-0.5rem" : "1rem")
-        .style("font-size", responsiveFontSize)
-        .style("user-select", "none")
-        .text(d);
+            // Add tick line
+            tick
+              .append("line")
+              .attr("class", "tick-line")
+              .attr("y1", 1)
+              .attr("y2", isAbove ? -tickSize : tickSize);
+
+            // Add year text
+            tick
+              .append("text")
+              .attr("class", "tick-text")
+              .attr("text-anchor", "middle")
+              .attr("dy", isAbove ? -textOffset : textOffset + tickSize)
+              .style("font-size", responsiveFontSize)
+              .style("user-select", "none")
+              .text(d);
+          });
+      }
     });
 
   // Create a link group for the links
-  const linkGroup = g
-    .append("g")
-    .attr("class", "links")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  const linkGroup = g.append("g").attr("class", "links");
 
   // Create a node group for the nodes
-  const nodeGroup = g
-    .append("g")
-    .attr("class", "nodes")
-    .attr("transform", `translate(${margin.left}, ${margin.top})`);
+  const nodeGroup = g.append("g").attr("class", "nodes");
 
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
 
@@ -572,10 +569,15 @@ function drawTimelineGraph() {
     ])
     .on("zoom", zoomed);
 
-  svg.call(zoom);
+  svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
 
   function zoomed({ target, type, transform, sourceEvent }) {
-    g.attr("transform", transform);
+    g.attr(
+      "transform",
+      `translate(${margin.left + transform.x}, ${
+        margin.top + transform.y
+      }) scale(${transform.k})`
+    );
   }
 }
 

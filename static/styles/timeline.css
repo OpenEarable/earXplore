@@ -215,6 +215,14 @@ label[for="timelineColorCategory"] {
     display: flex;
   }
 
+  .tick-line {
+    stroke: black;
+  }
+
+  .tick-text {
+    fill: rgb(33, 37, 41);
+  }
+
   #timeline-container {
     padding: var(--resp-padding);
   }
