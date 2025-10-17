@@ -312,13 +312,22 @@ function drawGraph(threshold) {
   // Determine graph dimensions
   const useULayout = nodes.length > 50; // Use U-Layout for larger graphs
 
-  // Define constants for the layout
-  const margin =
-    window.innerWidth <= 750
-      ? { top: 5, right: 5, bottom: 5, left: 5 }
-      : { top: 50, right: 20, bottom: 50, left: 20 };
+  // Breakpoint for vertical alignment of axes
+  const alignVertically = window.innerWidth <= 750;
 
-  const height = $("#graphContainer").width();
+  // Define constants for the layout
+  const margin = alignVertically
+    ? { top: 10, right: 5, bottom: 10, left: 5 }
+    : { top: 10, right: 20, bottom: 10, left: 20 };
+
+  // TODO: Parametarise the height with amount of nodes
+  const nodeSpacing = 25;
+  const height = alignVertically
+    ? Math.max(
+        $("#graphContainer").width() * 1.5,
+        (useULayout ? nodes.length / 2 : nodes.length) * nodeSpacing
+      )
+    : (9 / 16) * $("#graphContainer").width();
 
   // Create SVG with calculated dimensions
   const svg = d3
@@ -327,12 +336,9 @@ function drawGraph(threshold) {
     .attr("width", "100%")
     .attr("viewBox", `0 0 ${$("#graphContainer").width()} ${height}`);
 
-  if (useULayout) {
-    drawULayout(svg, margin, { nodes, links }, colorScale);
-  } else {
-    // Draw links, nodes, and labels for standard layout
-    drawStandardLayout(svg, margin, { nodes, links }, colorScale);
-  }
+  // Choose layout based on number of nodes
+  const layoutFunction = useULayout ? drawULayout : drawStandardLayout;
+  layoutFunction(svg, margin, { nodes, links }, colorScale, !alignVertically);
 
   // Draw the legend
   createLegend(
@@ -345,13 +351,19 @@ function drawGraph(threshold) {
   findSimilarStudies(links);
 }
 
-function drawULayout(container, margin, graphData, colorScale) {
+function drawULayout(
+  container,
+  margin,
+  graphData,
+  colorScale,
+  alignHorizontal
+) {
   const { nodes, links } = graphData;
 
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
   const width = parseInt($("svg").width()) - margin.left - margin.right;
-  const topAxisHeight = height / 4;
-  const axisMiddle = height / 2;
+  const firstAxisPos = alignHorizontal ? height / 4 : width / 4;
+  const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
   const baseNodeRadius = 5;
@@ -359,10 +371,10 @@ function drawULayout(container, margin, graphData, colorScale) {
   const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
 
   // Split the nodes into two groups based on their IDs
-  const topNodes = nodes.filter(
+  const firstNodes = nodes.filter(
     (node) => nodes.indexOf(node) <= nodes.length / 2
   );
-  const bottomNodes = nodes.filter(
+  const secondNodes = nodes.filter(
     (node) => nodes.indexOf(node) > nodes.length / 2
   );
 
@@ -371,83 +383,116 @@ function drawULayout(container, margin, graphData, colorScale) {
     .trim();
 
   // Create a scale for the top nodes
-  const topScale = d3.scalePoint().domain(topNodes).rangeRound([0, width]);
+  const firstScale = d3
+    .scalePoint()
+    .domain(firstNodes)
+    .rangeRound([0, alignHorizontal ? width : height]);
 
   // Create a scale for the bottom nodes
-  const bottomScale = d3
+  const secondScale = d3
     .scalePoint()
-    .domain(bottomNodes)
-    .rangeRound([0, width]);
+    .domain(secondNodes)
+    .rangeRound([0, alignHorizontal ? width : height]);
 
   // Create an arc generator for the nodes
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
 
   // Create the top axis for the nodes
-  const topAxis = d3
-    .axisTop(topScale)
-    .tickValues(topNodes)
-    .tickFormat((d) => "")
-    .tickSize(0)
-    .tickPadding(-4);
+  const firstAxis = alignHorizontal
+    ? d3
+        .axisTop(firstScale)
+        .tickValues(firstNodes)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(-4)
+    : d3
+        .axisLeft(firstScale)
+        .tickValues(firstNodes)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(8);
 
   // Create the bottom axis for the nodes
-  const bottomAxis = d3
-    .axisBottom(bottomScale)
-    .tickValues(bottomNodes)
-    .tickFormat((d) => "")
-    .tickSize(0)
-    .tickPadding(-4);
+  const secondAxis = alignHorizontal
+    ? d3
+        .axisBottom(secondScale)
+        .tickValues(secondNodes)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(-4)
+    : d3
+        .axisRight(secondScale)
+        .tickValues(secondNodes)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(8);
 
   // Append group element for zooming
   const g = container.append("g");
 
   // Draw the top axis
   g.append("g")
-    .attr("transform", `translate(0, ${topAxisHeight})`) // Position the axis at the top
+    .attr(
+      "transform",
+      alignHorizontal
+        ? `translate(0, ${firstAxisPos})`
+        : `translate(${firstAxisPos}, 0)`
+    ) // Position the first Axis
     .attr("class", "top-axis")
-    .call(topAxis);
+    .call(firstAxis);
 
   // Draw the bottom axis
   g.append("g")
-    .attr("transform", `translate(0, ${3 * topAxisHeight})`) // Position the axis at the bottom
+    .attr(
+      "transform",
+      alignHorizontal
+        ? `translate(0, ${3 * firstAxisPos})`
+        : `translate(${3 * firstAxisPos}, 0)`
+    ) // Position the axis at the bottom
     .attr("class", "bottom-axis")
-    .call(bottomAxis);
+    .call(secondAxis);
 
   // Add info circle and label to top axis ticks
-  container
-    .selectAll(".top-axis text")
-    .html(
-      (d) =>
-        `<tspan class="info-circle">ⓘ </tspan><tspan>${formatTickLabel(
-          d
-        )}</tspan>`
-    );
+  container.selectAll(".top-axis text").html((d) => {
+    const label = formatTickLabel(d);
+    const infoCircle = '<tspan class="info-circle">ⓘ </tspan>';
+    const labelSpan = `<tspan>${label}</tspan>`;
+
+    return alignHorizontal
+      ? `${labelSpan} ${infoCircle}`
+      : `${infoCircle} ${labelSpan}`;
+  });
 
   // Add info circle and label to bottom axis ticks
-  container
-    .selectAll(".bottom-axis text")
-    .html(
-      (d) =>
-        `<tspan class="info-circle">ⓘ </tspan><tspan>${formatTickLabel(
-          d
-        )}</tspan>`
-    );
+  container.selectAll(".bottom-axis text").html((d) => {
+    const label = formatTickLabel(d);
+    const infoCircle = '<tspan class="info-circle">ⓘ </tspan>';
+    const labelSpan = `<tspan>${label}</tspan>`;
 
-  // Rotate the axis labels for better readability and adjust the position
-  container
-    .select(".top-axis")
-    .selectAll("text")
-    .attr("text-anchor", "start")
-    .attr("transform", "rotate(-90)")
-    .attr("dx", "3em");
+    return alignHorizontal
+      ? `${infoCircle} ${labelSpan}`
+      : `${labelSpan} ${infoCircle}`;
+  });
 
-  // Rotate the axis labels for better readability
-  container
-    .select(".bottom-axis")
-    .selectAll("text")
-    .attr("text-anchor", "end")
-    .attr("transform", "rotate(-90)")
-    .attr("dx", "-3em"); // Adjust label position
+  // Rotate the axis labels for better readability and adjust the position for bigger screens
+  if (alignHorizontal) {
+    container
+      .select(".top-axis")
+      .selectAll("text")
+      .attr("text-anchor", "start")
+      .attr("transform", "rotate(-90)")
+      .attr("dx", "2em");
+  }
+
+  // Rotate the axis labels for better readability for bigger screens
+  if (alignHorizontal) {
+    container
+      .select(".bottom-axis")
+      .selectAll("text")
+      .attr("text-anchor", "end")
+      .attr("transform", "rotate(-90)")
+      .attr("dx", "-2em"); // Adjust label position
+  }
 
   // Add click event to the axis ticks, so that clicking on a node opens the study modal
   d3.selectAll(".tick")
@@ -467,11 +512,15 @@ function drawULayout(container, margin, graphData, colorScale) {
   // Draw the top nodes and add click and hover events
   nodeGroup
     .selectAll(".node")
-    .data(topNodes, (d) => d)
+    .data(firstNodes, (d) => d)
     .enter()
     .append("g")
     .attr("class", "node")
-    .attr("transform", (d) => `translate(${topScale(d)}, ${topAxisHeight})`)
+    .attr("transform", (d) =>
+      alignHorizontal
+        ? `translate(${firstScale(d)}, ${firstAxisPos})`
+        : `translate(${firstAxisPos}, ${firstScale(d)})`
+    )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
     })
@@ -486,13 +535,14 @@ function drawULayout(container, margin, graphData, colorScale) {
   // Draw the bottom nodes and add click and hover events
   nodeGroup
     .selectAll(".node")
-    .data(bottomNodes, (d) => d)
+    .data(secondNodes, (d) => d)
     .enter()
     .append("g")
     .attr("class", "node")
-    .attr(
-      "transform",
-      (d) => `translate(${bottomScale(d)}, ${3 * topAxisHeight})`
+    .attr("transform", (d) =>
+      alignHorizontal
+        ? `translate(${secondScale(d)}, ${3 * firstAxisPos})`
+        : `translate(${3 * firstAxisPos}, ${secondScale(d)})`
     )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
@@ -514,31 +564,54 @@ function drawULayout(container, margin, graphData, colorScale) {
     .attr("class", "link")
     .attr("d", (d) => {
       // Check on which axis the source and target nodes are located
-      const isSourceTop = topNodes.includes(d.sourceID);
-      const isTargetTop = topNodes.includes(d.targetID);
+      const isSourceFirst = firstNodes.includes(d.sourceID);
+      const isTargetFirst = firstNodes.includes(d.targetID);
 
-      // Retrieve the correct x position based on the axis
-      const sourceX = isSourceTop
-        ? topScale(d.sourceID)
-        : bottomScale(d.sourceID);
-      const targetX = isTargetTop
-        ? topScale(d.targetID)
-        : bottomScale(d.targetID);
+      // Get scale based on node position (first or second group)
+      const sourceScale = isSourceFirst ? firstScale : secondScale;
+      const targetScale = isTargetFirst ? firstScale : secondScale;
 
-      // Retrieve the correct y position based on the axis
-      const sourceY = isSourceTop ? topAxisHeight : 3 * topAxisHeight;
-      const targetY = isTargetTop ? topAxisHeight : 3 * topAxisHeight;
+      // Get positions based on orientation and scale
+      const sourceX = alignHorizontal
+        ? sourceScale(d.sourceID)
+        : isSourceFirst
+        ? firstAxisPos
+        : 3 * firstAxisPos;
+      const targetX = alignHorizontal
+        ? targetScale(d.targetID)
+        : isTargetFirst
+        ? firstAxisPos
+        : 3 * firstAxisPos;
+      const sourceY = alignHorizontal
+        ? isSourceFirst
+          ? firstAxisPos
+          : 3 * firstAxisPos
+        : sourceScale(d.sourceID);
+      const targetY = alignHorizontal
+        ? isTargetFirst
+          ? firstAxisPos
+          : 3 * firstAxisPos
+        : targetScale(d.targetID);
 
-      if (sourceX === targetX && isSourceTop) {
-        return `M ${sourceX} ${sourceY} Q ${(sourceX + targetX) / 2} ${
-          axisMiddle + margin.bottom
-        }, ${targetX} ${targetY}`;
-      } else if (sourceX === targetX && !isSourceTop) {
-        return `M ${sourceX} ${sourceY} Q ${(sourceX + targetX) / 2} ${
-          axisMiddle - margin.top
-        }, ${targetX} ${targetY}`;
-      } else {
+      // Create the path
+      if (alignHorizontal) {
+        // When the nodes are on the same vertical line
+        if (sourceX === targetX) {
+          const midPointY =
+            axisMiddle + (isSourceFirst ? margin.bottom : -margin.top);
+          return `M ${sourceX} ${sourceY} Q ${sourceX} ${midPointY}, ${targetX} ${targetY}`;
+        }
+        // Normal case - nodes on different vertical lines
         return `M ${sourceX} ${sourceY} C ${sourceX} ${axisMiddle}, ${targetX} ${axisMiddle}, ${targetX} ${targetY}`;
+      } else {
+        // When the nodes are on the same horizontal line
+        if (sourceY === targetY) {
+          const midPointX =
+            axisMiddle + (isSourceFirst ? margin.left : -margin.right);
+          return `M ${sourceX} ${sourceY} Q ${midPointX} ${sourceY}, ${targetX} ${targetY}`;
+        }
+        // Normal case - nodes on different horizontal lines
+        return `M ${sourceX} ${sourceY} C ${axisMiddle} ${sourceY}, ${axisMiddle} ${targetY}, ${targetX} ${targetY}`;
       }
     });
 
@@ -562,7 +635,7 @@ function drawULayout(container, margin, graphData, colorScale) {
   function zoomed({ transform }) {
     g.attr(
       "transform",
-      `translate (${margin.left + transform.x}, ${
+      `translate(${margin.left + transform.x}, ${
         margin.top + transform.y
       }) scale(${transform.k})`
     );
@@ -570,13 +643,19 @@ function drawULayout(container, margin, graphData, colorScale) {
 }
 
 // Draws the standard layout for the similarity graph
-function drawStandardLayout(container, margin, graphData, colorScale) {
+function drawStandardLayout(
+  container,
+  margin,
+  graphData,
+  colorScale,
+  alignHorizontal
+) {
   const { nodes, links } = graphData;
 
   // Define constants for the layout
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
   const width = parseInt($("svg").width()) - margin.left - margin.right;
-  const axisHeight = height / 2;
+  const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
   const baseNodeRadius = 5;
@@ -584,15 +663,24 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
   const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
 
   // Create a scale for the node positions
-  const xScale = d3.scalePoint().domain(nodes).rangeRound([0, width]);
+  const nodeScale = d3
+    .scalePoint()
+    .domain(nodes)
+    .rangeRound([0, alignHorizontal ? width : height]);
 
   // Create an axis for the nodes to be displayed horizontally
-  const axis = d3
-    .axisBottom(xScale)
-    .tickValues(nodes)
-    .tickFormat((d) => "")
-    .tickSize(0)
-    .tickPadding(-4);
+  const axis = alignHorizontal
+    ? d3
+        .axisBottom(nodeScale)
+        .tickValues(nodes)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(-4)
+    : d3
+        .axisLeft(nodeScale)
+        .tickFormat((d) => "")
+        .tickSize(0)
+        .tickPadding(8);
 
   const responsiveFontSize = getComputedStyle(document.body)
     .getPropertyValue("--resp-font-ticks")
@@ -604,7 +692,12 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
   // Draw the axis
   g.append("g")
     .attr("class", "axis")
-    .attr("transform", `translate(0, ${axisHeight})`) // Position the axis in the middle of the graph
+    .attr(
+      "transform",
+      alignHorizontal
+        ? `translate(0, ${axisMiddle})`
+        : `translate(${axisMiddle}, 0)`
+    ) // Position the axis in the middle of the graph
     .call(axis);
 
   d3.selectAll("text").html(
@@ -615,12 +708,14 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
   );
 
   // Rotate the axis labels for better readability and adjust the position
-  d3.selectAll("text")
-    .attr("text-anchor", "end")
-    .attr("transform", "rotate(-90)")
-    .attr("dx", "-2em")
-    .style("font-size", responsiveFontSize)
-    .style("user-select", "none");
+  if (alignHorizontal) {
+    d3.selectAll("text")
+      .attr("text-anchor", "end")
+      .attr("transform", "rotate(-90)")
+      .attr("dx", "-2em")
+      .style("font-size", responsiveFontSize)
+      .style("user-select", "none");
+  }
 
   // Add click event to the axis ticks, so that clicking on a node opens the study modal
   d3.selectAll(".tick")
@@ -635,7 +730,12 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
   // Create a group for the nodes
   const nodeGroup = g
     .append("g")
-    .attr("transform", `translate(0, ${axisHeight})`)
+    .attr(
+      "transform",
+      alignHorizontal
+        ? `translate(0, ${axisMiddle})`
+        : `translate(${axisMiddle}, 0)`
+    )
     .attr("class", "nodes");
 
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
@@ -646,7 +746,11 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
     .data(nodes)
     .join("g")
     .attr("class", "node")
-    .attr("transform", (d) => `translate(${xScale(d)}, 0)`)
+    .attr("transform", (d) =>
+      alignHorizontal
+        ? `translate(${nodeScale(d)}, 0)`
+        : `translate(0, ${nodeScale(d)})`
+    )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
     })
@@ -666,14 +770,30 @@ function drawStandardLayout(container, margin, graphData, colorScale) {
     .append("path")
     .attr("class", "link")
     .attr("d", (d) => {
-      const sourceX = xScale(d.sourceID);
-      const targetX = xScale(d.targetID);
-      const arcHeight = Math.min(Math.abs(sourceX - targetX) * 15, height / 3);
+      if (alignHorizontal) {
+        const sourceX = nodeScale(d.sourceID);
+        const targetX = nodeScale(d.targetID);
+        const midX = (sourceX + targetX) / 2;
+        const arcHeight = Math.min(
+          Math.abs(sourceX - targetX) * 0.4,
+          height / 3
+        );
 
-      // Draw an quadratic curve from the source to the target node
-      return `M ${sourceX} ${axisHeight} Q ${(sourceX + targetX) / 2} ${
-        axisHeight - arcHeight - 2 * margin.top
-      }, ${targetX} ${axisHeight}`;
+        // Draw a curved path between nodes
+        return `M ${sourceX} ${axisMiddle} Q ${midX} ${
+          axisMiddle - arcHeight
+        }, ${targetX} ${axisMiddle}`;
+      } else {
+        const sourceY = nodeScale(d.sourceID);
+        const targetY = nodeScale(d.targetID);
+        const midY = (sourceY + targetY) / 2;
+        const arcWidth = Math.min(Math.abs(sourceY - targetY) * 2, width / 2);
+
+        // Draw a curved path between nodes
+        return `M ${axisMiddle} ${sourceY} Q ${
+          axisMiddle + arcWidth
+        } ${midY}, ${axisMiddle} ${targetY}`;
+      }
     });
 
   // Add tooltips to the links
