@@ -314,7 +314,11 @@ function drawTimelineGraph() {
   const nodeRadius = Math.min(7, baseNodeRadius + 800 / containerWidth);
 
   // Calculate height based on max years count
-  const height = Math.max(400, maxYearsCount * (nodeRadius * 4));
+  const height = Math.max(
+    400,
+    maxYearsCount * (nodeRadius * 4),
+    (9 / 16) * containerWidth
+  );
   const innerHeight = height - margin.top - margin.bottom;
   const axisHeight = innerHeight;
 
