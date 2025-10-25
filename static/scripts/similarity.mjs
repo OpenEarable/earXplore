@@ -301,6 +301,15 @@ function drawGraph(threshold) {
   const { sortedNodes, links, colorScale } = generateGraphData(threshold);
   const nodes = [...sortedNodes];
 
+  const lengthLongestLabel =
+    nodes.length === 0
+      ? 0
+      : nodes.reduce((max, nodeID) => {
+          const author = getDataEntry(nodeID, "Main Author") || "";
+          return Math.max(max, author.length);
+        }, 0);
+  console.log(lengthLongestLabel);
+
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {
     $("#graphContainer").append(
@@ -320,13 +329,14 @@ function drawGraph(threshold) {
     ? { top: 10, right: 5, bottom: 10, left: 5 }
     : { top: 10, right: 20, bottom: 10, left: 20 };
 
-  // TODO: Parametarise the height with amount of nodes
   const nodeSpacing = 25;
   const height = alignVertically
     ? Math.max(
         $("#graphContainer").width() * 1.5,
         (useULayout ? nodes.length / 2 : nodes.length) * nodeSpacing
       )
+    : useULayout
+    ? (9 / 16) * $("#graphContainer").width() + 15 * lengthLongestLabel
     : (9 / 16) * $("#graphContainer").width();
 
   // Create SVG with calculated dimensions
