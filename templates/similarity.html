@@ -1,41 +1,62 @@
-{% extends "base.html" %}
-
-{% block styles %}
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/similarity.css') }}">
-{% endblock styles %}
-
-{% block content %}
+{% extends "base.html" %} {% block styles %}
+<link
+  rel="stylesheet"
+  type="text/css"
+  href="{{ url_for('static', filename='styles/similarity.css') }}"
+/>
+{% endblock styles %} {% block content %}
 
 <div id="similarityContainer">
-
   <div class="controls">
     <!-- Add similarity type toggle at the top -->
     <div class="similarityControlContainer">
       <strong>Similarity Type:</strong>
       <div class="btn-group" role="group">
-          <input type="radio" class="btn-check" name="similarityType" id="databaseSimilarity" value="database">
-          <label class="btn btn-sm btn-similarity" for="databaseSimilarity">Database Similarity</label>
-          
-          <input type="radio" class="btn-check" name="similarityType" id="abstractSimilarity" value="abstract">
-          <label class="btn btn-sm btn-similarity" for="abstractSimilarity">Abstract Similarity</label>
+        <input
+          type="radio"
+          class="btn-check"
+          name="similarityType"
+          id="databaseSimilarity"
+          value="database"
+        />
+        <label class="btn btn-sm btn-similarity" for="databaseSimilarity"
+          >Database Similarity</label
+        >
+
+        <input
+          type="radio"
+          class="btn-check"
+          name="similarityType"
+          id="abstractSimilarity"
+          value="abstract"
+        />
+        <label class="btn btn-sm btn-similarity" for="abstractSimilarity"
+          >Abstract Similarity</label
+        >
       </div>
     </div>
 
     <div class="similarityControlContainer sliderContainer">
       <div class="slider-explanation">
-        <strong>Similarity Threshold (σ):</strong> 
+        <strong>Similarity Threshold (σ):</strong>
         <span id="thresholdValue"></span>
-        <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" id="thresholdInfoIcon">
-      </div>           
-      <div id="thresholdSlider">
-        {# Insert slider here #}
+        <img
+          src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
+          alt="Question Mark Icon within a circle"
+          id="thresholdInfoIcon"
+        />
       </div>
+      <div id="thresholdSlider">{# Insert slider here #}</div>
     </div>
 
     <!-- Add color category dropdown -->
-    <div class="similarityControlContainer" id="categoryDropdownContainer" data-excluded-categories="{{ excluded_categories }}">
+    <div
+      class="similarityControlContainer"
+      id="categoryDropdownContainer"
+      data-excluded-categories="{{ excluded_categories }}"
+    >
       <label for="similarityColorCategory">
-          <strong>Color Nodes by:</strong>
+        <strong>Color Nodes by:</strong>
       </label>
       <select id="similarityColorCategory" class="form-select">
         <option value="">None</option>
@@ -45,13 +66,23 @@
   </div>
 
   {# Populate the Container with the graph here #}
-  <div id="graphContainer" data-similarity='{{ similarity_data }}' data-info-circle-path="{{ url_for('static', filename='images/info-circle.svg')}}"></div>
+  <div
+    id="graphContainer"
+    data-similarity="{{ similarity_data }}"
+    data-info-circle-path="{{ url_for('static', filename='images/info-circle.svg')}}"
+  ></div>
 
   {# Legend for the graph #}
   <div id="legend"></div>
 
   {# Modal for Network Information #}
-  <div class="modal fade" id="connectionsModal" tabindex="-1" aria-labelledby="connectionsModalLabel" aria-hidden="true">
+  <div
+    class="modal fade"
+    id="connectionsModal"
+    tabindex="-1"
+    aria-labelledby="connectionsModalLabel"
+    aria-hidden="true"
+  >
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-body">
@@ -60,15 +91,22 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-{% endblock content %}
-
-{% block scripts %}
-  <script type="module" src="{{ url_for('static', filename='scripts/similarity.mjs') }}"></script>
+{% endblock content %} {% block scripts %}
+<script
+  type="module"
+  src="{{ url_for('static', filename='scripts/similarity.mjs') }}"
+></script>
 {% endblock scripts %}

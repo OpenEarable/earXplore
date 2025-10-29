@@ -308,7 +308,6 @@ function drawGraph(threshold) {
           const author = getDataEntry(nodeID, "Main Author") || "";
           return Math.max(max, author.length);
         }, 0);
-  console.log(lengthLongestLabel);
 
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {

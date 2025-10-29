@@ -42,6 +42,7 @@ body {
 
 #visualization-warning span {
   text-align: center;
+  font-size: var(--font-bg);
 }
 
 header {
@@ -142,6 +143,10 @@ h3 {
 
 .filter-group {
   font-size: var(--font-md);
+}
+
+.question-circle {
+  width: var(--font-bg);
 }
 
 .panel {
