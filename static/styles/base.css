@@ -298,6 +298,10 @@ a:visited {
     transition: right 0.3s ease;
   }
 
+  .left-section {
+    overflow-y: auto;
+  }
+
   /* Make the sidebar appear when it should be visible */
   #sidebar.visible-sidebar {
     right: 0;

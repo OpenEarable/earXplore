@@ -328,7 +328,7 @@ function drawGraph(threshold) {
     ? { top: 10, right: 5, bottom: 10, left: 5 }
     : { top: 10, right: 20, bottom: 10, left: 20 };
 
-  const nodeSpacing = 25;
+  const nodeSpacing = 15;
   const height = alignVertically
     ? Math.max(
         $("#graphContainer").width() * 1.5,
@@ -435,7 +435,9 @@ function drawULayout(
         .tickPadding(8);
 
   // Append group element for zooming
-  const g = container.append("g");
+  const g = container
+    .append("g")
+    .attr("transform", `translate (${margin.left}, ${margin.top})`);
 
   // Draw the top axis
   g.append("g")
@@ -602,22 +604,26 @@ function drawULayout(
 
       // Create the path
       if (alignHorizontal) {
-        // When the nodes are on the same vertical line
-        if (sourceX === targetX) {
-          const midPointY =
-            axisMiddle + (isSourceFirst ? margin.bottom : -margin.top);
-          return `M ${sourceX} ${sourceY} Q ${sourceX} ${midPointY}, ${targetX} ${targetY}`;
-        }
-        // Normal case - nodes on different vertical lines
-        return `M ${sourceX} ${sourceY} C ${sourceX} ${axisMiddle}, ${targetX} ${axisMiddle}, ${targetX} ${targetY}`;
-      } else {
         // When the nodes are on the same horizontal line
         if (sourceY === targetY) {
-          const midPointX =
-            axisMiddle + (isSourceFirst ? margin.left : -margin.right);
-          return `M ${sourceX} ${sourceY} Q ${midPointX} ${sourceY}, ${targetX} ${targetY}`;
+          const midPointY =
+            axisMiddle + (isSourceFirst ? margin.top : -margin.top) * 15;
+          return `M ${sourceX} ${sourceY} Q ${
+            (sourceX + targetX) / 2
+          } ${midPointY}, ${targetX} ${targetY}`;
         }
         // Normal case - nodes on different horizontal lines
+        return `M ${sourceX} ${sourceY} C ${sourceX} ${axisMiddle}, ${targetX} ${axisMiddle}, ${targetX} ${targetY}`;
+      } else {
+        // When the nodes are on the same vertical line
+        if (sourceX === targetX) {
+          const midPointX =
+            axisMiddle + (isSourceFirst ? margin.left : -margin.right) * 20;
+          return `M ${sourceX} ${sourceY} Q ${midPointX} ${
+            (sourceY + targetY) / 2
+          }, ${targetX} ${targetY}`;
+        }
+        // Normal case - nodes on different vertical lines
         return `M ${sourceX} ${sourceY} C ${axisMiddle} ${sourceY}, ${axisMiddle} ${targetY}, ${targetX} ${targetY}`;
       }
     });
@@ -638,18 +644,20 @@ function drawULayout(
   // Add zoom for smaller screen widths
   const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  const zoom = d3
-    .zoom()
-    .scaleExtent([0.8, 10])
-    .on("zoom", ({ transform }) => {
-      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
-      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
-      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
-      const k = mobileQuery.matches ? transform.k : 1;
-      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-    });
+  if (mobileQuery.matches) {
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.8, 10])
+      .on("zoom", ({ transform }) => {
+        // On mobile allow panning/zooming
+        const x = margin.left + transform.x;
+        const y = margin.top + transform.y;
+        const k = transform.k;
+        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+      });
 
-  container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+    container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  }
 }
 
 // Draws the standard layout for the similarity graph
@@ -819,18 +827,20 @@ function drawStandardLayout(
 
   const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  const zoom = d3
-    .zoom()
-    .scaleExtent([0.8, 10])
-    .on("zoom", ({ transform }) => {
-      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
-      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
-      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
-      const k = mobileQuery.matches ? transform.k : 1;
-      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-    });
+  if (mobileQuery.matches) {
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.8, 10])
+      .on("zoom", ({ transform }) => {
+        // On mobile allow panning/zooming
+        const x = margin.left + transform.x;
+        const y = margin.top + transform.y;
+        const k = transform.k;
+        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+      });
 
-  container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+    container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  }
 }
 
 /*

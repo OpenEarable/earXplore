@@ -303,15 +303,13 @@ function drawTimelineGraph() {
   // Set up layout dimensions for the graph
   let margin =
     window.innerWidth <= 750
-      ? { top: 5, right: 10, bottom: 30, left: 10 }
+      ? { top: 5, right: 20, bottom: 30, left: 20 }
       : { top: 20, right: 50, bottom: 20, left: 50 };
   const containerWidth = $("#timeline-graph-container").width();
   const innerWidth = containerWidth - margin.left - margin.right;
 
   // Base node radius
-  const baseNodeRadius = 5;
-  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
-  const nodeRadius = Math.min(7, baseNodeRadius + 800 / containerWidth);
+  const nodeRadius = 7;
 
   // Calculate height based on max years count
   const height = Math.max(
@@ -349,7 +347,9 @@ function drawTimelineGraph() {
     .range([axisHeight - margin.bottom, 0]);
 
   // Append group element to svg for zooming
-  const g = svg.append("g");
+  const g = svg
+    .append("g")
+    .attr("transform", `translate (${margin.left}, ${margin.top})`);
 
   // Create an x axis for the years
   const xAxis = d3
@@ -548,18 +548,20 @@ function drawTimelineGraph() {
   // Add zooming functionality at lower screen sizes
   const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  const zoom = d3
-    .zoom()
-    .scaleExtent([0.8, 10])
-    .on("zoom", ({ transform }) => {
-      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
-      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
-      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
-      const k = mobileQuery.matches ? transform.k : 1;
-      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-    });
+  if (mobileQuery.matches) {
+    const zoom = d3
+      .zoom()
+      .scaleExtent([0.8, 10])
+      .on("zoom", ({ transform }) => {
+        // On mobile allow panning/zooming
+        const x = margin.left + transform.x;
+        const y = margin.top + transform.y;
+        const k = transform.k;
+        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+      });
 
-  g.call(zoom).call(zoom.transform, d3.zoomIdentity);
+    svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  }
 }
 
 $(document).ready(function () {
