@@ -143,6 +143,19 @@
   width: var(--font-bg);
 }
 
+#connectionsContainer,
+#connectionsModal button {
+  font-size: var(--font-md);
+}
+
+#connectionsContainer h5 {
+  font-size: var(--font-xl);
+}
+
+#connectionsContainer th {
+  font-size: var(--font-bg);
+}
+
 .info-circle {
   font-weight: bold;
   color: var(--color-accent);

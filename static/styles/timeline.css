@@ -184,6 +184,19 @@ label[for="timelineColorCategory"] {
   text-align: center;
   vertical-align: middle;
   user-select: none;
+  font-size: var(--font-md);
+}
+
+#timelineConnectionsModal button {
+  font-size: var(--font-md);
+}
+
+#timelineConnectionsContainer th {
+  font-size: var(--font-bg);
+}
+
+#timelineConnectionsContainer h5 {
+  font-size: var(--font-xl);
 }
 
 .node-tooltip {

@@ -11,6 +11,7 @@
 
 #select-filter-button {
   display: none;
+  font-size: var(--font-bg);
 }
 
 #reset-filters-button {

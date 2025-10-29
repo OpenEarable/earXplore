@@ -145,7 +145,8 @@ h3 {
   font-size: var(--font-md);
 }
 
-.question-circle {
+.question-circle,
+.info-circle {
   width: var(--font-bg);
 }
 
@@ -220,6 +221,16 @@ h3 {
 .study-info-panel-header {
   color: rgba(184, 148, 145, 1);
   font-weight: bold;
+}
+
+.study-info-panel-header,
+#study-info-header {
+  font-size: var(--font-xl);
+}
+
+#study-info-modal-body,
+#study-info-modal-footer button {
+  font-size: var(--font-bg);
 }
 
 .study-info-panel-header:not(:first-child) {
