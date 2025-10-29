@@ -545,19 +545,21 @@ function drawTimelineGraph() {
     $("#legend")
   );
 
-  // Add zooming functionality
-  const zoom = d3.zoom().scaleExtent([0.5, 10]).on("zoom", zoomed);
+  // Add zooming functionality at lower screen sizes
+  const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  const zoom = d3
+    .zoom()
+    .scaleExtent([0.8, 10])
+    .on("zoom", ({ transform }) => {
+      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
+      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
+      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
+      const k = mobileQuery.matches ? transform.k : 1;
+      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+    });
 
-  function zoomed({ target, type, transform, sourceEvent }) {
-    g.attr(
-      "transform",
-      `translate(${margin.left + transform.x}, ${
-        margin.top + transform.y
-      }) scale(${transform.k})`
-    );
-  }
+  g.call(zoom).call(zoom.transform, d3.zoomIdentity);
 }
 
 $(document).ready(function () {

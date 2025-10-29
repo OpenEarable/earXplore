@@ -150,10 +150,6 @@
   margin-bottom: 1em; /* Add some space below the visualization */
 }
 
-.link {
-  stroke-width: 0.5;
-}
-
 @media (max-width: 850px) {
   #visualization-warning {
     display: flex;
@@ -167,5 +163,9 @@
   .sliderContainer {
     width: 60%;
     margin-bottom: 1em;
+  }
+
+  .link {
+    stroke-width: 0.5;
   }
 }

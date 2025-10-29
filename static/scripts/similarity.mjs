@@ -376,9 +376,7 @@ function drawULayout(
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const baseNodeRadius = 5;
-  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
-  const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
+  const nodeRadius = 7;
 
   // Split the nodes into two groups based on their IDs
   const firstNodes = nodes.filter(
@@ -638,18 +636,21 @@ function drawULayout(
         }]`
     );
 
-  const zoom = d3.zoom().scaleExtent([0.8, 10]).on("zoom", zoomed);
+  // Add zoom for smaller screen widths
+  const mobileQuery = window.matchMedia("(max-width: 850px)");
+
+  const zoom = d3
+    .zoom()
+    .scaleExtent([0.8, 10])
+    .on("zoom", ({ transform }) => {
+      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
+      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
+      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
+      const k = mobileQuery.matches ? transform.k : 1;
+      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+    });
 
   container.call(zoom).call(zoom.transform, d3.zoomIdentity);
-
-  function zoomed({ transform }) {
-    g.attr(
-      "transform",
-      `translate(${margin.left + transform.x}, ${
-        margin.top + transform.y
-      }) scale(${transform.k})`
-    );
-  }
 }
 
 // Draws the standard layout for the similarity graph
@@ -668,9 +669,7 @@ function drawStandardLayout(
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const baseNodeRadius = 5;
-  // Node radius should scale with smaller screen size, 7 is maximum since nodes would overlap
-  const nodeRadius = Math.min(7, baseNodeRadius + 800 / width);
+  const nodeRadius = 7;
 
   // Create a scale for the node positions
   const nodeScale = d3
@@ -819,18 +818,20 @@ function drawStandardLayout(
         }]`
     );
 
-  const zoom = d3.zoom().scaleExtent([1, 10]).on("zoom", zoomed);
+  const mobileQuery = window.matchMedia("(max-width: 850px)");
+
+  const zoom = d3
+    .zoom()
+    .scaleExtent([0.8, 10])
+    .on("zoom", ({ transform }) => {
+      // On mobile allow panning/zooming; on larger screens keep a fixed margin offset
+      const x = margin.left + (mobileQuery.matches ? transform.x : 0);
+      const y = margin.top + (mobileQuery.matches ? transform.y : 0);
+      const k = mobileQuery.matches ? transform.k : 1;
+      g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+    });
 
   container.call(zoom).call(zoom.transform, d3.zoomIdentity);
-
-  function zoomed({ transform }) {
-    g.attr(
-      "transform",
-      `translate(${margin.left + transform.x}, ${
-        margin.top + transform.y
-      }) scale(${transform.k})`
-    );
-  }
 }
 
 /*
