@@ -74,6 +74,7 @@
 
 #thresholdSlider {
   width: 100%;
+  height: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
 }
 
 #thresholdValue {
