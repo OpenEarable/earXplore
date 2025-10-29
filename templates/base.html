@@ -189,14 +189,6 @@
               />
             </button>
           </a>
-          <button id="toggle-sidebar">
-            <img
-              id="filter-icon"
-              src="{{ url_for('static', filename='images/filter-icon.svg')}}"
-              alt="Filter Icon"
-              class="navbar-icon"
-            />
-          </button>
         </div>
       </header>
 
@@ -210,6 +202,17 @@
             >Warning: This visualization is optimized for larger screens and may
             not display visually appealing on smaller devices.</span
           >
+        </div>
+        <div id="toggle-sidebar">
+          <button id="toggle-sidebar-btn">
+            Toggle Sidebar
+            <img
+              id="filter-icon"
+              src="{{ url_for('static', filename='images/filter-icon.svg')}}"
+              alt="Filter Icon"
+              class="navbar-icon"
+            />
+          </button>
         </div>
         {# Dynamic View Section #} {% block content %} {% endblock content %}
       </main>

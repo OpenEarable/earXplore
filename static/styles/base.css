@@ -38,6 +38,7 @@ body {
   padding: 0.5em;
   border-radius: 5px;
   color: #b89230;
+  margin-bottom: 0.5rem;
 }
 
 #visualization-warning span {
@@ -319,7 +320,21 @@ a:visited {
   }
 
   /* Add two buttons to open and close the sidebar */
-  #toggle-sidebar,
+  #toggle-sidebar {
+    display: flex;
+    justify-content: end;
+    font-size: var(--font-bg);
+  }
+
+  #toggle-sidebar-btn {
+    display: flex;
+    border: none;
+    background-color: var(--color-gray-light);
+    border-radius: 30%;
+    opacity: 0.5;
+    gap: 0.5em;
+  }
+
   #close-sidebar {
     display: block;
     border: none;
@@ -384,7 +399,7 @@ a:visited {
   }
 }
 
-@media (max-width: 650px) {
+@media (max-width: 550px) {
   #nav-r {
     gap: 0.5rem;
   }
@@ -396,14 +411,8 @@ a:visited {
   .link-section {
     gap: 0em;
   }
-}
 
-@media (max-width: 560px) {
   header {
     gap: 0;
-  }
-
-  #open-earable-repo {
-    display: none;
   }
 }
