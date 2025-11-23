@@ -98,7 +98,11 @@
     <div class="left-section">
       <header class="mb-3">
         <nav data-current-view="{{ current_view }}">
-          <a href="https://open-earable.teco.edu/" target="_blank">
+          <a
+            href="https://open-earable.teco.edu/"
+            target="_blank"
+            id="open-earable-repo"
+          >
             <img
               id="open-earable-logo"
               src="{{ url_for('static', filename='images/OE_Logo_black_RGB.png') }}"
@@ -164,7 +168,7 @@
         </nav>
 
         {# Add Study Button #}
-        <div class="d-flex align-items-center gap-4">
+        <div class="d-flex align-items-center" id="nav-r">
           <a href="{{ url_for('add_study')}}">
             <button class="add-study-button">
               <span class="navbar-text"> Add study or report mistake! </span>
@@ -185,14 +189,6 @@
               />
             </button>
           </a>
-          <button id="toggle-sidebar">
-            <img
-              id="filter-icon"
-              src="{{ url_for('static', filename='images/filter-icon.svg')}}"
-              alt="Filter Icon"
-              class="navbar-icon"
-            />
-          </button>
         </div>
       </header>
 
@@ -204,8 +200,19 @@
           />
           <span
             >Warning: This visualization is optimized for larger screens and may
-            not display correctly on smaller devices.</span
+            not display visually appealing on smaller devices.</span
           >
+        </div>
+        <div id="toggle-sidebar">
+          <button id="toggle-sidebar-btn">
+            Toggle Sidebar
+            <img
+              id="filter-icon"
+              src="{{ url_for('static', filename='images/filter-icon.svg')}}"
+              alt="Filter Icon"
+              class="navbar-icon"
+            />
+          </button>
         </div>
         {# Dynamic View Section #} {% block content %} {% endblock content %}
       </main>
@@ -295,6 +302,7 @@
               <img
                 src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
                 alt="Question Mark Icon within a circle"
+                class="question-circle"
               />
             </span>
             {% endif %}
@@ -314,7 +322,9 @@
             class="filter-group mt-2 category"
             data-col="{{ category.value }}"
           >
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div
+              class="d-flex justify-content-between align-items-center gap-2 mb-2"
+            >
               {# Add an explanation circle for every category #}
               <div>
                 <strong>{{ category.value.split('_')[-1] }}</strong>
@@ -322,6 +332,7 @@
                 <img
                   src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
                   alt="Question Mark Icon within a circle"
+                  class="question-circle"
                   title="{{ category.explanation }}"
                 />
                 {% endif %}
@@ -406,7 +417,7 @@
             ></button>
           </div>
           <div class="modal-body" id="study-info-modal-body"></div>
-          <div class="modal-footer">
+          <div class="modal-footer" id="study-info-modal-footer">
             <button class="btn btn-secondary" id="similar-studies-btn">
               <a href="{{ url_for('similarity') }}">Find Similar Studies</a>
             </button>

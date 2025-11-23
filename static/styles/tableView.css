@@ -16,7 +16,7 @@
   background-color: var(--color-accent);
   color: white;
   border: none;
-  font-size: 1em;
+  font-size: var(--font-md);
   padding: 0.1em 0.4em;
   border-radius: 5px;
   cursor: pointer;
@@ -41,7 +41,7 @@
   color: #6c757d;
   opacity: 0.5;
   margin-left: 5px;
-  font-size: 0.8em;
+  font-size: var(--font-sm);
   white-space: pre; /* Preserves whitespace */
 }
 
@@ -49,4 +49,12 @@
 .sort-arrows.active {
   color: inherit;
   opacity: 1;
+}
+
+#table thead {
+  font-size: var(--font-bg);
+}
+
+#table tbody {
+  font-size: var(--font-md);
 }

@@ -5,6 +5,11 @@
   gap: 1vw;
 }
 
+#max-bars-container,
+#max-bars-container select {
+  font-size: var(--font-bg);
+}
+
 .chart-wrapper {
   background: var(--color-gray-light);
   border-radius: 8px;
@@ -20,7 +25,7 @@
 
 .chart-container {
   position: relative;
-  min-height: 30vh;
+  min-height: 25vh;
 }
 
 .chart-title {
@@ -35,12 +40,35 @@
   margin: 0;
   display: inline-block;
   word-break: break-word;
+  font-size: var(--font-xl);
+}
+
+.chart-title .question-circle {
+  width: var(--font-xl);
 }
 
 #hiddenChartsMessage {
   display: none;
   margin-top: 2em;
   padding: 1em;
+  font-size: var(--font-bg);
+}
+
+#hiddenChartsMessage h6 {
+  font-size: var(--font-xl);
+}
+
+#table-modal,
+#table-modal button {
+  font-size: var(--font-md);
+}
+
+#table-modal h5 {
+  font-size: var(--font-xl);
+}
+
+#table-modal th {
+  font-size: var(--font-bg);
 }
 
 @media (max-width: 670px) {

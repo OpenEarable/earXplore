@@ -1,5 +1,5 @@
 :root {
-  --color-accent: #B89491; /* Earable's accent color */
+  --color-accent: #b89491; /* Earable's accent color */
   --color-accent-dark: #a37c79;
   --color-gray: #6c757d;
   --color-gray-light: #f8f9fa;
@@ -11,7 +11,15 @@ body {
   padding: 0;
   display: flex;
   flex-direction: row;
-  font-size: clamp(0.75rem, 0.6642rem + 0.3661vw, 1.25rem);
+
+  --resp-font-size: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
+  --resp-font-ticks: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
+  --resp-font-ticks-bg: calc(clamp(0.25rem, 0.1213rem + 0.5492vw, 1rem) * 1.5);
+  --font-xl: calc(var(--resp-font-size) * 1.25);
+  --font-bg: calc(var(--resp-font-size) * 1.15);
+  --font-md: var(--resp-font-size);
+  --font-sm: calc(var(--resp-font-size) * 0.85);
+  --resp-padding: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
 }
 
 /* Hide elements that are only relevant for lower screen resolution */
@@ -26,14 +34,16 @@ body {
   align-items: center;
   justify-content: center;
   background-color: rgb(255, 255, 175);
-  border: 2px solid #B89230;
+  border: 2px solid #b89230;
   padding: 0.5em;
   border-radius: 5px;
-  color: #B89230;
+  color: #b89230;
+  margin-bottom: 0.5rem;
 }
 
 #visualization-warning span {
-  text-align: center;;
+  text-align: center;
+  font-size: var(--font-bg);
 }
 
 header {
@@ -41,7 +51,7 @@ header {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: 1em;
+  gap: var(--resp-padding);
 }
 
 .left-section {
@@ -61,6 +71,15 @@ nav {
   gap: 1em;
 }
 
+#nav-r {
+  gap: 1em;
+}
+
+#earXplore-repo,
+#open-earable-repo {
+  font-size: var(--font-bg);
+}
+
 #earXplore-repo a {
   display: flex;
   align-items: center;
@@ -76,9 +95,13 @@ nav {
 }
 
 .navbar-item {
-  padding: 1em;
+  padding: var(--resp-padding);
   text-align: center;
   border-radius: 5px; /* Rounded corners */
+}
+
+.navbar-text {
+  font-size: var(--font-bg);
 }
 
 .navbar-item:hover:not(.navbar-item-selected) {
@@ -99,7 +122,7 @@ nav {
 }
 
 h3 {
-  font-size: 1.5em;
+  font-size: var(--font-xl);
   padding: 0;
   margin: 0;
 }
@@ -117,7 +140,15 @@ h3 {
   padding: 5px;
   max-height: 100vh;
   overflow-y: scroll;
-  font-size: medium;
+}
+
+.filter-group {
+  font-size: var(--font-md);
+}
+
+.question-circle,
+.info-circle {
+  width: var(--font-bg);
 }
 
 .panel {
@@ -145,7 +176,7 @@ h3 {
 }
 
 /* Buttons */
-.add-study-button{
+.add-study-button {
   color: var(--color-accent);
   background-color: white;
   border: none;
@@ -157,13 +188,13 @@ h3 {
   border: 1px solid var(--color-gray);
   color: white;
   padding: 0.1em 0.4em;
-  font-size: 1em;
+  font-size: var(--font-md);
   border-radius: 5px;
   box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
   text-shadow: none;
 }
 
-.exclusive-filter{
+.exclusive-filter {
   background-color: var(--color-accent);
   border-color: var(--color-accent);
 }
@@ -174,9 +205,9 @@ h3 {
 }
 
 .btn-link,
-.toggle-visibility-button  {
+.toggle-visibility-button {
   background-color: var(--color-accent);
-  font-size: 1em;
+  font-size: var(--font-md);
   color: white;
   border: none;
   text-decoration: none;
@@ -191,6 +222,16 @@ h3 {
 .study-info-panel-header {
   color: rgba(184, 148, 145, 1);
   font-weight: bold;
+}
+
+.study-info-panel-header,
+#study-info-header {
+  font-size: var(--font-xl);
+}
+
+#study-info-modal-body,
+#study-info-modal-footer button {
+  font-size: var(--font-bg);
 }
 
 .study-info-panel-header:not(:first-child) {
@@ -209,7 +250,7 @@ h3 {
   border-radius: 5px;
   text-decoration: none;
   opacity: 1;
-  font-size: 1rem;
+  font-size: var(--font-md);
   border: 1px solid var(--color-accent);
 }
 
@@ -226,6 +267,10 @@ h3 {
 
 /* General Styles */
 
+p {
+  font-size: var(--font-sm);
+}
+
 /* Style checkboxes to match the grey color of the modal close button */
 input[type="checkbox"] {
   accent-color: var(--color-gray); /* Bootstrap's secondary color */
@@ -240,18 +285,19 @@ input[type="checkbox"] {
   opacity: 0.6;
 }
 
-.form-check-input:focus  {
+.form-check-input:focus {
   outline: none;
   box-shadow: none;
   border: 1px solid var(--color-gray);
 }
 
-a:link, a:visited {
+a:link,
+a:visited {
   text-decoration: none;
   color: inherit;
 }
 
-@media (max-width: 1050px) {
+@media (max-width: 1200px) {
   /* Hide the sidebar from the user */
   #sidebar {
     position: fixed;
@@ -264,13 +310,31 @@ a:link, a:visited {
     transition: right 0.3s ease;
   }
 
+  .left-section {
+    overflow-y: auto;
+  }
+
   /* Make the sidebar appear when it should be visible */
   #sidebar.visible-sidebar {
     right: 0;
   }
 
   /* Add two buttons to open and close the sidebar */
-  #toggle-sidebar,
+  #toggle-sidebar {
+    display: flex;
+    justify-content: end;
+    font-size: var(--font-bg);
+  }
+
+  #toggle-sidebar-btn {
+    display: flex;
+    border: none;
+    background-color: var(--color-gray-light);
+    border-radius: 30%;
+    opacity: 0.5;
+    gap: 0.5em;
+  }
+
   #close-sidebar {
     display: block;
     border: none;
@@ -285,7 +349,7 @@ a:link, a:visited {
   }
 
   #close-icon {
-    width: 2em;
+    width: 1.25rem;
   }
 
   /* Add a mask over the content when the sidebar is open */
@@ -317,7 +381,7 @@ a:link, a:visited {
   }
 }
 
-@media (max-width: 630px) {
+@media (max-width: 860px) {
   /* Change the navbar links from text to icons */
   .navbar-text {
     display: none;
@@ -335,11 +399,20 @@ a:link, a:visited {
   }
 }
 
-@media (max-width: 450px) {
+@media (max-width: 550px) {
+  #nav-r {
+    gap: 0.5rem;
+  }
+
   #earXplore-repo {
     display: none;
   }
+
+  .link-section {
+    gap: 0em;
+  }
+
+  header {
+    gap: 0;
+  }
 }
-
-
-

@@ -1,58 +1,87 @@
-{% extends "filter.html" %}
-
-{% block styles %}
-  {{ super() }}
-  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles/barChart.css') }}">
-{% endblock styles %}
-
-{% block content %}
-  {{ super() }}
-  <div class="d-flex justify-content-end mb-3 align-items-center">
-    <label for="maxBarsDropdown" class="form-label me-2 mb-0">Maximum bars per chart:</label>
-    <select id="maxBarsDropdown" class="form-select form-select-sm" style="width: auto;">
-      <option value="10">10</option>
-      <option value="20">20</option>
-      <option value="30">30</option>
-      <option value="40">40</option>
-      <option value="50" selected>50</option>
-      <option value="70">70</option>
-      <option value="100">100</option>
-      <option value="999">Unlimited</option>
-    </select>
-  </div>
-  <div id="chartsContainer" data-url-path-question-circle="{{ url_for('static', filename='images/question-circle-fill.svg')}}">
-    <!-- Charts will be dynamically generated here -->
-  </div>
-  <div id="hiddenChartsMessage">
-    <h6>Some charts exceed the maximum bar threshold and are not displayed:</h6>
-    <ul id="hiddenChartsList"></ul>
-  </div>
+{% extends "filter.html" %} {% block styles %} {{ super() }}
+<link
+  rel="stylesheet"
+  type="text/css"
+  href="{{ url_for('static', filename='styles/barChart.css') }}"
+/>
+{% endblock styles %} {% block content %} {{ super() }}
+<div
+  class="d-flex justify-content-end mb-3 align-items-center"
+  id="max-bars-container"
+>
+  <label for="maxBarsDropdown" class="form-label me-2 mb-0"
+    >Maximum bars per chart:</label
+  >
+  <select
+    id="maxBarsDropdown"
+    class="form-select form-select-sm"
+    style="width: auto"
+  >
+    <option value="10">10</option>
+    <option value="20">20</option>
+    <option value="30">30</option>
+    <option value="40">40</option>
+    <option value="50" selected>50</option>
+    <option value="70">70</option>
+    <option value="100">100</option>
+    <option value="999">Unlimited</option>
+  </select>
+</div>
+<div
+  id="chartsContainer"
+  data-url-path-question-circle="{{ url_for('static', filename='images/question-circle-fill.svg')}}"
+>
+  <!-- Charts will be dynamically generated here -->
+</div>
+<div id="hiddenChartsMessage">
+  <h6>Some charts exceed the maximum bar threshold and are not displayed:</h6>
+  <ul id="hiddenChartsList"></ul>
+</div>
 
 <!-- Modal Structure -->
-<div class="modal fade" id="table-modal" tabindex="-1" aria-labelledby="infoModalLabelBarCharts" aria-hidden="true">
+<div
+  class="modal fade"
+  id="table-modal"
+  tabindex="-1"
+  aria-labelledby="infoModalLabelBarCharts"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modal-header-info">Row Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
-      <div class="modal-body" id="table-modal-body" data-url-path-info-circle="{{ url_for('static', filename='images/info-circle.svg') }}">
+      <div
+        class="modal-body"
+        id="table-modal-body"
+        data-url-path-info-circle="{{ url_for('static', filename='images/info-circle.svg') }}"
+      >
         <div id="rowDetailsContainerBarCharts">
-            <!-- Row details will be populated here -->
+          <!-- Row details will be populated here -->
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
       </div>
     </div>
   </div>
 </div>
-{% endblock content %}
-
-{% block scripts %}
-  {{ super() }}
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js" integrity="sha256-Lye89HGy1p3XhJT24hcvsoRw64Q4IOL5a7hdOflhjTA=" crossorigin="anonymous"></script>
-  <script type="module" src="{{ url_for('static', filename='scripts/barChart.mjs') }}"></script>
+{% endblock content %} {% block scripts %} {{ super() }}
+<script
+  src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"
+  integrity="sha256-Lye89HGy1p3XhJT24hcvsoRw64Q4IOL5a7hdOflhjTA="
+  crossorigin="anonymous"
+></script>
+<script
+  type="module"
+  src="{{ url_for('static', filename='scripts/barChart.mjs') }}"
+></script>
 {% endblock scripts %}
-
-

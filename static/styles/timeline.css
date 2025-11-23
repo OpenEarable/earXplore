@@ -2,7 +2,7 @@
   padding: 1.5em;
   margin: 1.5em 0;
 }
-    
+
 .timeline-controls {
   margin-bottom: 1.5em;
   display: flex;
@@ -11,6 +11,21 @@
   text-align: center;
   flex-wrap: wrap;
   gap: 1em;
+  font-size: var(--font-md);
+}
+
+.timeline-controls label {
+  font-size: var(--font-md);
+  padding: calc(var(--resp-padding) * 0.5) calc(var(--resp-padding) * 2);
+  min-width: fit-content;
+}
+
+.form-select {
+  font-size: var(--font-md);
+}
+
+label[for="timelineColorCategory"] {
+  padding: 0;
 }
 
 .category-dropdown-container {
@@ -27,7 +42,7 @@
 
 .link {
   stroke: #999;
-  stroke-width: 1;
+  stroke-width: 0.5;
   stroke-opacity: 0.6;
   fill: none;
 }
@@ -87,22 +102,6 @@
   color: white;
 }
 
-/* Timeline axis styling */
-.timeline-axis {
-  stroke: #ccc;
-  stroke-width: 2;
-}
-
-.timeline-tick {
-  stroke: #ccc;
-  stroke-width: 1;
-}
-
-.timeline-label {
-  font-size: 12px;
-  fill: #666;
-}
-
 /* Container dimensions */
 #timeline-graph-container {
   width: 100%;
@@ -125,7 +124,7 @@
 .timeline-legend-item {
   display: flex;
   align-items: center;
-  font-size: 1em;
+  font-size: var(--font-md);
 }
 
 .timeline-legend-line {
@@ -153,16 +152,16 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 2;
-  font-size: 0.8em;
+  font-size: var(--font-md);
 }
 
 #legend h4 {
-  font-size: 1.2em;
+  font-size: var(--font-xl);
 }
 
 #legendNote {
   font-style: italic;
-  font-size: 0.8em;
+  font-size: var(--font-sm);
   margin-bottom: 0.5em;
 }
 
@@ -180,10 +179,24 @@
   align-items: center;
 }
 
-#timelineConnectionsContainer, .centered-cell {
+#timelineConnectionsContainer,
+.centered-cell {
   text-align: center;
   vertical-align: middle;
   user-select: none;
+  font-size: var(--font-md);
+}
+
+#timelineConnectionsModal button {
+  font-size: var(--font-md);
+}
+
+#timelineConnectionsContainer th {
+  font-size: var(--font-bg);
+}
+
+#timelineConnectionsContainer h5 {
+  font-size: var(--font-xl);
 }
 
 .node-tooltip {
@@ -203,5 +216,25 @@
   #visualization-warning {
     display: flex;
   }
-}
 
+  .tick-line {
+    stroke: black;
+  }
+
+  .tick-text {
+    fill: rgb(33, 37, 41);
+  }
+
+  #timeline-container {
+    padding: var(--resp-padding);
+  }
+
+  .timeline-controls {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .link {
+    stroke-width: 0.5;
+  }
+}

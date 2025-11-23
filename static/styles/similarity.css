@@ -2,6 +2,11 @@
 #similarityContainer {
   padding: 1.5em;
   margin: 1.5em 0;
+  font-size: var(--font-md);
+}
+
+.form-select {
+  font-size: var(--font-md);
 }
 
 #categoryDropdownContainer {
@@ -20,14 +25,13 @@
 
 .btn-check,
 .btn-outline-secondary {
-  font-size: 1em;
   background-color: white;
 }
 
-.btn-check:checked+.btn{
+.btn-check:checked + .btn {
   background-color: var(--color-accent);
   color: white;
-  border-color: var(--color-accent); 
+  border-color: var(--color-accent);
 }
 
 .similarityControlContainer {
@@ -35,6 +39,11 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5em;
+  font-size: var(--font-md);
+}
+
+.similarityControlContainer label {
+  font-size: var(--font-md);
 }
 
 .btn-similarity {
@@ -44,13 +53,13 @@
 }
 
 .btn-check:checked + .btn-similarity:hover {
-  background-color: var(--color-accent) !important; 
+  background-color: var(--color-accent) !important;
   border-color: var(--color-accent) !important;
   color: white !important;
 }
 
 .btn-similarity:hover {
-  background-color: #f8e6e6 !important; 
+  background-color: #f8e6e6 !important;
   border-color: var(--color-accent) !important;
   color: #666 !important;
 }
@@ -65,6 +74,7 @@
 
 #thresholdSlider {
   width: 100%;
+  height: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
 }
 
 #thresholdValue {
@@ -78,13 +88,17 @@
   flex-direction: column;
   align-items: center;
   flex-shrink: 2;
-  font-size: 0.8em;
+  font-size: var(--font-md);
+}
+
+#legend h4 {
+  font-size: var(--font-xl);
 }
 
 #legendNote {
   font-style: italic;
-  font-size: 0.8em;
-  margin-bottom: 0.5em
+  font-size: var(--font-sm);
+  margin-bottom: 0.5em;
 }
 
 #legendItems {
@@ -126,6 +140,23 @@
   opacity: 0.3;
 }
 
+#thresholdInfoIcon {
+  width: var(--font-bg);
+}
+
+#connectionsContainer,
+#connectionsModal button {
+  font-size: var(--font-md);
+}
+
+#connectionsContainer h5 {
+  font-size: var(--font-xl);
+}
+
+#connectionsContainer th {
+  font-size: var(--font-bg);
+}
+
 .info-circle {
   font-weight: bold;
   color: var(--color-accent);
@@ -144,5 +175,19 @@
 @media (max-width: 850px) {
   #visualization-warning {
     display: flex;
+  }
+
+  .controls {
+    flex-direction: column;
+    align-items: start;
+  }
+
+  .sliderContainer {
+    width: 60%;
+    margin-bottom: 1em;
+  }
+
+  .link {
+    stroke-width: 0.5;
   }
 }
