@@ -375,7 +375,7 @@ function drawULayout(
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const nodeRadius = 7;
+  const nodeRadius = alignHorizontal ? 5.5 : 7;
 
   // Split the nodes into two groups based on their IDs
   const firstNodes = nodes.filter(
