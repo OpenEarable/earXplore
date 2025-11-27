@@ -114,7 +114,6 @@ single_value_columns = [
     'Sensing_PANEL_No Additional Sensing', 'Interaction_PANEL_Hands-Free', 'Interaction_PANEL_Eyes-Free', 
     'Interaction_PANEL_Adaptation of the Interaction Detection Algorithm to User',
     'Interaction_PANEL_Discreetness of Interaction Techniques', 
-    'Interaction_PANEL_Social Acceptability of Interaction Techniques',
     'Interaction_PANEL_Accuracy of Interaction Recognition',
     'Interaction_PANEL_Robustness of Interaction Detection',
     'Study_PANEL_Elicitation Study',
