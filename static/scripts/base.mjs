@@ -22,7 +22,7 @@ $(".navbar-item").each((index, element) => {
 let filters = JSON.parse(window.sessionStorage.getItem("filters")) || null;
 if (!filters) {
   // If there isnt a filter object in session storage, create a new one
-  filters = { valueFilters: [], rangeFilters: {}, exclusiveFilters: [] };
+  filters = {};
   updateFilters(filters);
 }
 
@@ -69,7 +69,7 @@ if (!rangeFilters) {
         updateFilters(filters);
       });
 
-    // Store the initial values in session storage
+    // Store the initial values in session storag
     rangeFilters[category] = slider.noUiSlider.get();
   });
 
