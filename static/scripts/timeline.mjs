@@ -281,9 +281,20 @@ function generateTimelineData() {
 }
 
 function drawTimelineGraph() {
+  const headerHeight = $("header").outerHeight(true) || 0;
+  const timelineControlsHeight = $(".timeline-controls").outerHeight(true) || 0;
+  const visualizationWarningHeight =
+    window.innerWidth <= 750
+      ? $("#visualization-warning").outerHeight(true) || 0
+      : 0;
+
   // Clear the previous graph
   $("#timeline-graph-container").empty();
-  $("#timeline-graph-container").height("auto");
+  $("#timeline-graph-container").height(
+    `calc(90vh - ${
+      headerHeight + timelineControlsHeight + visualizationWarningHeight
+    }px)`
+  );
   $("#legend").empty();
 
   const { nodes, years, links, maxYears, colorScale } = generateTimelineData();
@@ -312,11 +323,7 @@ function drawTimelineGraph() {
   const nodeRadius = Math.min(10, innerWidth / 100);
 
   // Calculate height based on max years count
-  const height = Math.max(
-    400,
-    maxYearsCount * (nodeRadius * 4),
-    (9 / 16) * containerWidth
-  );
+  const height = $("#timeline-graph-container").height();
   const innerHeight = height - margin.top - margin.bottom;
   const axisHeight = innerHeight;
 

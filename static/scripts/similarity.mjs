@@ -295,19 +295,10 @@ function formatTickLabel(d) {
 function drawGraph(threshold) {
   // Clear graph and legend container
   $("#graphContainer").empty();
-  $("#graphContainer").height("auto");
   $("#legend").empty();
 
   const { sortedNodes, links, colorScale } = generateGraphData(threshold);
   const nodes = [...sortedNodes];
-
-  const lengthLongestLabel =
-    nodes.length === 0
-      ? 0
-      : nodes.reduce((max, nodeID) => {
-          const author = getDataEntry(nodeID, "Main Author") || "";
-          return Math.max(max, author.length);
-        }, 0);
 
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {
@@ -329,7 +320,19 @@ function drawGraph(threshold) {
     : { top: 10, right: 20, bottom: 10, left: 20 };
 
   const containerWidth = $("#graphContainer").width();
-  $("#graphContainer").height(alignVertically ? "120vh" : "60vh");
+  const headerHeight = $("header").outerHeight(true) || 0;
+  const controlsHeight = $(".controls").outerHeight(true) || 0;
+  const visualizationWarningHeight =
+    window.innerWidth <= 850
+      ? $("#visualization-warning").outerHeight(true) || 0
+      : 0;
+  $("#graphContainer").height(
+    alignVertically
+      ? "120vh"
+      : `calc(90vh - ${
+          headerHeight + controlsHeight + visualizationWarningHeight
+        }px)`
+  );
 
   // Create SVG with calculated dimensions
   const svg = d3
