@@ -299,9 +299,6 @@ function drawTimelineGraph() {
 
   const { nodes, years, links, maxYears, colorScale } = generateTimelineData();
   const { coauthorLinks, citingLinks, citedByLinks } = links;
-  const maxYearsCount = Math.max(
-    ...Object.values(years).map((year) => year.length)
-  );
 
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {
@@ -320,7 +317,7 @@ function drawTimelineGraph() {
   const innerWidth = containerWidth - margin.left - margin.right;
 
   // Base node radius
-  const nodeRadius = Math.min(10, innerWidth / 100);
+  const nodeRadius = Math.min(12, innerWidth / 100);
 
   // Calculate height based on max years count
   const height = $("#timeline-graph-container").height();
