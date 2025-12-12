@@ -550,22 +550,23 @@ function drawTimelineGraph() {
   );
 
   // Add zooming functionality at lower screen sizes
-  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  // Uncomment for enabling zoom on mobile devices
+  // const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  if (mobileQuery.matches) {
-    const zoom = d3
-      .zoom()
-      .scaleExtent([0.8, 10])
-      .on("zoom", ({ transform }) => {
-        // On mobile allow panning/zooming
-        const x = margin.left + transform.x;
-        const y = margin.top + transform.y;
-        const k = transform.k;
-        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-      });
+  // if (mobileQuery.matches) {
+  //   const zoom = d3
+  //     .zoom()
+  //     .scaleExtent([0.8, 10])
+  //     .on("zoom", ({ transform }) => {
+  //       // On mobile allow panning/zooming
+  //       const x = margin.left + transform.x;
+  //       const y = margin.top + transform.y;
+  //       const k = transform.k;
+  //       g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+  //     });
 
-    svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  }
+  //   svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  // }
 }
 
 $(document).ready(function () {
