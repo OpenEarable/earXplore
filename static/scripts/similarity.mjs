@@ -379,7 +379,7 @@ function drawULayout(
   const width = alignHorizontal
     ? parseInt($("svg").width()) * 1.4 - margin.left - margin.right
     : parseInt($("svg").width()) - margin.left - margin.right;
-  const firstAxisPos = alignHorizontal ? height / 4 : width / 4;
+  const firstAxisPos = alignHorizontal ? height / 4 : width / 3;
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
@@ -412,7 +412,7 @@ function drawULayout(
   // Create an arc generator for the nodes
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
 
-  // Create the top axis for the nodes
+  // Create the first axis for the nodes
   const firstAxis = alignHorizontal
     ? d3
         .axisTop(firstScale)
@@ -427,7 +427,7 @@ function drawULayout(
         .tickSize(0)
         .tickPadding(8);
 
-  // Create the bottom axis for the nodes
+  // Create the second axis for the nodes
   const secondAxis = alignHorizontal
     ? d3
         .axisBottom(secondScale)
@@ -464,7 +464,7 @@ function drawULayout(
       "transform",
       alignHorizontal
         ? `translate(0, ${3 * firstAxisPos})`
-        : `translate(${3 * firstAxisPos}, 0)`
+        : `translate(${2 * firstAxisPos}, 0)`
     ) // Position the axis at the bottom
     .attr("class", "bottom-axis")
     .call(secondAxis);
@@ -559,7 +559,7 @@ function drawULayout(
     .attr("transform", (d) =>
       alignHorizontal
         ? `translate(${secondScale(d)}, ${3 * firstAxisPos})`
-        : `translate(${3 * firstAxisPos}, ${secondScale(d)})`
+        : `translate(${2 * firstAxisPos}, ${secondScale(d)})`
     )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
@@ -593,12 +593,12 @@ function drawULayout(
         ? sourceScale(d.sourceID)
         : isSourceFirst
         ? firstAxisPos
-        : 3 * firstAxisPos;
+        : 2 * firstAxisPos;
       const targetX = alignHorizontal
         ? targetScale(d.targetID)
         : isTargetFirst
         ? firstAxisPos
-        : 3 * firstAxisPos;
+        : 2 * firstAxisPos;
       const sourceY = alignHorizontal
         ? isSourceFirst
           ? firstAxisPos
