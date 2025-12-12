@@ -291,9 +291,9 @@ function drawTimelineGraph() {
   // Clear the previous graph
   $("#timeline-graph-container").empty();
   $("#timeline-graph-container").height(
-    `calc(90vh - ${
+    `min(1000px, calc(90vh - ${
       headerHeight + timelineControlsHeight + visualizationWarningHeight
-    }px)`
+    }px))`
   );
   $("#legend").empty();
 

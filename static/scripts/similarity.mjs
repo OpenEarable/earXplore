@@ -329,9 +329,9 @@ function drawGraph(threshold) {
   $("#graphContainer").height(
     alignVertically
       ? "120vh"
-      : `calc(90vh - ${
+      : `min(1000px, calc(90vh - ${
           headerHeight + controlsHeight + visualizationWarningHeight
-        }px)`
+        }px))`
   );
 
   // Create SVG with calculated dimensions
