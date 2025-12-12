@@ -321,29 +321,32 @@ function drawGraph(threshold) {
   const useULayout = nodes.length > 50; // Use U-Layout for larger graphs
 
   // Breakpoint for vertical alignment of axes
-  const alignVertically = window.innerWidth <= 750;
+  const alignVertically = window.innerWidth <= 850;
 
   // Define constants for the layout
   const margin = alignVertically
     ? { top: 10, right: 5, bottom: 10, left: 5 }
     : { top: 10, right: 20, bottom: 10, left: 20 };
 
-  const nodeSpacing = 15;
-  const height = alignVertically
-    ? Math.max(
-        $("#graphContainer").width() * 1.5,
-        (useULayout ? nodes.length / 2 : nodes.length) * nodeSpacing
-      )
-    : useULayout
-    ? (9 / 16) * $("#graphContainer").width() + 15 * lengthLongestLabel
-    : (9 / 16) * $("#graphContainer").width();
+  const containerWidth = $("#graphContainer").width();
+  $("#graphContainer").height(alignVertically ? "120vh" : "60vh");
 
   // Create SVG with calculated dimensions
   const svg = d3
     .select("#graphContainer")
     .append("svg")
     .attr("width", "100%")
-    .attr("viewBox", `0 0 ${$("#graphContainer").width()} ${height}`);
+    .attr("height", "100%")
+    .attr(
+      "viewBox",
+      `${alignVertically ? 0 : containerWidth * 0.2} ${
+        alignVertically ? 0 : -$("#graphContainer").height() * 0.2
+      } ${containerWidth} ${
+        alignVertically
+          ? $("#graphContainer").height()
+          : $("#graphContainer").height() * 1.4
+      }`
+    );
 
   // Choose layout based on number of nodes
   const layoutFunction = useULayout ? drawULayout : drawStandardLayout;
@@ -370,12 +373,14 @@ function drawULayout(
   const { nodes, links } = graphData;
 
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
-  const width = parseInt($("svg").width()) - margin.left - margin.right;
+  const width = alignHorizontal
+    ? parseInt($("svg").width()) * 1.4 - margin.left - margin.right
+    : parseInt($("svg").width()) - margin.left - margin.right;
   const firstAxisPos = alignHorizontal ? height / 4 : width / 4;
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const nodeRadius = alignHorizontal ? Math.min(8, width / 150) : 7;
+  const nodeRadius = alignHorizontal ? Math.min(8, width / 150) : 6;
 
   // Split the nodes into two groups based on their IDs
   const firstNodes = nodes.filter(

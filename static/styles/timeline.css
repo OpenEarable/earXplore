@@ -208,6 +208,10 @@ label[for="timelineColorCategory"] {
   padding: 0.5em;
 }
 
+.tick text {
+  font-size: var(--resp-font-ticks);
+}
+
 .node-tooltip p {
   margin: 0;
 }
