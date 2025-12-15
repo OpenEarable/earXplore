@@ -93,7 +93,7 @@ def filter_categories(data):
     # Filter out categories that should not be filtered for
     return [category for category in data[0].keys() if category not in EXCLUDED_SIDEBAR_CATEGORIES]
 
-def load_data(config_path="configs/earXplore_interaction.yaml"):
+def load_data(config_path):
     try:
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
@@ -380,7 +380,7 @@ def load_citation_data():
 
 @app.get("/")
 def home():
-    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
     data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
@@ -399,7 +399,7 @@ def home():
 
 @app.get("/bar-chart")
 def bar_chart():
-    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
     data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
@@ -427,7 +427,7 @@ def bar_chart():
 
 @app.get("/similarity")
 def similarity():
-    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
     data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
@@ -447,7 +447,7 @@ def similarity():
 
 @app.get("/timeline")
 def timeline():
-    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
     data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
