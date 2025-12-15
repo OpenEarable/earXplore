@@ -3,20 +3,20 @@ import { convertToID, updateFilters, processQuery } from "./dataUtility.mjs";
 // Highlight the current view in the navbar
 const selectedView = $("nav").data("current-view");
 $(".navbar-item").each((index, element) => {
-  selectedView === $(element).attr("data-section") ?
-    $(element).addClass("navbar-item-selected") :
-    $(element).removeClass("navbar-item-selected");
+  selectedView === $(element).attr("data-section")
+    ? $(element).addClass("navbar-item-selected")
+    : $(element).removeClass("navbar-item-selected");
 });
 
 /*
-  * Merge all the filters into a single object
-  * This object will be used to filter the data displayed on the page
-  * The filters are stored in the session storage to persist across page reloads
-  * The filters are stored in the following format:
-  * {valuesFilters: [value1-category1, value2-category1, ..., valueN-categoryN],
-  * rangeFilters: {rangeCategory: [handle1-value, handle2-value], rangeCategory2: [handle1-value], ...},
-  * categoryFilters: [category1, category2, ...]} <--- will not be set here, but will be set in the respective scripts
-*/
+ * Merge all the filters into a single object
+ * This object will be used to filter the data displayed on the page
+ * The filters are stored in the session storage to persist across page reloads
+ * The filters are stored in the following format:
+ * {valueFilters: [value1-category1, value2-category1, ..., valueN-categoryN],
+ * rangeFilters: {rangeCategory: [handle1-value, handle2-value], rangeCategory2: [handle1-value], ...},
+ * categoryFilters: [category1, category2, ...]} <--- will not be set here, but will be set in the respective scripts
+ */
 
 // Load the current value filters from the session storage
 let filters = JSON.parse(window.sessionStorage.getItem("filters")) || null;
@@ -33,7 +33,7 @@ let exclusiveFilters = filters.exclusiveFilters || null;
 // If there are no value filters in session storage, meaning user is visiting for the first time, default to all value filters being selected
 if (!valueFilters) {
   valueFilters = [];
-  
+
   $(".value-filter").each((index, element) => {
     // Check the checkbox and add its ID to the value filters
     $(element).prop("checked", true);
@@ -45,50 +45,53 @@ if (!valueFilters) {
 } else {
   // If there are value filters in session storage, set the respective checkboxes to checked
   $(".value-filter").each((index, element) => {
-    valueFilters.includes(convertToID($(element).attr("id"))) ?
-      $(element).prop("checked", true) :
-      $(element).prop("checked", false);
+    valueFilters.includes(convertToID($(element).attr("id")))
+      ? $(element).prop("checked", true)
+      : $(element).prop("checked", false);
   });
-};
+}
 
 // If there are no range sliders in session storage, initialize them with default values
 if (!rangeFilters) {
   rangeFilters = {};
-  filters.rangeFilters = rangeFilters;
 
-  $('.range-slider').each(function() {
+  $(".range-slider").each(function () {
     const slider = this;
-    const min = $(this).data('min');
-    const max = $(this).data('max');
-    const category = $(this).data('col');
-  
-    noUiSlider.create(this, getSliderConfig([min, max], min, max))
-    .on("change", function(values, handle) {
-      const filters = JSON.parse(window.sessionStorage.getItem("filters"));
-      filters.rangeFilters[category] = values;
-      updateFilters(filters);
-    });
+    const min = $(this).data("min");
+    const max = $(this).data("max");
+    const category = $(this).data("col");
 
-    // Store the initial values in session storage
+    noUiSlider
+      .create(this, getSliderConfig([min, max], min, max))
+      .on("change", function (values, handle) {
+        const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+        filters.rangeFilters[category] = values;
+        updateFilters(filters);
+      });
+
+    // Store the initial values in session storag
     rangeFilters[category] = slider.noUiSlider.get();
   });
+
+  filters.rangeFilters = rangeFilters;
   updateFilters(filters);
 } else {
   // If there are range filters in session storage, configure the sliders with the stored valus
   for (const [category, values] of Object.entries(rangeFilters)) {
     const slider = $(`.range-slider[data-col="${category}"]`);
-    const max = slider.data('max');
-    const min = slider.data('min');
+    const max = slider.data("max");
+    const min = slider.data("min");
 
     // Recreate the slider with the stored configuartion
-    noUiSlider.create(slider[0], getSliderConfig(values, min, max))
-      .on("change", function(values, handle) {
+    noUiSlider
+      .create(slider[0], getSliderConfig(values, min, max))
+      .on("change", function (values, handle) {
         const filters = JSON.parse(window.sessionStorage.getItem("filters"));
         filters.rangeFilters[category] = values;
         updateFilters(filters);
       });
   }
-};
+}
 
 // If there are no exclusive filters in session storage, initialize them as an empty array
 if (!exclusiveFilters) {
@@ -108,27 +111,27 @@ if (!exclusiveFilters) {
       $(element).text("Exclusive Filterting: OFF");
     }
   });
-};
+}
 
 function getSliderConfig(startValues, min, max) {
   return {
     start: startValues,
     connect: true,
     range: {
-      'min': min,
-      'max': max
+      min: min,
+      max: max,
     },
     tooltips: [true, true],
     format: {
       to: function (value) {
-          return Math.round(value);
+        return Math.round(value);
       },
       from: function (value) {
-          return Number(value);
-      }
-    }
+        return Number(value);
+      },
+    },
   };
-};
+}
 
 function selectAll(checkboxSelection) {
   const filters = JSON.parse(window.sessionStorage.getItem("filters"));
@@ -143,8 +146,8 @@ function selectAll(checkboxSelection) {
   // Reset the slider to the default range by setting both handles to the minimum and maximum values
   const changedSliders = [];
   checkboxSelection.find(".range-slider").each((_, element) => {
-    const min = $(element).data('min');
-    const max = $(element).data('max');
+    const min = $(element).data("min");
+    const max = $(element).data("max");
     element.noUiSlider.set([min, max]);
     changedSliders.push(element);
   });
@@ -154,20 +157,20 @@ function selectAll(checkboxSelection) {
     const id = convertToID($(element).attr("id"));
     if (!filters.valueFilters.includes(id)) {
       filters.valueFilters.push(id);
-    };
+    }
   });
 
   // Update the range filters for the changed sliders
   changedSliders.forEach((element) => {
-    const category = $(element).data('col');
-    const min = $(element).data('min');
-    const max = $(element).data('max');
+    const category = $(element).data("col");
+    const min = $(element).data("min");
+    const max = $(element).data("max");
     filters.rangeFilters[category] = [min, max];
   });
 
   // Store the updated value filters in session storage
   updateFilters(filters);
-  
+
   // Trigger the change event only once for performance
   checkboxSelection.find(".value-filter").first().trigger("change");
 }
@@ -185,7 +188,7 @@ function deselectAll(checkboxSelection) {
   // Change the slider to no selection by setting both handles to the minimum value
   const changedSliders = [];
   checkboxSelection.find(".range-slider").each((_, element) => {
-    const min = $(element).data('min');
+    const min = $(element).data("min");
     element.noUiSlider.set([min, min]);
     changedSliders.push(element);
   });
@@ -195,13 +198,13 @@ function deselectAll(checkboxSelection) {
     const id = convertToID($(element).attr("id"));
     if (filters.valueFilters.includes(id)) {
       filters.valueFilters.splice(filters.valueFilters.indexOf(id), 1);
-    };
+    }
   });
 
   // Update the range filters for the changed sliders
   changedSliders.forEach((element) => {
-    const category = $(element).data('col');
-    const min = $(element).data('min');
+    const category = $(element).data("col");
+    const min = $(element).data("min");
     filters.rangeFilters[category] = [min, min];
   });
 
@@ -212,9 +215,9 @@ function deselectAll(checkboxSelection) {
   checkboxSelection.find(".value-filter").first().trigger("change");
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   // Add event listener to each value filter to update the session storage
-  $(".value-filter").on("change", function() {
+  $(".value-filter").on("change", function () {
     // Get the ID of the checkbox and convert it to a format suitable for storage
     const id = convertToID($(this).attr("id"));
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
@@ -229,13 +232,16 @@ $(document).ready(function() {
     updateFilters(filters);
   });
 
-  $(".exclusive-filter").on("click", function() {
+  $(".exclusive-filter").on("click", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
     const category = $(this).data("col");
 
     if (filters.exclusiveFilters.includes(category)) {
       // If the category is already in the exclusive filters, remove it
-      filters.exclusiveFilters.splice(filters.exclusiveFilters.indexOf(category), 1);
+      filters.exclusiveFilters.splice(
+        filters.exclusiveFilters.indexOf(category),
+        1
+      );
       $(this).text("Exclusive filterting: OFF");
     } else {
       // If the category is not in the exclusive filters, add it
@@ -246,28 +252,28 @@ $(document).ready(function() {
   });
 
   // Add "selecting / deselecting all" functionality to certain categories
-  $(".select-all").on("click", function() {
+  $(".select-all").on("click", function () {
     const category = $(this).data("col");
 
     // Find the div with the the same data-col attribute
     const categoryDiv = $(`.category[data-col="${category}"]`);
-    
+
     // Select all the checkboxes within the category div
     selectAll(categoryDiv);
   });
 
-  $(".deselect-all").on("click", function() {
+  $(".deselect-all").on("click", function () {
     const category = $(this).data("col");
 
     // Find the div with the the same data-col attribute
     const categoryDiv = $(`.category[data-col="${category}"]`);
-    
+
     // Deselect all the checkboxes within the category div
     deselectAll(categoryDiv);
   });
 
   // Add "selecting / deselecting all" functionality to certain panels
-  $(".select-all-panel").on("click", function() {
+  $(".select-all-panel").on("click", function () {
     const panelValue = $(this).data("panel");
 
     // Find the div with the the same data-panel attribute
@@ -277,7 +283,7 @@ $(document).ready(function() {
     selectAll(panelDiv);
   });
 
-  $(".deselect-all-panel").on("click", function() {
+  $(".deselect-all-panel").on("click", function () {
     const panelValue = $(this).data("panel");
 
     // Find the div with the the same data-panel attribute
@@ -287,40 +293,39 @@ $(document).ready(function() {
     deselectAll(panelDiv);
   });
 
-  $(".toggle-visibility-button").on("click", function() {
+  $(".toggle-visibility-button").on("click", function () {
     const panel = $(this).data("panel");
-    
+
     // Find the div with the the same data-panel attribute
     const panelDiv = $(`.panel[data-panel-value="${panel}"]`);
 
     // Toggle the visibility of the filter section
     panelDiv.find(".filters").toggleClass("hidden-filters");
-    
+
     // Change button text based on current state
     const isHidden = panelDiv.find(".filters").hasClass("hidden-filters");
     $(this).text(isHidden ? "Show" : "Hide");
   });
 
-  $("#select-all-sidebar-button").on("click", function() {
+  $("#select-all-sidebar-button").on("click", function () {
     selectAll($("#sidebar"));
   });
 
-  $("#deselect-all-sidebar-button").on("click", function() {
+  $("#deselect-all-sidebar-button").on("click", function () {
     deselectAll($("#sidebar"));
   });
 
-  $("#toggle-sidebar").on("click", function() {
+  $("#toggle-sidebar").on("click", function () {
     $("#sidebar").toggleClass("visible-sidebar");
     $("#mask").show();
   });
 
-  $("#close-sidebar, #mask").on("click", function() {
+  $("#close-sidebar, #mask").on("click", function () {
     $("#sidebar").toggleClass("visible-sidebar");
     $("#mask").hide();
   });
 
-  $("#study-info-modal").on("hidden.bs.modal", function() {
+  $("#study-info-modal").on("hidden.bs.modal", function () {
     window.sessionStorage.removeItem("modalID");
   });
 });
-

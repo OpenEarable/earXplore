@@ -11,24 +11,24 @@ if (!categoryFilters) {
 
   $(".column-filter").each((index, element) => {
     const id = $(element).attr("id");
-    categoryFilters.includes(id) ?
-      $(element).prop("checked", true) :
-      $(element).prop("checked", false);
+    categoryFilters.includes(id)
+      ? $(element).prop("checked", true)
+      : $(element).prop("checked", false);
   });
   updateFilters(filters);
 } else {
   // If there are category filters in session storage, set the respective checkboxes to checked
   $(".column-filter").each((index, element) => {
     const id = $(element).attr("id");
-    categoryFilters.includes(id) ?
-      $(element).prop("checked", true) :
-      $(element).prop("checked", false);
+    categoryFilters.includes(id)
+      ? $(element).prop("checked", true)
+      : $(element).prop("checked", false);
   });
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
   // When a checkbox is clicked, update the filters in local storage and the current view
-  $(".column-filter").on("change", function() {
+  $(".column-filter").on("change", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
 
     const id = $(this).attr("id");
@@ -40,9 +40,9 @@ $(document).ready(function() {
     }
     updateFilters(filters);
   });
-  
+
   // Add selecting functionality to the "Select All" button
-  $("#toggleSelectAllColumns").on("click", function() {
+  $("#toggleSelectAllColumns").on("click", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
     const checkboxes = ["INFO"]; // Start with INFO to ensure it is always selected
 
@@ -61,7 +61,7 @@ $(document).ready(function() {
   });
 
   // Add deselecting functionality to the "Deselect All" button
-  $("#toggleDeselectAllColumns").on("click", function() {
+  $("#toggleDeselectAllColumns").on("click", function () {
     $("#columnToggles .column-filter").each((index, element) => {
       element.checked = false;
     });
@@ -74,7 +74,7 @@ $(document).ready(function() {
     $("#columnToggles .column-filter").first().trigger("change");
   });
 
-  $("#reset-filters-button").on("click", function() {
+  $("#reset-filters-button").on("click", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
     filters.categoryFilters = startCategories; // Reset to the initial categories
     updateFilters(filters);
@@ -88,7 +88,7 @@ $(document).ready(function() {
     $(".column-filter").first().trigger("change");
   });
 
-  $("#select-filter-button").on("click", function() {
+  $("#select-filter-button").on("click", function () {
     $("#toggle-menu-container").toggleClass("visible-filters");
   });
 });

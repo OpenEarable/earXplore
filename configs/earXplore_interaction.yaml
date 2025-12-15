@@ -1,0 +1,16 @@
+database-name: earXplore
+database-path: data.csv
+explanation-path: explanations.csv
+database-name: earXplore
+database-path: data.csv
+explanation-path: explanations.csv
+excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors"]
+advanced-sidebar-categories: ["Main Author", "Gesture", "Keywords"]
+slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures"]
+select-deselect-all-categories: ["Location", "Input Body Part", "Sensing_PANEL_Sensors", "Main Author", "Gesture", "Keywords"]
+exclusive-filtering-categories: ["Sensing_PANEL_Sensors"]
+select-deselect-all-panels: ["Interaction", "Implementation", "Study", "Applications", "Motivations", "Device"]
+initially-hidden-panels: ["Advanced Filters"]
+parenthical-columns: ["Interaction_PANEL_Accuracy of Interaction Recognition", "Interaction_PANEL_Robustness of Interaction Detection", "Study_PANEL_Elicitation Study", "Study_PANEL_Usability Evaluations", "Study_PANEL_Cognitive Ease Evaluations", "Study_PANEL_Discreetness of Interactions Evaluations", "Study_PANEL_Social Acceptability of Interactions Evaluations", "Study_PANEL_Accuracy of Interactions Evaluations", "Study_PANEL_Alternative Interaction Validity Evaluations"]
+start-category-filters: ["Main Author", "Year", "Location", "Input Body Part", "Gesture"]
+special-format-explanations: ["Interaction_PANEL_Discreetness of Interaction Techniques", "Interaction_PANEL_Social Acceptability of Interaction Techniques", "Interaction_PANEL_Accuracy of Interaction Recognition", "Interaction_PANEL_Robustness of Interaction Detection", "Motivations_PANEL_Motivations"]

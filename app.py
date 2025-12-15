@@ -6,48 +6,39 @@ import pandas as pd
 import json
 import os
 import mimetypes
+import yaml
 mimetypes.add_type('application/javascript', '.mjs')
 
 # Categories that should not be filtered for
-EXCLUDED_SIDEBAR_CATEGORIES = ['ID', 'Abstract', 'Study Link', 'Title', 'Authors']
+EXCLUDED_SIDEBAR_CATEGORIES = []
 
 # Categories that go in the advanced filters panel
-ADVANCED_SIDEBAR_CATEGORIES = ['Main Author', 'Gesture', 'Keywords']
+ADVANCED_SIDEBAR_CATEGORIES = []
 
 # Categories that are displayed as sliders in the sidebar, should be numerical !
-SLIDER_CATEGORIES = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
+SLIDER_CATEGORIES = []
 
 # Categories that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_CATEGORIES = ['Location', 'Input Body Part', 'Sensing_PANEL_Sensors', 'Main Author', 'Gesture', 'Keywords']
+SELECT_DESELECT_ALL_CATEGORIES = []
 
 # Categories that should have an "exclusive filtering" button in the sidebar
-EXCLUSIVE_FILTERING_CATEGORIES = ['Sensing_PANEL_Sensors']
+EXCLUSIVE_FILTERING_CATEGORIES = []
 
 # Panels that should have a "select/deselect all" button in the sidebar
-SELECT_DESELECT_ALL_PANELS = ['Interaction', 'Implementation', 'Study', 'Applications', 'Motivations', 'Device']
+SELECT_DESELECT_ALL_PANELS = []
 
 # Panels that should be initially hidden in the sidebar
-INITIALLY_HIDDEN_PANELS = ['Advanced Filters']
+INITIALLY_HIDDEN_PANELS = []
 
 # Columns that contain parentheses but only the part before the parentheses should be used for filtering
-PARENTHICAL_COLUMNS = [
-                    'Interaction_PANEL_Accuracy of Interaction Recognition', 
-                    'Interaction_PANEL_Robustness of Interaction Detection', 
-                    'Study_PANEL_Elicitation Study', 
-                    'Study_PANEL_Usability Evaluations', 
-                    'Study_PANEL_Cognitive Ease Evaluations', 
-                    'Study_PANEL_Discreetness of Interactions Evaluations', 
-                    'Study_PANEL_Social Acceptability of Interactions Evaluations', 
-                    'Study_PANEL_Accuracy of Interactions Evaluations', 
-                    'Study_PANEL_Alternative Interaction Validity Evaluations'
-                ]
+PARENTHICAL_COLUMNS = []
 
 # Categories that should be displayed initially in the tabular and bar chart views 
 # Do not delete the "INFO" category !
-START_CATEGORY_FILTERS = json.dumps(["INFO", "Main Author", "Year", "Location", "Input Body Part", "Gesture"])
+START_CATEGORY_FILTERS = json.dumps([])
 
 # Categories whose explanations should be formatted in a special way
-SPECIAL_FORMAT_EXPLANATIONS = ["Interaction_PANEL_Discreetness of Interaction Techniques", "Interaction_PANEL_Accuracy of Interaction Recognition", "Interaction_PANEL_Robustness of Interaction Detection", "Motivations_PANEL_Motivations"]
+SPECIAL_FORMAT_EXPLANATIONS = []
 
 app = Flask(__name__)
 
@@ -102,10 +93,32 @@ def filter_categories(data):
     # Filter out categories that should not be filtered for
     return [category for category in data[0].keys() if category not in EXCLUDED_SIDEBAR_CATEGORIES]
 
-def load_data():
+def load_data(config_path="configs/earXplore_interaction.yaml"):
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+    except FileNotFoundError:
+        return f"Configuration file {config_path} not found"
+    except yaml.YAMLError as e:
+        return f"Error parsing configuration file {config_path}: {e}"
+    
+    database_path = config.get("database-path", "data.csv")
+    explanations_path = config.get("explanations-path", "explanations.csv")
+    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS
+    EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
+    ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
+    SLIDER_CATEGORIES = config.get("slider-categories", [])
+    SELECT_DESELECT_ALL_CATEGORIES = config.get("select-deselect-all-categories", [])
+    EXCLUSIVE_FILTERING_CATEGORIES = config.get("exclusive-filtering-categories", [])
+    PARENTHICAL_COLUMNS = config.get("parenthical-columns", [])
+    SELECT_DESELECT_ALL_PANELS = config.get("select-deselect-all-panels", [])
+    INITIALLY_HIDDEN_PANELS = config.get("initially-hidden-panels", [])
+    START_CATEGORY_FILTERS = json.dumps(["INFO"] + config.get("start-category-filters", []))
+    SPECIAL_FORMAT_EXPLANATIONS = config.get("special-format-explanations", [])
+
     # Load data from CSV file into data variable
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), database_path)
         df = pd.read_csv(csv_path)
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -127,12 +140,9 @@ def load_data():
         if 'Title' in data_entry:
             del data_entry['Title']
 
-    return data
-
-def load_explanations():
     # Load explanations from CSV file into explanations variable
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "explanations.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), explanations_path)
         explanations_df = pd.read_csv(csv_path)
         explanations = dict(zip(explanations_df["Column"], explanations_df["Explanation"]))
     except FileNotFoundError:
@@ -143,8 +153,8 @@ def load_explanations():
         return "explanations.csv file is missing required columns"
     except Exception as e:
         return f"Error loading explanations.csv: {e}"
-    
-    return explanations
+
+    return data, explanations
 
 def load_abstracts():
     try:
@@ -370,11 +380,11 @@ def load_citation_data():
 
 @app.get("/")
 def home():
-    data = load_data()
+    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
-
-    explanations = load_explanations()
+    
     if not isinstance(explanations, dict):
         return render_template("error.html", error=explanations), 500
     
@@ -389,11 +399,11 @@ def home():
 
 @app.get("/bar-chart")
 def bar_chart():
-    data = load_data()
+    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
-
-    explanations = load_explanations()
+    
     if not isinstance(explanations, dict):
         return render_template("error.html", error=explanations), 500
     
@@ -417,11 +427,11 @@ def bar_chart():
 
 @app.get("/similarity")
 def similarity():
-    data = load_data()
+    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
-
-    explanations = load_explanations()
+    
     if not isinstance(explanations, dict):
         return render_template("error.html", error=explanations), 500
     
@@ -437,11 +447,11 @@ def similarity():
 
 @app.get("/timeline")
 def timeline():
-    data = load_data()
+    config_path = "configs/earXplore_interaction.yaml" # default configuration file, should later be settable by user
+    data, explanations = load_data(config_path=config_path)
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
-
-    explanations = load_explanations()
+    
     if not isinstance(explanations, dict):
         return render_template("error.html", error=explanations), 500
     

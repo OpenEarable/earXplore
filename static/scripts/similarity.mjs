@@ -295,19 +295,10 @@ function formatTickLabel(d) {
 function drawGraph(threshold) {
   // Clear graph and legend container
   $("#graphContainer").empty();
-  $("#graphContainer").height("auto");
   $("#legend").empty();
 
   const { sortedNodes, links, colorScale } = generateGraphData(threshold);
   const nodes = [...sortedNodes];
-
-  const lengthLongestLabel =
-    nodes.length === 0
-      ? 0
-      : nodes.reduce((max, nodeID) => {
-          const author = getDataEntry(nodeID, "Main Author") || "";
-          return Math.max(max, author.length);
-        }, 0);
 
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {
@@ -321,29 +312,44 @@ function drawGraph(threshold) {
   const useULayout = nodes.length > 50; // Use U-Layout for larger graphs
 
   // Breakpoint for vertical alignment of axes
-  const alignVertically = window.innerWidth <= 750;
+  const alignVertically = window.innerWidth <= 850;
 
   // Define constants for the layout
   const margin = alignVertically
     ? { top: 10, right: 5, bottom: 10, left: 5 }
     : { top: 10, right: 20, bottom: 10, left: 20 };
 
-  const nodeSpacing = 15;
-  const height = alignVertically
-    ? Math.max(
-        $("#graphContainer").width() * 1.5,
-        (useULayout ? nodes.length / 2 : nodes.length) * nodeSpacing
-      )
-    : useULayout
-    ? (9 / 16) * $("#graphContainer").width() + 15 * lengthLongestLabel
-    : (9 / 16) * $("#graphContainer").width();
+  const containerWidth = $("#graphContainer").width();
+  const headerHeight = $("header").outerHeight(true) || 0;
+  const controlsHeight = $(".controls").outerHeight(true) || 0;
+  const visualizationWarningHeight =
+    window.innerWidth <= 850
+      ? $("#visualization-warning").outerHeight(true) || 0
+      : 0;
+  $("#graphContainer").height(
+    alignVertically
+      ? "120vh"
+      : `min(1000px, calc(90vh - ${
+          headerHeight + controlsHeight + visualizationWarningHeight
+        }px))`
+  );
 
   // Create SVG with calculated dimensions
   const svg = d3
     .select("#graphContainer")
     .append("svg")
     .attr("width", "100%")
-    .attr("viewBox", `0 0 ${$("#graphContainer").width()} ${height}`);
+    .attr("height", "100%")
+    .attr(
+      "viewBox",
+      `${alignVertically ? 0 : containerWidth * 0.2} ${
+        alignVertically ? 0 : -$("#graphContainer").height() * 0.2
+      } ${containerWidth} ${
+        alignVertically
+          ? $("#graphContainer").height()
+          : $("#graphContainer").height() * 1.4
+      }`
+    );
 
   // Choose layout based on number of nodes
   const layoutFunction = useULayout ? drawULayout : drawStandardLayout;
@@ -370,12 +376,14 @@ function drawULayout(
   const { nodes, links } = graphData;
 
   const height = parseInt($("svg").height()) - margin.top - margin.bottom;
-  const width = parseInt($("svg").width()) - margin.left - margin.right;
-  const firstAxisPos = alignHorizontal ? height / 4 : width / 4;
+  const width = alignHorizontal
+    ? parseInt($("svg").width()) * 1.4 - margin.left - margin.right
+    : parseInt($("svg").width()) - margin.left - margin.right;
+  const firstAxisPos = alignHorizontal ? height / 4 : width / 3;
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const nodeRadius = alignHorizontal ? 5.5 : 7;
+  const nodeRadius = alignHorizontal ? Math.min(10, width / 150) : 6;
 
   // Split the nodes into two groups based on their IDs
   const firstNodes = nodes.filter(
@@ -404,7 +412,7 @@ function drawULayout(
   // Create an arc generator for the nodes
   const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
 
-  // Create the top axis for the nodes
+  // Create the first axis for the nodes
   const firstAxis = alignHorizontal
     ? d3
         .axisTop(firstScale)
@@ -419,7 +427,7 @@ function drawULayout(
         .tickSize(0)
         .tickPadding(8);
 
-  // Create the bottom axis for the nodes
+  // Create the second axis for the nodes
   const secondAxis = alignHorizontal
     ? d3
         .axisBottom(secondScale)
@@ -456,7 +464,7 @@ function drawULayout(
       "transform",
       alignHorizontal
         ? `translate(0, ${3 * firstAxisPos})`
-        : `translate(${3 * firstAxisPos}, 0)`
+        : `translate(${2 * firstAxisPos}, 0)`
     ) // Position the axis at the bottom
     .attr("class", "bottom-axis")
     .call(secondAxis);
@@ -551,7 +559,7 @@ function drawULayout(
     .attr("transform", (d) =>
       alignHorizontal
         ? `translate(${secondScale(d)}, ${3 * firstAxisPos})`
-        : `translate(${3 * firstAxisPos}, ${secondScale(d)})`
+        : `translate(${2 * firstAxisPos}, ${secondScale(d)})`
     )
     .each(function (d) {
       drawNode(d3.select(this), colorCategory, arc, colorScale);
@@ -585,12 +593,12 @@ function drawULayout(
         ? sourceScale(d.sourceID)
         : isSourceFirst
         ? firstAxisPos
-        : 3 * firstAxisPos;
+        : 2 * firstAxisPos;
       const targetX = alignHorizontal
         ? targetScale(d.targetID)
         : isTargetFirst
         ? firstAxisPos
-        : 3 * firstAxisPos;
+        : 2 * firstAxisPos;
       const sourceY = alignHorizontal
         ? isSourceFirst
           ? firstAxisPos
@@ -642,22 +650,23 @@ function drawULayout(
     );
 
   // Add zoom for smaller screen widths
-  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  // Uncomment for functionality to work on mobile devices
+  // const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  if (mobileQuery.matches) {
-    const zoom = d3
-      .zoom()
-      .scaleExtent([0.8, 10])
-      .on("zoom", ({ transform }) => {
-        // On mobile allow panning/zooming
-        const x = margin.left + transform.x;
-        const y = margin.top + transform.y;
-        const k = transform.k;
-        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-      });
+  // if (mobileQuery.matches) {
+  //   const zoom = d3
+  //     .zoom()
+  //     .scaleExtent([0.8, 10])
+  //     .on("zoom", ({ transform }) => {
+  //       // On mobile allow panning/zooming
+  //       const x = margin.left + transform.x;
+  //       const y = margin.top + transform.y;
+  //       const k = transform.k;
+  //       g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+  //     });
 
-    container.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  }
+  //   container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  // }
 }
 
 // Draws the standard layout for the similarity graph

@@ -281,16 +281,24 @@ function generateTimelineData() {
 }
 
 function drawTimelineGraph() {
+  const headerHeight = $("header").outerHeight(true) || 0;
+  const timelineControlsHeight = $(".timeline-controls").outerHeight(true) || 0;
+  const visualizationWarningHeight =
+    window.innerWidth <= 750
+      ? $("#visualization-warning").outerHeight(true) || 0
+      : 0;
+
   // Clear the previous graph
   $("#timeline-graph-container").empty();
-  $("#timeline-graph-container").height("auto");
+  $("#timeline-graph-container").height(
+    `min(1000px, calc(90vh - ${
+      headerHeight + timelineControlsHeight + visualizationWarningHeight
+    }px))`
+  );
   $("#legend").empty();
 
   const { nodes, years, links, maxYears, colorScale } = generateTimelineData();
   const { coauthorLinks, citingLinks, citedByLinks } = links;
-  const maxYearsCount = Math.max(
-    ...Object.values(years).map((year) => year.length)
-  );
 
   // If there are no nodes, do not draw the graph
   if (nodes.length === 0) {
@@ -309,14 +317,10 @@ function drawTimelineGraph() {
   const innerWidth = containerWidth - margin.left - margin.right;
 
   // Base node radius
-  const nodeRadius = 7;
+  const nodeRadius = Math.min(12, innerWidth / 100);
 
   // Calculate height based on max years count
-  const height = Math.max(
-    400,
-    maxYearsCount * (nodeRadius * 4),
-    (9 / 16) * containerWidth
-  );
+  const height = $("#timeline-graph-container").height();
   const innerHeight = height - margin.top - margin.bottom;
   const axisHeight = innerHeight;
 
@@ -546,22 +550,23 @@ function drawTimelineGraph() {
   );
 
   // Add zooming functionality at lower screen sizes
-  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  // Uncomment for enabling zoom on mobile devices
+  // const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  if (mobileQuery.matches) {
-    const zoom = d3
-      .zoom()
-      .scaleExtent([0.8, 10])
-      .on("zoom", ({ transform }) => {
-        // On mobile allow panning/zooming
-        const x = margin.left + transform.x;
-        const y = margin.top + transform.y;
-        const k = transform.k;
-        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-      });
+  // if (mobileQuery.matches) {
+  //   const zoom = d3
+  //     .zoom()
+  //     .scaleExtent([0.8, 10])
+  //     .on("zoom", ({ transform }) => {
+  //       // On mobile allow panning/zooming
+  //       const x = margin.left + transform.x;
+  //       const y = margin.top + transform.y;
+  //       const k = transform.k;
+  //       g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+  //     });
 
-    svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  }
+  //   svg.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  // }
 }
 
 $(document).ready(function () {
