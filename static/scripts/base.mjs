@@ -1,6 +1,10 @@
 import { convertToID, updateFilters, processQuery } from "./dataUtility.mjs";
 
-// Highlight the current view in the navbar
+
+
+$(document).ready(function () {
+
+  // Highlight the current view in the navbar
 const selectedView = $("nav").data("current-view");
 $(".navbar-item").each((index, element) => {
   selectedView === $(element).attr("data-section")
@@ -214,8 +218,6 @@ function deselectAll(checkboxSelection) {
   // Trigger the change event only once for performance
   checkboxSelection.find(".value-filter").first().trigger("change");
 }
-
-$(document).ready(function () {
   // Add event listener to each value filter to update the session storage
   $(".value-filter").on("change", function () {
     // Get the ID of the checkbox and convert it to a format suitable for storage
