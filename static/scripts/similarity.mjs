@@ -339,17 +339,19 @@ function drawGraph(threshold) {
     .select("#graphContainer")
     .append("svg")
     .attr("width", "100%")
-    .attr("height", "100%")
-    .attr(
-      "viewBox",
-      `${alignVertically ? 0 : containerWidth * 0.2} ${
-        alignVertically ? 0 : -$("#graphContainer").height() * 0.2
-      } ${containerWidth} ${
-        alignVertically
-          ? $("#graphContainer").height()
-          : $("#graphContainer").height() * 1.4
-      }`
-    );
+    .attr("height", "100%");
+
+  // Depending on the layout at the viewBox attribute
+  const viewBoxX = alignVertically ? 0 : containerWidth * 0.2;
+  const viewBoxY = alignVertically ? 0 : -$("#graphContainer").height() * 0.2;
+  const viewBoxWidth = containerWidth;
+  const viewBoxHeight = alignVertically
+    ? $("#graphContainer").height()
+    : $("#graphContainer").height() * 1.4;
+
+  if (useULayout) {
+    svg.attr("viewBox", `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+  }
 
   // Choose layout based on number of nodes
   const layoutFunction = useULayout ? drawULayout : drawStandardLayout;
@@ -685,7 +687,7 @@ function drawStandardLayout(
   const axisMiddle = alignHorizontal ? height / 2 : width / 2;
 
   // Base node radius
-  const nodeRadius = 7;
+  const nodeRadius = alignHorizontal ? Math.min(10, width / 150) : 6;
 
   // Create a scale for the node positions
   const nodeScale = d3
@@ -693,7 +695,7 @@ function drawStandardLayout(
     .domain(nodes)
     .rangeRound([0, alignHorizontal ? width : height]);
 
-  // Create an axis for the nodes to be displayed horizontally
+  // Create an axis for the nodes to be displayed horizontally or vertically
   const axis = alignHorizontal
     ? d3
         .axisBottom(nodeScale)
@@ -712,7 +714,7 @@ function drawStandardLayout(
     .trim();
 
   // Append group element for zooming
-  const g = container.append("g");
+  const g = container.append("g").attr("transform", `translate (${margin.left}, ${margin.top})`);
 
   // Draw the axis
   g.append("g")
@@ -834,22 +836,24 @@ function drawStandardLayout(
         }]`
     );
 
-  const mobileQuery = window.matchMedia("(max-width: 850px)");
+  // Add zoom for smaller screen widths
+  // Uncomment for functionality to work on mobile devices
+  // const mobileQuery = window.matchMedia("(max-width: 850px)");
 
-  if (mobileQuery.matches) {
-    const zoom = d3
-      .zoom()
-      .scaleExtent([0.8, 10])
-      .on("zoom", ({ transform }) => {
-        // On mobile allow panning/zooming
-        const x = margin.left + transform.x;
-        const y = margin.top + transform.y;
-        const k = transform.k;
-        g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
-      });
+  // if (mobileQuery.matches) {
+  //   const zoom = d3
+  //     .zoom()
+  //     .scaleExtent([0.8, 10])
+  //     .on("zoom", ({ transform }) => {
+  //       // On mobile allow panning/zooming
+  //       const x = margin.left + transform.x;
+  //       const y = margin.top + transform.y;
+  //       const k = transform.k;
+  //       g.attr("transform", `translate(${x}, ${y}) scale(${k})`);
+  //     });
 
-    container.call(zoom).call(zoom.transform, d3.zoomIdentity);
-  }
+  //   container.call(zoom).call(zoom.transform, d3.zoomIdentity);
+  // }
 }
 
 /*
