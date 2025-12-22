@@ -1,5 +1,4 @@
 const categories = JSON.parse($(".container").data("categories").replaceAll(/'/g, '"').replaceAll(/True/g, '"True"'));
-console.log(categories);
 
 $(document).ready(function() {
   // Handle clicking on the "Report Mistake" card
