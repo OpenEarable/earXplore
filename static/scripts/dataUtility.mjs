@@ -225,6 +225,11 @@ function filterData(filters) {
  * @returns {Array} An array of active filter values for the specified category.
  */
 function getActiveFilters(category, filters) {
+  // Return empty array if filters haven't been initialized yet
+  if (!filters || !filters.valueFilters || !filters.rangeFilters) {
+    return [];
+  }
+  
   const valueFilters = filters.valueFilters;
   const rangeFilters = filters.rangeFilters;
 

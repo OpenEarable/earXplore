@@ -4,9 +4,12 @@ import { updateFilters } from "./dataUtility.mjs";
 const startCategories = $("#toggle-menu-container").data("start-categories");
 
 let filters = JSON.parse(window.sessionStorage.getItem("filters"));
-let categoryFilters = filters.categoryFilters || null;
+let categoryFilters = (filters && filters.categoryFilters) || null;
 if (!categoryFilters) {
   categoryFilters = startCategories;
+  if (!filters) {
+    filters = {};
+  }
   filters.categoryFilters = categoryFilters;
 
   $(".column-filter").each((index, element) => {
@@ -30,6 +33,11 @@ $(document).ready(function () {
   // When a checkbox is clicked, update the filters in local storage and the current view
   $(".column-filter").on("change", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters || !filters.categoryFilters) {
+      return;
+    }
 
     const id = $(this).attr("id");
 
@@ -44,6 +52,12 @@ $(document).ready(function () {
   // Add selecting functionality to the "Select All" button
   $("#toggleSelectAllColumns").on("click", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters) {
+      return;
+    }
+    
     const checkboxes = ["INFO"]; // Start with INFO to ensure it is always selected
 
     // Select all checkboxes and store their IDs in an array
@@ -67,6 +81,12 @@ $(document).ready(function () {
     });
 
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters) {
+      return;
+    }
+    
     filters.categoryFilters = ["INFO"]; // Always keep INFO selected
     updateFilters(filters);
 
@@ -76,6 +96,12 @@ $(document).ready(function () {
 
   $("#reset-filters-button").on("click", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters) {
+      return;
+    }
+    
     filters.categoryFilters = startCategories; // Reset to the initial categories
     updateFilters(filters);
 

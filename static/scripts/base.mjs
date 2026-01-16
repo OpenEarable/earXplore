@@ -139,6 +139,11 @@ function getSliderConfig(startValues, min, max) {
 
 function selectAll(checkboxSelection) {
   const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+  
+  // Return early if filters haven't been initialized yet
+  if (!filters || !filters.valueFilters || !filters.rangeFilters) {
+    return;
+  }
 
   // Check all the checkboxes in the selection
   const changedCheckboxes = [];
@@ -181,6 +186,11 @@ function selectAll(checkboxSelection) {
 
 function deselectAll(checkboxSelection) {
   const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+  
+  // Return early if filters haven't been initialized yet
+  if (!filters || !filters.valueFilters || !filters.rangeFilters) {
+    return;
+  }
 
   // Uncheck all the checkboxes in the selection
   const changedCheckboxes = [];
@@ -223,6 +233,11 @@ function deselectAll(checkboxSelection) {
     // Get the ID of the checkbox and convert it to a format suitable for storage
     const id = convertToID($(this).attr("id"));
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters || !filters.valueFilters) {
+      return;
+    }
 
     if (this.checked && !filters.valueFilters.includes(id)) {
       // Add the ID to the session storage
