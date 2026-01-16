@@ -1,43 +1,34 @@
 import { updateFilters } from "./dataUtility.mjs";
 
-// Load the start categories from the backend
-const startCategories = $("#toggle-menu-container").data("start-categories");
-
-let filters = JSON.parse(window.sessionStorage.getItem("filters"));
-let categoryFilters = (filters && filters.categoryFilters) || null;
-if (!categoryFilters) {
-  categoryFilters = startCategories;
-  if (!filters) {
-    filters = {};
-  }
-  filters.categoryFilters = categoryFilters;
-
-  $(".column-filter").each((index, element) => {
-    const id = $(element).attr("id");
-    categoryFilters.includes(id)
-      ? $(element).prop("checked", true)
-      : $(element).prop("checked", false);
-  });
-  updateFilters(filters);
-} else {
-  // If there are category filters in session storage, set the respective checkboxes to checked
-  $(".column-filter").each((index, element) => {
-    const id = $(element).attr("id");
-    categoryFilters.includes(id)
-      ? $(element).prop("checked", true)
-      : $(element).prop("checked", false);
-  });
-}
-
 $(document).ready(function () {
+  // Load the start categories from the backend
+  const startCategories = $("#toggle-menu-container").data("start-categories");
+  
+  let filters = JSON.parse(window.sessionStorage.getItem("filters"));
+  let categoryFilters = filters.categoryFilters || null;
+  if (!categoryFilters) {
+    categoryFilters = startCategories;
+    filters.categoryFilters = categoryFilters;
+  
+    $(".column-filter").each((index, element) => {
+      const id = $(element).attr("id");
+      categoryFilters.includes(id)
+        ? $(element).prop("checked", true)
+        : $(element).prop("checked", false);
+    });
+    updateFilters(filters);
+  } else {
+    // If there are category filters in session storage, set the respective checkboxes to checked
+    $(".column-filter").each((index, element) => {
+      const id = $(element).attr("id");
+      categoryFilters.includes(id)
+        ? $(element).prop("checked", true)
+        : $(element).prop("checked", false);
+    });
+  }
   // When a checkbox is clicked, update the filters in local storage and the current view
   $(".column-filter").on("change", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
-    
-    // Return early if filters haven't been initialized yet
-    if (!filters || !filters.categoryFilters) {
-      return;
-    }
 
     const id = $(this).attr("id");
 
