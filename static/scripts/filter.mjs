@@ -5,9 +5,12 @@ $(document).ready(function () {
   const startCategories = $("#toggle-menu-container").data("start-categories");
   
   let filters = JSON.parse(window.sessionStorage.getItem("filters"));
-  let categoryFilters = filters.categoryFilters || null;
+  let categoryFilters = (filters && filters.categoryFilters) || null;
   if (!categoryFilters) {
     categoryFilters = startCategories;
+    if (!filters) {
+      filters = {};
+    }
     filters.categoryFilters = categoryFilters;
   
     $(".column-filter").each((index, element) => {
@@ -29,6 +32,11 @@ $(document).ready(function () {
   // When a checkbox is clicked, update the filters in local storage and the current view
   $(".column-filter").on("change", function () {
     const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    
+    // Return early if filters haven't been initialized yet
+    if (!filters || !filters.categoryFilters) {
+      return;
+    }
 
     const id = $(this).attr("id");
 
