@@ -68,8 +68,7 @@ $(document).ready(function () {
       noUiSlider
         .create(this, getSliderConfig([min, max], min, max))
         .on("change", function (values, handle) {
-          const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
-          if (!filters.rangeFilters) filters.rangeFilters = {};
+          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
           filters.rangeFilters[category] = values;
           updateFilters(filters);
         });
@@ -91,8 +90,7 @@ $(document).ready(function () {
       noUiSlider
         .create(slider[0], getSliderConfig(values, min, max))
         .on("change", function (values, handle) {
-          const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
-          if (!filters.rangeFilters) filters.rangeFilters = {};
+          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
           filters.rangeFilters[category] = values;
           updateFilters(filters);
         });

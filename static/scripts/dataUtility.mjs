@@ -189,7 +189,7 @@ function filterData(filters) {
       const filterValues = getActiveFilters(category, filters);
 
       // For range filters, we need to check if the data falls within the specified range
-      if (filters.rangeFilters && Object.keys(filters.rangeFilters).includes(category)) {
+      if (Object.keys(filters.rangeFilters).includes(category)) {
         return dataItem[category] >= filterValues[0] && dataItem[category] <= filterValues[1];
       }
 
