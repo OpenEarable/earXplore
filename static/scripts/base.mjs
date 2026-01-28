@@ -68,8 +68,8 @@ $(document).ready(function () {
       noUiSlider
         .create(this, getSliderConfig([min, max], min, max))
         .on("change", function (values, handle) {
-          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
-          filters.rangeFilters[category] = values;
+        const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+          if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
           updateFilters(filters);
         });
 
@@ -90,8 +90,8 @@ $(document).ready(function () {
       noUiSlider
         .create(slider[0], getSliderConfig(values, min, max))
         .on("change", function (values, handle) {
-          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
-          filters.rangeFilters[category] = values;
+        const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+          if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
           updateFilters(filters);
         });
     }
@@ -138,7 +138,8 @@ $(document).ready(function () {
   }
 
   function selectAll(checkboxSelection) {
-    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+      if (!filters.rangeFilters) filters.rangeFilters = {};
     
     // Return early if filters haven't been initialized yet
     if (!filters || !filters.valueFilters || !filters.rangeFilters) {
@@ -185,7 +186,8 @@ $(document).ready(function () {
   }
 
   function deselectAll(checkboxSelection) {
-    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+      if (!filters.rangeFilters) filters.rangeFilters = {};
     
     // Return early if filters haven't been initialized yet
     if (!filters || !filters.valueFilters || !filters.rangeFilters) {
@@ -232,7 +234,8 @@ $(document).ready(function () {
     $(".value-filter").on("change", function () {
       // Get the ID of the checkbox and convert it to a format suitable for storage
       const id = convertToID($(this).attr("id"));
-      const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+      const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+        if (!filters.rangeFilters) filters.rangeFilters = {};
       
       // Return early if filters haven't been initialized yet
       if (!filters || !filters.valueFilters) {
@@ -250,7 +253,8 @@ $(document).ready(function () {
     });
 
     $(".exclusive-filter").on("click", function () {
-      const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+      const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+      if (!filters.rangeFilters) filters.rangeFilters = {};
       const category = $(this).data("col");
 
       if (filters.exclusiveFilters.includes(category)) {
