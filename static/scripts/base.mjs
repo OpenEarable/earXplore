@@ -3,7 +3,6 @@ import { convertToID, updateFilters, _dmCol, _dmOptions, _otCols, _otRareValues,
 
 
 $(document).ready(function () {
-
   // Highlight the current view in the navbar
   const selectedView = $("nav").data("current-view");
   $(".navbar-item").each((index, element) => {
@@ -13,14 +12,14 @@ $(document).ready(function () {
   });
 
   /*
-  * Merge all the filters into a single object
-  * This object will be used to filter the data displayed on the page
-  * The filters are stored in the session storage to persist across page reloads
-  * The filters are stored in the following format:
-  * {valueFilters: [value1-category1, value2-category1, ..., valueN-categoryN],
-  * rangeFilters: {rangeCategory: [handle1-value, handle2-value], rangeCategory2: [handle1-value], ...},
-  * categoryFilters: [category1, category2, ...]} <--- will not be set here, but will be set in the respective scripts
-  */
+   * Merge all the filters into a single object
+   * This object will be used to filter the data displayed on the page
+   * The filters are stored in the session storage to persist across page reloads
+   * The filters are stored in the following format:
+   * {valueFilters: [value1-category1, value2-category1, ..., valueN-categoryN],
+   * rangeFilters: {rangeCategory: [handle1-value, handle2-value], rangeCategory2: [handle1-value], ...},
+   * categoryFilters: [category1, category2, ...]} <--- will not be set here, but will be set in the respective scripts
+   */
 
   // Load the current value filters from the session storage
   let filters = JSON.parse(window.sessionStorage.getItem("filters")) || null;
@@ -154,8 +153,8 @@ $(document).ready(function () {
       noUiSlider
         .create(this, getSliderConfig([min, max], min, max, unboundedMax))
         .on("change", function (values, handle) {
-        const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
-          if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
+          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+          filters.rangeFilters[category] = values;
           updateFilters(filters);
         });
 
@@ -177,8 +176,8 @@ $(document).ready(function () {
       noUiSlider
         .create(slider[0], getSliderConfig(values, min, max, unboundedMax))
         .on("change", function (values, handle) {
-        const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
-          if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
+          const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+          filters.rangeFilters[category] = values;
           updateFilters(filters);
         });
     }
@@ -404,10 +403,9 @@ $(document).ready(function () {
       updateFilters(filters);
     });
 
-    $(".exclusive-filter").on("click", function () {
-      const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
-      if (!filters.rangeFilters) filters.rangeFilters = {};
-      const category = $(this).data("col");
+  $(".exclusive-filter").on("click", function () {
+    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    const category = $(this).data("col");
 
       if (filters.exclusiveFilters.includes(category)) {
         // If the category is already in the exclusive filters, remove it
