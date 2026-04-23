@@ -55,11 +55,6 @@
       defer
     ></script>
     <script src="https://cdn.jsdelivr.net/npm/d3@7" defer></script>
-    <script src="https://cdn.botpress.cloud/webchat/v3.6/inject.js"></script>
-    <script
-      src="https://files.bpcontent.cloud/2026/04/15/09/20260415093154-UPVWYIJO.js"
-      defer
-    ></script>
 
     {# Dynamic Section #} {% block head %}
     <title>
@@ -122,7 +117,7 @@
       }
     </script>
     {% endif %} {# Mask for the Sidebar #}
-    <div id="mask"></div>
+    <div id="mask" aria-hidden="true"></div>
 
     {# Left Section #}
     <div class="left-section">
@@ -517,6 +512,40 @@
         </div>
       </div>
       {% endfor %}
+    </aside>
+
+    {# Chatbot Button #}
+    <button id="chatbot-btn" aria-label="Open chatbot" title="Chat">
+      Chat
+    </button>
+
+    {# Chatbot Overlay #}
+    <div id="chatbot-overlay" aria-hidden="true"></div>
+
+    {# Chatbot Panel #}
+    <aside
+      id="chatbot-panel"
+      aria-hidden="true"
+      aria-label="Chatbot panel"
+      role="dialog"
+      aria-modal="true"
+      inert
+    >
+      <div class="chatbot-header">
+        <div id="chatbot-name">Assistant</div>
+        <button id="chatbot-close" aria-label="Close chatbot">x</button>
+      </div>
+      <div class="chatbot-body" id="chatbot-messages">
+        <p>Hi! How can I help you?</p>
+      </div>
+      <form class="chatbot-input-row" id="chatbot-form">
+        <input
+          id="chatbot-input"
+          type="text"
+          placeholder="Type your message..."
+        />
+        <button type="submit">Send</button>
+      </form>
     </aside>
 
     {# Modal for study information #}
