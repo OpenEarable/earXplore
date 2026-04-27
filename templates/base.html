@@ -533,10 +533,13 @@
     >
       <div class="chatbot-header">
         <div id="chatbot-name">Assistant</div>
-        <button id="chatbot-close" aria-label="Close chatbot">x</button>
+        <div id="chatbot-func">
+          <button id="chatbot-reset" aria-label="Reset chatbot">Reset</button>
+          <button id="chatbot-close" aria-label="Close chatbot">X</button>
+        </div>
       </div>
       <div class="chatbot-body" id="chatbot-messages">
-        <p>Hi! How can I help you?</p>
+        <div class="message bot-message">Hi! How can I help you?</div>
       </div>
       <form class="chatbot-input-row" id="chatbot-form">
         <input

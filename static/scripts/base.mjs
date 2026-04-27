@@ -515,8 +515,44 @@ $(document).ready(function () {
     closeChatbot();
   });
 
+  $("#chatbot-reset").on("click", function () {
+    resetChatbot();
+  });
+
   // Remove later
-  $("#chatbot-form").on("submit", function (e) {
+  $("#chatbot-form").on("submit", async function (e) {
     e.preventDefault();
+
+    // Push the user input to the messages array in session storage
+    const userInput = $("#chatbot-input").val();
+    if (userInput.trim() === "") {
+      return;
+    }
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+    messages.push({ sender: "user", text: userInput });
+
+    // Display the user message in the chatbot
+    $("#chatbot-messages").append(
+      `<div class="message user-message">${userInput}</div>`,
+    );
+
+    // Clear the input field
+    $("#chatbot-input").val("");
+
+    // Process the user query and get the bot response
+    const botResponse = await processLLMResponse(userInput);
+
+    // Display the bot response in the chatbot
+    $("#chatbot-messages").append(
+      `<div class="message bot-message">${botResponse}</div>`,
+    );
+
+    // Push the bot response to the messages array in session storage
+    messages.push({ sender: "bot", text: botResponse });
+    window.sessionStorage.setItem("messages", JSON.stringify(messages));
+
+    // Scroll to the bottom of the chatbot messages
+    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
   });
 });
