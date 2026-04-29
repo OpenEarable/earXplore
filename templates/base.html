@@ -55,6 +55,7 @@
     data-filter-categories="{{ filter_categories }}"
     data-parenthical-categories="{{ parenthical_columns }}"
     data-explanations="{{ explanations }}"
+    data-performance-metrics-mapping="{{ performance_metrics_mapping }}"
   >
     {# Success Message Alert #} {% if success_message %}
     <div
@@ -393,6 +394,76 @@
             </div>
           </div>
           {% endfor %}
+
+          {# Performance metrics block – rendered last, no sub-headings for type checkboxes #}
+          {% if panel.performance_block and panel.performance_block.slider %}
+          <div class="filter-group mt-2" id="performance-metrics-block">
+            {# Hidden sentinel divs so the modal loop picks up the 4 real performance columns #}
+            {% for metric_type, eval_map in panel.performance_block.col_map.items() %}
+              {% for eval_type, col_name in eval_map.items() %}
+              <div class="filter-group d-none" data-col="{{ col_name }}"></div>
+              {% endfor %}
+            {% endfor %}
+            <strong>{{ panel.performance_block.slider.value }}</strong>
+            {% if panel.performance_block.slider.explanation %}
+            <span title="{{ panel.performance_block.slider.explanation }}" class="ms-1">
+              <img
+                src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
+                alt="Question Mark Icon within a circle"
+                class="question-circle"
+              />
+            </span>
+            {% endif %}
+            <br />
+            <div class="slider-container">
+              <div
+                class="range-slider"
+                data-col="{{ panel.performance_block.slider.value }}"
+                data-min="{{ panel.performance_block.slider.min_value }}"
+                data-max="{{ panel.performance_block.slider.max_value }}"
+              ></div>
+            </div>
+
+            {# All type/eval/NA checkboxes in one single wrapping row #}
+            <div class="d-flex flex-wrap flex-row gap-1 mt-2">
+              {% for value in panel.performance_block.metric_types %}
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  class="value-filter form-check-input"
+                  name="{{ value }}"
+                  value="{{ value }}"
+                  id="{{ value | replace(' ', '€') }}--Performance_Metric_Type"
+                />
+                <label for="{{ value | replace(' ', '€') }}--Performance_Metric_Type">{{ value }}</label>
+              </div>
+              {% endfor %}
+              {% for value in panel.performance_block.eval_types %}
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  class="value-filter form-check-input"
+                  name="{{ value }}"
+                  value="{{ value }}"
+                  id="{{ value | replace(' ', '€') }}--Performance_Evaluation_Type"
+                />
+                <label for="{{ value | replace(' ', '€') }}--Performance_Evaluation_Type">{{ value }}</label>
+              </div>
+              {% endfor %}
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  class="value-filter form-check-input"
+                  name="Include N/A"
+                  value="Include N/A"
+                  id="Include€N/A--Performance_NA_Include"
+                />
+                <label for="Include€N/A--Performance_NA_Include">Include N/A</label>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
         </div>
       </div>
       {% endfor %}

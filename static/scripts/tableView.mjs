@@ -2,13 +2,14 @@ import { data, showStudyModal, filterData } from "./dataUtility.mjs";
 
 $(document).ready(function () {
   const table = $("#table");
-  const categories = [
-    "INFO",
-    "ID",
-    ...$("body").data("filter-categories"),
-    "Study Link",
-    "Authors",
-  ];
+  // Build the column ordering from the toggle menu checkboxes, which reflect data[0].keys() order.
+  // This includes ALL columns (including excluded sidebar ones like performance metrics),
+  // so toggled-on columns always appear in the correct relative position.
+  const categories = ["INFO", "ID"];
+  $("#columnToggles .column-filter").each(function () {
+    categories.push($(this).attr("id"));
+  });
+  categories.push("Study Link", "Authors");
   const infoCirclePath = table.data("info-circle-path");
   
   let categoryOrder =

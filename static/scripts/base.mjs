@@ -95,6 +95,30 @@ $(document).ready(function () {
           updateFilters(filters);
         });
     }
+
+    // Also initialize any new sliders that are not yet in session storage
+    $(".range-slider").each(function () {
+      const category = $(this).data("col");
+      if (rangeFilters[category] !== undefined) return; // already initialized above
+
+      const min = $(this).data("min");
+      const max = $(this).data("max");
+      const slider = this;
+
+      noUiSlider
+        .create(this, getSliderConfig([min, max], min, max))
+        .on("change", function (values, handle) {
+          const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+          if (!filters.rangeFilters) filters.rangeFilters = {};
+          filters.rangeFilters[category] = values;
+          updateFilters(filters);
+        });
+
+      rangeFilters[category] = slider.noUiSlider.get();
+    });
+
+    filters.rangeFilters = rangeFilters;
+    updateFilters(filters);
   }
 
   // If there are no exclusive filters in session storage, initialize them as an empty array
@@ -135,6 +159,49 @@ $(document).ready(function () {
         },
       },
     };
+  }
+
+  // Auto-uncheck the "Include N/A" performance checkbox and remove it from session storage.
+  // Called when the performance slider is moved or when metric/eval type checkboxes change.
+  function autoUncheckPerformanceNA() {
+    const naCheckbox = document.getElementById("Include\u20acN/A--Performance_NA_Include");
+    if (!naCheckbox || !naCheckbox.checked) return; // already unchecked, nothing to do
+    naCheckbox.checked = false;
+    const f = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+    if (!f.valueFilters) return;
+    const naId = "Include N/A--Performance_NA_Include";
+    const idx = f.valueFilters.indexOf(naId);
+    if (idx !== -1) f.valueFilters.splice(idx, 1);
+    updateFilters(f);
+  }
+
+  // Auto-check the "Include N/A" checkbox and add it to session storage.
+  // Called when the performance slider is returned to its full default range.
+  function autoCheckPerformanceNA() {
+    const naCheckbox = document.getElementById("Include\u20acN/A--Performance_NA_Include");
+    if (!naCheckbox || naCheckbox.checked) return; // already checked, nothing to do
+    naCheckbox.checked = true;
+    const f = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
+    if (!f.valueFilters) return;
+    const naId = "Include N/A--Performance_NA_Include";
+    if (!f.valueFilters.includes(naId)) f.valueFilters.push(naId);
+    updateFilters(f);
+  }
+
+  // Attach an additional change listener to the performance slider so N/A is auto-managed when it moves
+  const _perfSliderEl = $(".range-slider[data-col='Accuracy/F1-Score of Interaction Detection']");
+  if (_perfSliderEl.length && _perfSliderEl[0].noUiSlider) {
+    const _perfMin = parseFloat(_perfSliderEl.data("min"));
+    const _perfMax = parseFloat(_perfSliderEl.data("max"));
+    _perfSliderEl[0].noUiSlider.on("change", function (values) {
+      const lo = parseFloat(values[0]);
+      const hi = parseFloat(values[1]);
+      if (lo <= _perfMin && hi >= _perfMax) {
+        autoCheckPerformanceNA();
+      } else {
+        autoUncheckPerformanceNA();
+      }
+    });
   }
 
   function selectAll(checkboxSelection) {
@@ -249,6 +316,12 @@ $(document).ready(function () {
         // Remove the ID from the session storage
         filters.valueFilters.splice(filters.valueFilters.indexOf(id), 1);
       }
+
+      // Auto-uncheck the N/A checkbox when metric/eval type selections change
+      if (id.endsWith("--Performance_Metric_Type") || id.endsWith("--Performance_Evaluation_Type")) {
+        autoUncheckPerformanceNA();
+      }
+
       updateFilters(filters);
     });
 

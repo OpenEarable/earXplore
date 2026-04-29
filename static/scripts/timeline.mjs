@@ -32,6 +32,16 @@ $(document).ready(function () {
       `<option value="${category}">${shortCategory}</option>`
     );
   });
+  // Also add performance metric columns (excluded from sidebar but valid for coloring)
+  const _perfMappingTl = $("body").data("performance-metrics-mapping") || {};
+  Object.values(_perfMappingTl).forEach(evalMap => {
+    Object.values(evalMap).forEach(colName => {
+      const shortName = colName.split("_").pop();
+      $("#timelineColorCategory").append(
+        `<option value="${colName}">${shortName}</option>`
+      );
+    });
+  });
   
   // Set the default value for the dropdown menu
   let colorCategory = window.sessionStorage.getItem("colorCategory") || "";

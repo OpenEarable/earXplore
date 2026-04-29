@@ -40,6 +40,9 @@ START_CATEGORY_FILTERS = json.dumps([])
 # Categories whose explanations should be formatted in a special way
 SPECIAL_FORMAT_EXPLANATIONS = []
 
+# Columns for combined performance metrics filtering
+PERFORMANCE_METRICS_COLUMNS = []
+
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
@@ -80,6 +83,7 @@ class Panel:
         self.filters = filters if filters is not None else []
         self.select_deselect_buttons = select_deselect_buttons
         self.initial_visibility = initial_visibility
+        self.performance_block = None  # Optional special block rendered at the bottom of the panel
 
 # custom sort the values of columns in the data
 def custom_sort(values):
@@ -104,7 +108,7 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS
+    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
     ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
@@ -115,6 +119,7 @@ def load_data(config_path):
     INITIALLY_HIDDEN_PANELS = config.get("initially-hidden-panels", [])
     START_CATEGORY_FILTERS = json.dumps(["INFO"] + config.get("start-category-filters", []))
     SPECIAL_FORMAT_EXPLANATIONS = config.get("special-format-explanations", [])
+    PERFORMANCE_METRICS_COLUMNS = config.get("performance-metrics-columns", [])
 
     # Load data from CSV file into data variable
     try:
@@ -212,6 +217,26 @@ def additional_data():
     
     return helper
 
+def get_performance_metrics_mapping():
+    """
+    Generate a mapping for performance metrics filtering.
+    Returns a dictionary that maps checkbox selections to actual data columns.
+    """
+    if not PERFORMANCE_METRICS_COLUMNS:
+        return {}
+    
+    mapping = {
+        "Accuracy": {
+            "User-Dependent": "Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)",
+            "User-Independent": "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)"
+        },
+        "F1-Score": {
+            "User-Dependent": "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)",
+            "User-Independent": "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"
+        }
+    }
+    return mapping
+
 def generate_sidebar_panels(data, explanations):
     # Create a list for the panels on the side bar
     sidebar_panels = []
@@ -292,6 +317,42 @@ def generate_sidebar_panels(data, explanations):
             new_filter.explanation = explanation
             new_panel.filters.append(new_filter)
         sidebar_panels.append(new_panel)
+
+    # Add special performance metrics block (slider + type checkboxes + N/A) at the bottom of the Interaction panel
+    if PERFORMANCE_METRICS_COLUMNS:
+        for panel in sidebar_panels:
+            if panel.value == "Interaction":
+                # Calculate min and max values across all 4 performance columns
+                all_values = []
+                for row in data:
+                    for col in PERFORMANCE_METRICS_COLUMNS:
+                        val = row.get(col, 'N/A')
+                        if val != 'N/A' and val != '':
+                            try:
+                                numeric_val = float(str(val).split('(')[0].strip())
+                                all_values.append(numeric_val)
+                            except (ValueError, AttributeError):
+                                pass
+
+                if all_values:
+                    min_value = int(min(all_values))
+                    max_value = int(max(all_values))
+                    performance_slider = Slider(
+                        value="Accuracy/F1-Score of Interaction Detection",
+                        min_value=min_value,
+                        max_value=max_value,
+                        explanation="The system's ability to accurately detect and interpret interactions, considering only the most basic reported condition and setting (e.g., sitting in a lab) for consistency. Only applies to studies reporting accuracies/F-1 scores."
+                    )
+                else:
+                    performance_slider = None
+
+                panel.performance_block = {
+                    'slider': performance_slider,
+                    'metric_types': ["Accuracy", "F1-Score"],
+                    'eval_types': ["User-Dependent", "User-Independent"],
+                    'col_map': get_performance_metrics_mapping(),
+                }
+                break
 
     # Panel for advanced filters should be at the end
     sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
@@ -399,7 +460,7 @@ def home():
     if success_message:
         print(f"Success message detected: {success_message}")
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, success_message=success_message)
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -431,7 +492,7 @@ def bar_chart():
     if not isinstance(titles, list):
         return render_template("error.html", error=titles), 500
 
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS,)
+    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
 
 @app.get("/similarity")
 def similarity():
@@ -455,12 +516,16 @@ def similarity():
     
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories))
+    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
 
 @app.get("/timeline")
 def timeline():
     config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    data, explanations = load_data(config_path=config_path)
+    result = load_data(config_path=config_path)
+    if isinstance(result, str):
+        return render_template("error.html", error=result), 500
+    
+    data, explanations = result
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
     
@@ -478,7 +543,7 @@ def timeline():
     citation_matrix, coauthor_matrix = load_citation_data()
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories))
+    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
 
 @app.get('/add_study')
 def add_study():

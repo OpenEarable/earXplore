@@ -17,6 +17,27 @@ const parenthicalCategories = $("body").data("parenthical-categories");
 
 const filterCategories = $("body").data("filter-categories");
 
+const performanceMetricsMapping = $("body").data("performance-metrics-mapping") || {};
+const PERFORMANCE_SLIDER_KEY = "Accuracy/F1-Score of Interaction Detection";
+
+// Flat set of all actual performance metric column names
+const performanceColumns = new Set(
+  Object.values(performanceMetricsMapping).flatMap(evalMap => Object.values(evalMap))
+);
+
+/**
+ * Given a numeric performance value, returns its bucket label (e.g. "96-100", "91-95").
+ * Bucket size is 5. The topmost bucket is "96-100".
+ *
+ * @param {number} value - Numeric accuracy / F1-score (0-100).
+ * @returns {string} Bucket label.
+ */
+function getPerformanceBucket(value) {
+  const bucketTop = Math.ceil(value / 5) * 5;  // e.g. 97 -> 100, 95 -> 95
+  const bucketBot = bucketTop - 4;             // e.g. 100 -> 96, 95 -> 91
+  return `${bucketBot}-${bucketTop}`;
+}
+
 /**
  * The abstracts for the studies passed from the backend.
  * 
@@ -184,8 +205,8 @@ function cleanDataString(category, dataString) {
 function filterData(filters) {
   // Each data entry has to match at least one value for each category to be included in the filtered data
   const activeData = data.filter(dataItem => {
-    // Each category has to be checked
-    return filterCategories.every(category => {
+    // Each regular category has to be checked
+    const passesRegularFilters = filterCategories.every(category => {
       const filterValues = getActiveFilters(category, filters);
 
       // For range filters, we need to check if the data falls within the specified range
@@ -209,8 +230,82 @@ function filterData(filters) {
       // At least one value in the data must match one of the active filters for the category
       return dataValues.some(dataValue => filterValues.includes(dataValue));
     });
+
+    if (!passesRegularFilters) return false;
+
+    // Additionally check the performance metrics slider when it is present in rangeFilters
+    if (filters.rangeFilters && filters.rangeFilters[PERFORMANCE_SLIDER_KEY] !== undefined) {
+      return passesPerformanceFilter(dataItem, filters);
+    }
+
+    return true;
   });
   return activeData;
+}
+
+/**
+ * Checks whether a data item passes the performance metrics range filter.
+ * Reads the slider range and the selected metric/evaluation type checkboxes,
+ * resolves the actual column names via performanceMetricsMapping, parses
+ * numeric values from strings like "97 (N=2)", and returns true if ANY
+ * resolved column has a value within the selected range.
+ * When the slider is at its full default range all items pass.
+ * When metric type or evaluation type selections are empty all types are used.
+ *
+ * @param {Object} dataItem - A single data entry.
+ * @param {Object} filters - The current filters object.
+ * @returns {boolean} Whether the data item passes the performance metrics filter.
+ */
+function passesPerformanceFilter(dataItem, filters) {
+  // Determine which metric types and evaluation types are selected.
+  // Empty selection means none are selected → nothing passes (return false).
+  const selectedMetricTypes = getActiveFilters("Performance_Metric_Type", filters);
+  const selectedEvalTypes = getActiveFilters("Performance_Evaluation_Type", filters);
+  if (selectedMetricTypes.length === 0 || selectedEvalTypes.length === 0) return false;
+
+  // Build the list of actual column names to check based on selected types
+  const columnsToCheck = [];
+  for (const [metricType, evalMap] of Object.entries(performanceMetricsMapping)) {
+    if (selectedMetricTypes.includes(metricType)) {
+      for (const [evalType, colName] of Object.entries(evalMap)) {
+        if (selectedEvalTypes.includes(evalType)) {
+          columnsToCheck.push(colName);
+        }
+      }
+    }
+  }
+  if (columnsToCheck.length === 0) return false;
+
+  // Check whether this item has any non-N/A value in the selected columns
+  const hasAnyValue = columnsToCheck.some(col => {
+    const rawVal = dataItem[col];
+    return rawVal && rawVal !== "N/A" && rawVal !== "";
+  });
+
+  // If all selected columns are N/A, include/exclude based on the N/A checkbox
+  if (!hasAnyValue) {
+    return getActiveFilters("Performance_NA_Include", filters).includes("Include N/A");
+  }
+
+  // At least one value exists – check the slider range
+  const range = filters.rangeFilters[PERFORMANCE_SLIDER_KEY];
+  const lo = parseFloat(range[0]);
+  const hi = parseFloat(range[1]);
+  const sliderEl = $(`.range-slider[data-col="${PERFORMANCE_SLIDER_KEY}"]`);
+  const sliderMin = parseFloat(sliderEl.data("min"));
+  const sliderMax = parseFloat(sliderEl.data("max"));
+
+  // If slider is at full default range, any item with at least one value passes
+  if (lo <= sliderMin && hi >= sliderMax) return true;
+
+  // Otherwise require at least one selected column's value to be within [lo, hi]
+  return columnsToCheck.some(col => {
+    const rawVal = dataItem[col];
+    if (!rawVal || rawVal === "N/A" || rawVal === "") return false;
+    const numVal = parseFloat(rawVal.toString().split("(")[0].trim());
+    if (isNaN(numVal)) return false;
+    return numVal >= lo && numVal <= hi;
+  });
 }
 
 /**
@@ -267,19 +362,25 @@ function sortNodesByCategory(nodes, category) {
     return {sortedNodes: nodes, colorScale: function(value) {return defaultColor}}; // No category selected, return original nodes and a default color function
   }
 
+  const isPerf = performanceColumns.has(category);
+
   // Get the unique values for the selected category
   const uniqueValues = new Set();
   const valueMap = {};
   nodes.forEach(node => {
     // Get the values for the selected category from the data matching the node ID, category is defined at this point
-    const values = cleanDataString(category, getDataEntry(node, category).toString());
+    const rawValues = cleanDataString(category, getDataEntry(node, category).toString());
     valueMap[node] = [];
 
-    // Add each value to the value map and the unique values set
-    values.forEach(value => {
-      valueMap[node].push(value);
-      uniqueValues.add(value);
-    })
+    rawValues.forEach(value => {
+      // For performance columns, map the raw numeric string to a bucket label
+      const displayVal = isPerf ? (() => {
+        const num = parseFloat(value);
+        return isNaN(num) ? "N/A" : getPerformanceBucket(num);
+      })() : value;
+      valueMap[node].push(displayVal);
+      uniqueValues.add(displayVal);
+    });
   });
 
   // Create a legend from the unique values
@@ -340,8 +441,16 @@ function createColorScale(uniqueValues) {
         // Parse as numbers for numeric comparison
         return Number(a) - Number(b);
     }
-    
-    // Use special order for specific values
+
+    // Detect performance bucket labels (e.g. "96-100", "1-5") – sort by lower bound descending, N/A last
+    const bucketRe = /^(\d+)-(\d+)$/;
+    const aIsNA = a === "N/A", bIsNA = b === "N/A";
+    const aMatch = bucketRe.exec(a), bMatch = bucketRe.exec(b);
+    if (aMatch || bMatch || aIsNA || bIsNA) {
+      if (aIsNA) return 1;
+      if (bIsNA) return -1;
+      if (aMatch && bMatch) return parseInt(bMatch[1]) - parseInt(aMatch[1]); // descending
+    }
     const orderA = specialOrders[a] || 0;
     const orderB = specialOrders[b] || 0;
     
@@ -405,7 +514,8 @@ function showStudyModal(studyID) {
 
       const heading = $(panel).find("h3")[0].innerText;
 
-      const filters = $(panel).find(".filter-group").map((index, filter) => $(filter).data("col")).get();
+      const filters = $(panel).find(".filter-group").map((index, filter) => $(filter).data("col")).get()
+        .filter(col => col !== undefined);
 
       let filtersHTML = filters
         .map(filter => `<strong>${filter.split("_").pop()}</strong>: ${entry[filter] || "N/A"}`)
@@ -428,4 +538,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket};

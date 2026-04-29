@@ -56,6 +56,16 @@ $(document).ready(function () {
       `<option value="${category}">${shortCategory}</option>`
     );
   });
+  // Also add performance metric columns (excluded from sidebar but valid for coloring)
+  const _perfMappingSim = $("body").data("performance-metrics-mapping") || {};
+  Object.values(_perfMappingSim).forEach(evalMap => {
+    Object.values(evalMap).forEach(colName => {
+      const shortName = colName.split("_").pop();
+      $("#similarityColorCategory").append(
+        `<option value="${colName}">${shortName}</option>`
+      );
+    });
+  });
   
   let colorCategory = window.sessionStorage.getItem("colorCategory") || "";
   $(`#similarityColorCategory > option[value="${colorCategory}"]`).prop(

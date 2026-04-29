@@ -4,6 +4,8 @@ import {
   specialOrders,
   showStudyModal,
   defaultColors,
+  performanceColumns,
+  getPerformanceBucket,
 } from "./dataUtility.mjs";
 
 
@@ -18,6 +20,10 @@ Intialization of the interactive elements
 $(document).ready(function () {
   // The available categories passed by the server for the bar charts
   const categories = $("body").data("filter-categories");
+  const performanceMetricsMapping = $("body").data("performance-metrics-mapping") || {};
+  // Add performance metric columns so they can appear in charts when toggled on
+  const performanceColumns = Object.values(performanceMetricsMapping).flatMap(evalMap => Object.values(evalMap));
+  const allCategories = [...categories, ...performanceColumns];
   const questionCirclePath = $("#toggle-menu-container").data(
     "question-circle-path"
   );
@@ -186,22 +192,34 @@ $(document).ready(function () {
   
   // Function to create the data in the format required by Chart.js for bar charts
   function createBarChartData(barData, category) {
-    // Count the occurrences of each value in the data entries
+    const isPerf = performanceColumns.has(category);
+
+    // Count the occurrences of each value (or bucket) in the data entries
     const occurrences = {};
     for (const entry of barData) {
       const values = cleanDataString(category, entry.toString());
       for (const value of values) {
-        occurrences[value] = (occurrences[value] || 0) + 1;
+        let key = value;
+        if (isPerf) {
+          const num = parseFloat(value);
+          key = isNaN(num) ? "N/A" : getPerformanceBucket(num);
+        }
+        occurrences[key] = (occurrences[key] || 0) + 1;
       }
     }
   
     // The keys of the occurrences will be the labels for the chart
     const labels = Object.keys(occurrences).sort((a, b) => {
+      // For performance buckets (e.g. "96-100"), sort by the lower bound numerically descending
+      if (isPerf) {
+        if (a === "N/A") return 1;
+        if (b === "N/A") return -1;
+        return parseFloat(b.split("-")[0]) - parseFloat(a.split("-")[0]);
+      }
       // Check if the labels are all convertable to numbers
       if (Object.keys(occurrences).every((key) => !isNaN(key))) {
         return parseFloat(a) - parseFloat(b);
       }
-  
       const prioA = specialOrders[a] ?? 0;
       const prioB = specialOrders[b] ?? 0;
       return prioA !== prioB ? prioA - prioB : a.localeCompare(b);
@@ -276,7 +294,7 @@ $(document).ready(function () {
   
   // Finds the full category name based on the short name provided by the checkbox
   function getFullCategory(category) {
-    return categories.find((cat) => cat.includes(category));
+    return allCategories.find((cat) => cat.includes(category));
   }
   
   /*

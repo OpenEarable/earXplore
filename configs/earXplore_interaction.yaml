@@ -1,9 +1,10 @@
 database-name: earXplore
 database-path: data.csv
 explanations-path: explanations.csv
-excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors"]
+excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors", "Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"]
 advanced-sidebar-categories: ["Main Author", "Gesture", "Keywords"]
 slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures"]
+performance-metrics-columns: ["Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"]
 select-deselect-all-categories: ["Location", "Input Body Part", "Sensing_PANEL_Sensors", "Main Author", "Gesture", "Keywords"]
 exclusive-filtering-categories: ["Sensing_PANEL_Sensors"]
 select-deselect-all-panels: ["Interaction", "Implementation", "Study", "Applications", "Motivations", "Device"]
