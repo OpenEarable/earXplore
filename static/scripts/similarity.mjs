@@ -3,6 +3,8 @@ import {
   getDataEntry,
   showStudyModal,
   sortNodesByCategory,
+  data,
+  performanceColumns,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -48,23 +50,17 @@ $(document).ready(function () {
     similarityType === "abstract" ? abstractTooltip : databaseTooltip
   );
   
-  // Populate the color nodes dropdown menu
-  filterCategories.forEach((category) => {
-    if (excluded_categories.includes(category)) return;
+  // Populate the color nodes dropdown using data[0] key order so performance
+  // columns appear at their natural position (not always at the bottom).
+  Object.keys(data[0]).forEach((category) => {
+    const isPerf = performanceColumns.has(category);
+    // Always exclude non-performance excluded categories; never exclude performance columns
+    if (!isPerf && excluded_categories.includes(category)) return;
+    if (!filterCategories.includes(category) && !isPerf) return;
     const shortCategory = category.split("_").pop();
     $("#similarityColorCategory").append(
       `<option value="${category}">${shortCategory}</option>`
     );
-  });
-  // Also add performance metric columns (excluded from sidebar but valid for coloring)
-  const _perfMappingSim = $("body").data("performance-metrics-mapping") || {};
-  Object.values(_perfMappingSim).forEach(evalMap => {
-    Object.values(evalMap).forEach(colName => {
-      const shortName = colName.split("_").pop();
-      $("#similarityColorCategory").append(
-        `<option value="${colName}">${shortName}</option>`
-      );
-    });
   });
   
   let colorCategory = window.sessionStorage.getItem("colorCategory") || "";

@@ -3,6 +3,8 @@ import {
   sortNodesByCategory,
   getDataEntry,
   showStudyModal,
+  data,
+  performanceColumns,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -24,23 +26,17 @@ $(document).ready(function () {
   // Citing order
   const citingOrder = { Cites: 0, "Cited By": 1, Coauthor: 2 };
   
-  // Populate the timeline dropdown menu
-  filterCategories.forEach((category) => {
-    if (excludedCategories.includes(category)) return;
+  // Populate the timeline dropdown using data[0] key order so performance
+  // columns appear at their natural position (not always at the bottom).
+  Object.keys(data[0]).forEach((category) => {
+    const isPerf = performanceColumns.has(category);
+    // Always exclude non-performance excluded categories; never exclude performance columns
+    if (!isPerf && excludedCategories.includes(category)) return;
+    if (!filterCategories.includes(category) && !isPerf) return;
     const shortCategory = category.split("_").pop();
     $("#timelineColorCategory").append(
       `<option value="${category}">${shortCategory}</option>`
     );
-  });
-  // Also add performance metric columns (excluded from sidebar but valid for coloring)
-  const _perfMappingTl = $("body").data("performance-metrics-mapping") || {};
-  Object.values(_perfMappingTl).forEach(evalMap => {
-    Object.values(evalMap).forEach(colName => {
-      const shortName = colName.split("_").pop();
-      $("#timelineColorCategory").append(
-        `<option value="${colName}">${shortName}</option>`
-      );
-    });
   });
   
   // Set the default value for the dropdown menu

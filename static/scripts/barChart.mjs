@@ -20,9 +20,7 @@ Intialization of the interactive elements
 $(document).ready(function () {
   // The available categories passed by the server for the bar charts
   const categories = $("body").data("filter-categories");
-  const performanceMetricsMapping = $("body").data("performance-metrics-mapping") || {};
-  // Add performance metric columns so they can appear in charts when toggled on
-  const performanceColumns = Object.values(performanceMetricsMapping).flatMap(evalMap => Object.values(evalMap));
+  // performanceColumns is the imported Set from dataUtility.mjs; spread it to build allCategories
   const allCategories = [...categories, ...performanceColumns];
   const questionCirclePath = $("#toggle-menu-container").data(
     "question-circle-path"
@@ -43,6 +41,7 @@ $(document).ready(function () {
       JSON.parse(window.sessionStorage.getItem("filters"))
     );
     const fullCategory = getFullCategory(category);
+    const isPerf = performanceColumns.has(fullCategory);
   
     const tableHTML = `
       <table class="table table-striped">
@@ -59,7 +58,14 @@ $(document).ready(function () {
         </thead>
         <tbody>
           ${activeData
-            .filter((entry) => entry[fullCategory].toString().includes(label))
+            .filter((entry) => {
+              if (isPerf) {
+                const num = parseFloat(entry[fullCategory]);
+                const bucket = isNaN(num) ? "N/A" : getPerformanceBucket(num);
+                return bucket === label;
+              }
+              return entry[fullCategory].toString().includes(label);
+            })
             .map(
               (elem) =>
                 `

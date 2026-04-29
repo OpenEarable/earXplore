@@ -1,4 +1,4 @@
-import { getDataEntry, cleanDataString, defaultColor } from './dataUtility.mjs';
+import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket } from './dataUtility.mjs';
 
 const evenPie = d3.pie()
   .value(d => 1)
@@ -10,8 +10,12 @@ function getColors(node, colorCategory, colorScale) {
     return [defaultColor];
   }
 
+  const isPerf = performanceColumns.has(colorCategory);
   const values = cleanDataString(colorCategory, getDataEntry(node, colorCategory).toString());
-  const colors = values.map(value => colorScale(value)).filter(Boolean);
+  const colors = values.map(value => {
+    const key = isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
+    return colorScale(key);
+  }).filter(Boolean);
 
   return colors;
 }
@@ -127,10 +131,14 @@ function createLegend(nodes, colorScale, category, legendContainer) {
   legendContainer.append(`<h4 id="legendTitle">${category.split("_").pop()}</h3>`);
   legendContainer.append(`<p id="legendNote">Note: Studies with multiple values are shown as pie charts</p>`);
 
+  const isPerf = performanceColumns.has(category);
   const uniqueValues = new Set();
   for (const node of nodes) {
     const values = cleanDataString(category, getDataEntry(node, category).toString());
-    values.forEach(value => uniqueValues.add(value));
+    values.forEach(value => {
+      const key = isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
+      uniqueValues.add(key);
+    });
   }
 
   const legendItems = $("<div id='legendItems'></div>");
