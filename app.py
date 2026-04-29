@@ -491,53 +491,56 @@ def load_similarity_data():
     
     return similarity_data
 
-def load_citation_data():
-    # Load citation and co-author matrices for timeline view
-    citation_matrix = []
-    coauthor_matrix = []
-    
+def load_citation_data(all_data_ids=None):
+    # Load citation and co-author matrices for timeline view.
+    # Returns two dict-of-dicts: { rowId(str): { colId(str): value } }
+    # so that JS can do matrix[nodeA][nodeB] directly.
+    # IDs present in data.csv but absent from the CSV files get all-zero rows.
+
+    if all_data_ids is None:
+        all_data_ids = []
+
+    def load_matrix(csv_path):
+        """Read a square matrix CSV and return a dict-of-dicts keyed by string ID."""
+        df = pd.read_csv(csv_path, index_col=0)
+        # Ensure both index and column names are strings
+        df.index = df.index.astype(str)
+        df.columns = df.columns.astype(str)
+
+        result = {}
+        for row_id in df.index:
+            result[row_id] = {col_id: int(df.at[row_id, col_id])
+                              for col_id in df.columns}
+
+        # Pad any IDs present in data.csv but missing from the matrix
+        for sid in all_data_ids:
+            if sid not in result:
+                # Add a zero row and a zero column entry for every existing row
+                result[sid] = {other: 0 for other in all_data_ids}
+                for other in result:
+                    if sid not in result[other]:
+                        result[other][sid] = 0
+
+        return result
+
+    citation_matrix = {}
+    coauthor_matrix = {}
+
     try:
-        # Read CSV - convert index to a column for proper processing in JS
         csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/citation_matrix.csv")
-        citation_df = pd.read_csv(csv_path, index_col=0)
-        
-        # Get column names and index
-        col_headers = citation_df.columns.tolist()
-        row_indices = citation_df.index.tolist()
-        
-        # Create header row with empty first cell plus column names
-        header_row = [""] + col_headers
-        
-        # Create matrix with header row and data rows (index + values)
-        citation_matrix = [header_row]
-        for idx in row_indices:
-            row_data = [idx] + citation_df.loc[idx].tolist()
-            citation_matrix.append(row_data)
-                
+        citation_matrix = load_matrix(csv_path)
     except Exception as e:
-        return f"Error loading citation matrix: {e}"
-    
+        print(f"Warning: could not load citation matrix: {e}")
+        # Fall back to an all-zero matrix so the timeline still renders
+        citation_matrix = {sid: {other: 0 for other in all_data_ids} for sid in all_data_ids}
+
     try:
-        # Read CSV - convert index to a column for proper processing in JS
         csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/coauthor_matrix.csv")
-        coauthor_df = pd.read_csv(csv_path, index_col=0)
-        
-        # Get column names and index
-        col_headers = coauthor_df.columns.tolist()
-        row_indices = coauthor_df.index.tolist()
-        
-        # Create header row with empty first cell plus column names
-        header_row = [""] + col_headers
-        
-        # Create matrix with header row and data rows (index + values)
-        coauthor_matrix = [header_row]
-        for idx in row_indices:
-            row_data = [idx] + coauthor_df.loc[idx].tolist()
-            coauthor_matrix.append(row_data)
-            
+        coauthor_matrix = load_matrix(csv_path)
     except Exception as e:
-        return f"Error loading coauthor matrix: {e}"
-    
+        print(f"Warning: could not load coauthor matrix: {e}")
+        coauthor_matrix = {sid: {other: 0 for other in all_data_ids} for sid in all_data_ids}
+
     return citation_matrix, coauthor_matrix
 
 @app.get("/")
@@ -641,7 +644,8 @@ def timeline():
             continue
         categories.append(category)
 
-    citation_matrix, coauthor_matrix = load_citation_data()
+    all_data_ids = [str(entry['ID']) for entry in data]
+    citation_matrix, coauthor_matrix = load_citation_data(all_data_ids)
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
     return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))

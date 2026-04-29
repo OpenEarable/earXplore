@@ -255,7 +255,7 @@ $(document).ready(function () {
     for (const node of sortedNodes) {
       for (const other of sortedNodes) {
         // Populate the links for co-authors
-        if (coauthorMatrix[node][other]) {
+        if (coauthorMatrix[node]?.[other]) {
           links.coauthorLinks.push({
             sourceID: node,
             targetID: other,
@@ -263,14 +263,14 @@ $(document).ready(function () {
         }
   
         // Populate the links for citations
-        if (citationMatrix[node][other]) {
+        if (citationMatrix[node]?.[other]) {
           links.citingLinks.push({
             sourceID: node,
             targetID: other,
           });
         }
   
-        if (citationMatrix[other][node]) {
+        if (citationMatrix[other]?.[node]) {
           links.citedByLinks.push({
             sourceID: node,
             targetID: other,
