@@ -87,6 +87,18 @@ const _tokenSearchCols = (() => {
   try { return new Set(JSON.parse(raw)); } catch (e) { return new Set(); }
 })();
 
+// Sliders with unbounded upper end: when the slider handle is at data-max, values above that
+// threshold are also included (e.g. "25+" gesture slider captures everything ≥25).
+const _unboundedMaxThresholds = (() => {
+  const map = {};
+  $(".range-slider[data-unbounded-max='true']").each(function () {
+    const col = $(this).data("col");
+    const max = parseFloat($(this).data("max"));
+    if (col && !isNaN(max)) map[col] = max;
+  });
+  return map;
+})();
+
 // ── Debug: log device-model filter config to the browser console ──────────────
 console.groupCollapsed("[earXplore] Device model filter config");
 console.log("_dmCol      :", JSON.stringify(_dmCol), " (length:", _dmCol.length, ")");
@@ -279,7 +291,14 @@ function filterData(filters) {
 
       // For range filters, we need to check if the data falls within the specified range
       if (filters.rangeFilters && Object.keys(filters.rangeFilters).includes(category)) {
-        return dataItem[category] >= filterValues[0] && dataItem[category] <= filterValues[1];
+        const lo = parseFloat(filterValues[0]);
+        const hi = parseFloat(filterValues[1]);
+        const threshold = _unboundedMaxThresholds[category];
+        // When the slider is at its max on an unbounded-max slider, include all values above too
+        const upperOk = (threshold !== undefined && hi >= threshold)
+          ? true
+          : dataItem[category] <= hi;
+        return dataItem[category] >= lo && upperOk;
       }
 
       // Every other category is a value filter
@@ -713,6 +732,7 @@ function showStudyModal(studyID) {
   infoHTML.push(`
     <h5 class="study-info-panel-header">Study Summary</h5>
     <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
+    <strong>Main Author</strong>: ${entry["Main Author"] || "N/A"}<br />
     <strong>Authors</strong>: ${entry["Authors"] || "N/A"}<br />
     <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
     <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}
@@ -720,8 +740,9 @@ function showStudyModal(studyID) {
 
   // All the selections here are present because the modal is rendered in the base template which every page extends
   $(".panel").each((index, panel) => {
-      // Skip the "Advanced Filters" panel
-      if ($(panel).data("panel-value") === "Advanced Filters") {
+      // Skip the "Metadata" panel — its fields (Title, Main Author, Authors, Keywords) are
+      // already covered by the Study Summary section above.
+      if ($(panel).data("panel-value") === "Metadata") {
         return;
       }
 
@@ -730,12 +751,9 @@ function showStudyModal(studyID) {
       const filters = $(panel).find(".filter-group").map((index, filter) => $(filter).data("col")).get()
         .filter(col => col !== undefined);
 
-      let filtersHTML = filters
+      const filtersHTML = filters
         .map(filter => `<strong>${filter.split("_").pop()}</strong>: ${entry[filter] || "N/A"}`)
         .join("<br />");
-      if (heading === "General Information") {
-        filtersHTML = `<strong>Main Author</strong>: ${entry["Main Author"] || "N/A"}<br />${filtersHTML}<br /><strong>Gesture</strong>: ${entry["Gesture"] || "N/A"}`;
-      }
 
       const panelHTML = `<h5 class="study-info-panel-header">${heading}</h5>` + filtersHTML;
       

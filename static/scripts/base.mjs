@@ -149,9 +149,10 @@ $(document).ready(function () {
       const min = $(this).data("min");
       const max = $(this).data("max");
       const category = $(this).data("col");
+      const unboundedMax = $(this).attr("data-unbounded-max") === "true";
 
       noUiSlider
-        .create(this, getSliderConfig([min, max], min, max))
+        .create(this, getSliderConfig([min, max], min, max, unboundedMax))
         .on("change", function (values, handle) {
         const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
           if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
@@ -170,10 +171,11 @@ $(document).ready(function () {
       const slider = $(`.range-slider[data-col="${category}"]`);
       const max = slider.data("max");
       const min = slider.data("min");
+      const unboundedMax = slider.attr("data-unbounded-max") === "true";
 
       // Recreate the slider with the stored configuartion
       noUiSlider
-        .create(slider[0], getSliderConfig(values, min, max))
+        .create(slider[0], getSliderConfig(values, min, max, unboundedMax))
         .on("change", function (values, handle) {
         const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
           if (!filters.rangeFilters) filters.rangeFilters = {};          filters.rangeFilters[category] = values;
@@ -189,9 +191,10 @@ $(document).ready(function () {
       const min = $(this).data("min");
       const max = $(this).data("max");
       const slider = this;
+      const unboundedMax = $(this).attr("data-unbounded-max") === "true";
 
       noUiSlider
-        .create(this, getSliderConfig([min, max], min, max))
+        .create(this, getSliderConfig([min, max], min, max, unboundedMax))
         .on("change", function (values, handle) {
           const filters = JSON.parse(window.sessionStorage.getItem("filters")) || { rangeFilters: {}, valueFilters: [], exclusiveFilters: [] };
           if (!filters.rangeFilters) filters.rangeFilters = {};
@@ -226,7 +229,10 @@ $(document).ready(function () {
     });
   }
 
-  function getSliderConfig(startValues, min, max) {
+  function getSliderConfig(startValues, min, max, unboundedMax = false) {
+    const upperTooltipFmt = unboundedMax
+      ? { to: v => Math.round(v) >= max ? `${max}+` : `${Math.round(v)}` }
+      : { to: v => `${Math.round(v)}` };
     return {
       start: startValues,
       connect: true,
@@ -234,7 +240,7 @@ $(document).ready(function () {
         min: min,
         max: max,
       },
-      tooltips: [true, true],
+      tooltips: [{ to: v => `${Math.round(v)}` }, upperTooltipFmt],
       format: {
         to: function (value) {
           return Math.round(value);

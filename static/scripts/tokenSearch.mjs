@@ -185,16 +185,7 @@ $(document).ready(function () {
     setTimeout(() => getSuggestionsEl(col).hide(), 180);
   });
 
-  // Select All: add every option as a token
-  $(document).on("click", ".token-select-all", function () {
-    const col = $(this).data("col");
-    const all = _tokenSearchOptions[col] || [];
-    setTokens(col, [...all]);
-    renderTokenBadges(col);
-    notifyFilterChange();
-  });
-
-  // Deselect All: clear all tokens (reverts to "show everything")
+  // Clear Selection: remove all tokens (reverts to "show everything")
   $(document).on("click", ".token-deselect-all", function () {
     const col = $(this).data("col");
     setTokens(col, []);

@@ -138,6 +138,7 @@ h3 {
   flex-direction: column;
   gap: 15px;
   padding: 5px;
+  padding-bottom: 14rem; /* extra space so the last token-search dropdown isn't clipped */
   max-height: 100vh;
   overflow-y: scroll;
 }

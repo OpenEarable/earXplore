@@ -12,8 +12,8 @@ mimetypes.add_type('application/javascript', '.mjs')
 # Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = []
 
-# Categories that go in the advanced filters panel
-ADVANCED_SIDEBAR_CATEGORIES = []
+# Categories that go in the metadata panel
+METADATA_SIDEBAR_CATEGORIES = []
 
 # Categories that are displayed as sliders in the sidebar, should be numerical !
 SLIDER_CATEGORIES = []
@@ -80,11 +80,12 @@ mail = Mail(app)
 
 # Template classes for sidebar panel
 class Slider:
-    def __init__(self, value:str, min_value:int, max_value:int, explanation:str = None):
+    def __init__(self, value:str, min_value:int, max_value:int, explanation:str = None, unbounded_max:bool = False):
         self.value = value
         self.min_value = min_value
         self.max_value = max_value
         self.explanation = explanation
+        self.unbounded_max = unbounded_max
 
 class Filter:
     def __init__(self, value:str, explanation:str = None, unique_values:List[str] = None, exclusive_filtering:bool = False, select_deselect_all:bool = False):
@@ -128,9 +129,9 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS
+    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
-    ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
+    METADATA_SIDEBAR_CATEGORIES = config.get("metadata-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
     SELECT_DESELECT_ALL_CATEGORIES = config.get("select-deselect-all-categories", [])
     EXCLUSIVE_FILTERING_CATEGORIES = config.get("exclusive-filtering-categories", [])
@@ -286,7 +287,7 @@ def generate_sidebar_panels(data, explanations):
     sidebar_panels = []
     panels = {}
     for col in data[0].keys(): # all records in the database have the same keys = column headings = data[0].keys()
-        prefix = "Advanced Filters" if col in ADVANCED_SIDEBAR_CATEGORIES else (col.split("_")[0] if "_" in col else "General Information")
+        prefix = "Metadata" if col in METADATA_SIDEBAR_CATEGORIES else (col.split("_")[0] if "_" in col else "General Information")
         if prefix not in panels:
             panels.update({prefix: []})
         panels[prefix].append(col)
@@ -320,8 +321,14 @@ def generate_sidebar_panels(data, explanations):
             min_value = min(list(map(lambda entry: entry[col], data)))
             max_value = max(list(map(lambda entry: entry[col], data)))
 
+            unbounded_max = False
+            # Fixed / capped overrides for specific sliders
+            if col == "Interaction_PANEL_Number of Selected Gestures":
+                max_value = 25
+                unbounded_max = True  # values > 25 are all captured when slider is at max
+
             # create a new slider
-            new_slider = Slider(value=col, min_value=min_value, max_value=max_value)
+            new_slider = Slider(value=col, min_value=min_value, max_value=max_value, unbounded_max=unbounded_max)
             new_slider.explanation = explanations.get(col, None)
 
             # add the slider to the respective panel
@@ -402,8 +409,8 @@ def generate_sidebar_panels(data, explanations):
                                 pass
 
                 if all_values:
-                    min_value = int(min(all_values))
-                    max_value = int(max(all_values))
+                    min_value = 0    # fixed range: 0–100 regardless of data
+                    max_value = 100
                     performance_slider = Slider(
                         value="Accuracy/F1-Score of Interaction Detection",
                         min_value=min_value,
@@ -421,18 +428,24 @@ def generate_sidebar_panels(data, explanations):
                 }
                 break
 
-    # Panel for advanced filters should be at the end
-    sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
+    # Metadata panel should be at the end
+    sidebar_panels.sort(key=lambda x: x.value == "Metadata")
 
-    # Add "Authors" to the Advanced Filters token-search block (Authors is excluded from
-    # normal sidebar processing but should be searchable via the token UI)
-    if "Authors" in TOKEN_SEARCH_COLUMNS:
+    # Add "Authors" and "Title" to the Metadata token-search block
+    # (both are excluded from normal sidebar processing but should be searchable via the token UI)
+    if TOKEN_SEARCH_COLUMNS:
         for panel in sidebar_panels:
-            if panel.value == "Advanced Filters":
-                # Only add if not already present from the main loop
+            if panel.value == "Metadata":
                 existing_cols = {entry['column'] for entry in panel.token_search_block}
-                if 'Authors' not in existing_cols:
-                    panel.token_search_block.append({'column': 'Authors', 'label': 'Authors'})
+                for col in ["Authors", "Title"]:
+                    if col in TOKEN_SEARCH_COLUMNS and col not in existing_cols:
+                        panel.token_search_block.append({'column': col, 'label': col})
+                # Sort into desired display order
+                desired_order = ["Keywords", "Main Author", "Authors", "Title"]
+                panel.token_search_block.sort(
+                    key=lambda x: desired_order.index(x['column'])
+                    if x['column'] in desired_order else len(desired_order)
+                )
                 break
 
     # Add custom device model filter block at the bottom of the Device panel
@@ -602,7 +615,7 @@ def similarity():
     if not isinstance(similarity_data, dict):
         return render_template("error.html", error=similarity_data), 500
     
-    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
     return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
@@ -629,7 +642,7 @@ def timeline():
         categories.append(category)
 
     citation_matrix, coauthor_matrix = load_citation_data()
-    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
     return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 

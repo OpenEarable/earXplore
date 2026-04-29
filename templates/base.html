@@ -278,25 +278,7 @@
               Deselect All
             </button>
           </div>
-          {% endif %} {# Toggle button only for Advanced Filters panel #} {% if
-          panel.value == "Advanced Filters" %} {% if panel.initial_visibility ==
-          "none" %}
-          <button
-            type="button"
-            class="toggle-visibility-button"
-            data-panel="{{ panel.value }}"
-          >
-            Show
-          </button>
-          {% else %}
-          <button
-            type="button"
-            class="toggle-visibility-button"
-            data-panel="{{ panel.value }}"
-          >
-            Hide
-          </button>
-          {% endif %} {% endif %}
+          {% endif %}
         </div>
         <hr />
 
@@ -323,6 +305,7 @@
                 data-col="{{ slider.value }}"
                 data-min="{{ slider.min_value }}"
                 data-max="{{ slider.max_value }}"
+                data-unbounded-max="{{ 'true' if slider.unbounded_max else 'false' }}"
               ></div>
             </div>
           </div>
@@ -427,6 +410,7 @@
                 data-col="{{ panel.performance_block.slider.value }}"
                 data-min="{{ panel.performance_block.slider.min_value }}"
                 data-max="{{ panel.performance_block.slider.max_value }}"
+                data-unbounded-max="false"
               ></div>
             </div>
 
@@ -499,8 +483,7 @@
             <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
               <strong>{{ ts.label }}</strong>
               <div class="d-flex gap-1">
-                <button type="button" class="select-button token-select-all" data-col="{{ ts.column }}">Select All</button>
-                <button type="button" class="select-button token-deselect-all" data-col="{{ ts.column }}">Deselect All</button>
+                <button type="button" class="select-button token-deselect-all" data-col="{{ ts.column }}">Clear Selection</button>
               </div>
             </div>
             <div class="token-search-input-wrapper">
