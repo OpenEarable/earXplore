@@ -38,6 +38,38 @@ function getPerformanceBucket(value) {
   return `${bucketBot}-${bucketTop}`;
 }
 
+// Device model filter – column name and option keywords read directly from the
+// body data attributes rendered by the server, available at module load time.
+//
+// NOTE: jQuery's .data() only auto-JSON-parses values starting with '{' or '['.
+// The device-model-column value is a JSON *string* (starts with '"'), so .data()
+// returns it with the surrounding quote characters still attached.  We therefore
+// read both attributes via .attr() and call JSON.parse() ourselves.
+const _dmCol = (() => {
+  const raw = $("body").attr("data-device-model-column");
+  if (!raw) return "";
+  try { return JSON.parse(raw); } catch (e) { return raw; }
+})();
+const _dmOptions = (() => {
+  const raw = $("body").attr("data-device-model-options");
+  if (!raw) return [];
+  try { return JSON.parse(raw); } catch (e) { return []; }
+})();
+const _dmKeywords = Array.isArray(_dmOptions)
+  ? _dmOptions.filter(o => o !== "Other" && o !== "N/A")
+  : [];
+
+// ── Debug: log device-model filter config to the browser console ──────────────
+console.groupCollapsed("[earXplore] Device model filter config");
+console.log("_dmCol      :", JSON.stringify(_dmCol), " (length:", _dmCol.length, ")");
+console.log("_dmOptions  :", _dmOptions);
+console.log("_dmKeywords :", _dmKeywords);
+if (!_dmCol) {
+  console.warn("  → _dmCol is empty – device model column NOT configured or attribute missing.");
+}
+console.groupEnd();
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * The abstracts for the studies passed from the backend.
  * 
@@ -203,6 +235,11 @@ function cleanDataString(category, dataString) {
  * @returns {Object[]} Filtered array of data entries matching the filter criteria.
  */
 function filterData(filters) {
+  // One-shot debug flag: warn once if the device model branch is never reached.
+  if (typeof filterData._dmBranchLogged === "undefined") {
+    filterData._dmBranchLogged = false;
+  }
+
   // Each data entry has to match at least one value for each category to be included in the filtered data
   const activeData = data.filter(dataItem => {
     // Each regular category has to be checked
@@ -227,6 +264,46 @@ function filterData(filters) {
         return dataValues.every(dataValue => filterValues.includes(dataValue));
       }
 
+      // Device model column: split cell by comma, trim each part, apply keyword/substring matching.
+      // A part matches a selected option when:
+      //   - option is "N/A"    → part must equal "N/A" (or empty)
+      //   - option is "Other"  → part does not contain any known brand keyword
+      //   - otherwise          → part contains the option string (case-insensitive)
+      // A row passes if ANY (part, option) pair matches.
+      //
+      // IMPORTANT: restrict filterValues to only the configured keyword options.
+      // sessionStorage may contain stale exact device names from a previous version
+      // of the filter (when Device Model was a regular checklist).  Those stale
+      // values act as accidental substring matches and must be ignored here.
+      if (_dmCol && category === _dmCol) {
+        const dmFilterValues = filterValues.filter(v => _dmOptions.includes(v));
+
+        if (!filterData._dmBranchLogged) {
+          filterData._dmBranchLogged = true;
+          const stale = filterValues.filter(v => !_dmOptions.includes(v));
+          console.groupCollapsed("[earXplore] Device model branch ENTERED");
+          console.log("  active keyword options:", dmFilterValues);
+          if (stale.length > 0) {
+            console.warn("  STALE session storage entries (ignored):", stale.length, stale);
+            console.warn("  → Clear sessionStorage in DevTools (Application tab) to remove them permanently.");
+          }
+          console.groupEnd();
+        }
+
+        if (dmFilterValues.length === 0) return false;
+        const parts = dataItem[category].toString().split(",").map(s => s.trim());
+        return parts.some(part => {
+          const isNA = part === "" || part === "N/A";
+          if (isNA) return dmFilterValues.includes("N/A");
+          const lower = part.toLowerCase();
+          return dmFilterValues.some(opt => {
+            if (opt === "N/A")    return false;  // only matched above
+            if (opt === "Other")  return !_dmKeywords.some(kw => lower.includes(kw.toLowerCase()));
+            return lower.includes(opt.toLowerCase());
+          });
+        });
+      }
+
       // At least one value in the data must match one of the active filters for the category
       return dataValues.some(dataValue => filterValues.includes(dataValue));
     });
@@ -240,6 +317,13 @@ function filterData(filters) {
 
     return true;
   });
+
+  // Warn once if device model column is configured but the branch was never entered.
+  if (_dmCol && !filterData._dmBranchLogged) {
+    console.warn("[earXplore] Device model branch was NEVER entered even though _dmCol =", JSON.stringify(_dmCol),
+      "— filterCategories contains it:", filterCategories.includes(_dmCol));
+  }
+
   return activeData;
 }
 
@@ -538,4 +622,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions};

@@ -1,4 +1,4 @@
-import { convertToID, updateFilters, processQuery } from "./dataUtility.mjs";
+import { convertToID, updateFilters, processQuery, _dmCol, _dmOptions } from "./dataUtility.mjs";
 
 
 
@@ -53,6 +53,45 @@ $(document).ready(function () {
         ? $(element).prop("checked", true)
         : $(element).prop("checked", false);
     });
+
+    // Auto-add any newly introduced checkboxes that are not yet in session storage
+    // (e.g. the device model filter added after user's first visit).
+    // These default to checked so they don't silently hide rows.
+    let newFiltersAdded = false;
+    $(".value-filter").each((index, element) => {
+      const id = convertToID($(element).attr("id"));
+      if (!valueFilters.includes(id)) {
+        $(element).prop("checked", true);
+        valueFilters.push(id);
+        newFiltersAdded = true;
+      }
+    });
+    if (newFiltersAdded) {
+      filters.valueFilters = valueFilters;
+      updateFilters(filters);
+    }
+
+    // Remove stale device model entries: exact device names stored by a previous
+    // version of the filter (when Device Model was a regular checklist).  Any
+    // session-storage entry whose category matches the device model column but
+    // whose value is not one of the configured keyword options is stale and must
+    // be removed, otherwise those values act as accidental substring matches.
+    if (_dmCol && _dmOptions.length > 0) {
+      const before = valueFilters.length;
+      valueFilters = valueFilters.filter(entry => {
+        const sep = entry.indexOf("--");
+        if (sep === -1) return true;
+        const entryCategory = entry.slice(sep + 2);
+        if (entryCategory !== _dmCol) return true;          // not device model → keep
+        const entryValue = entry.slice(0, sep);
+        return _dmOptions.includes(entryValue);             // only keep known options
+      });
+      if (valueFilters.length !== before) {
+        console.log("[earXplore] Removed", before - valueFilters.length, "stale device model entries from sessionStorage.");
+        filters.valueFilters = valueFilters;
+        updateFilters(filters);
+      }
+    }
   }
 
   // If there are no range sliders in session storage, initialize them with default values

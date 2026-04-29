@@ -56,6 +56,8 @@
     data-parenthical-categories="{{ parenthical_columns }}"
     data-explanations="{{ explanations }}"
     data-performance-metrics-mapping="{{ performance_metrics_mapping }}"
+    data-device-model-column="{{ device_model_column }}"
+    data-device-model-options="{{ device_model_options }}"
   >
     {# Success Message Alert #} {% if success_message %}
     <div
@@ -460,6 +462,29 @@
                 />
                 <label for="Include€N/A--Performance_NA_Include">Include N/A</label>
               </div>
+            </div>
+          </div>
+          {% endif %}
+
+          {# Device Model custom filter block – fixed brand options with keyword matching #}
+          {% if panel.device_model_block %}
+          <div class="filter-group mt-2" id="device-model-block">
+            {# Hidden sentinel kept for compatibility; filtering reads column/options from body data-attributes #}
+            <div class="filter-group d-none" data-col="{{ panel.device_model_block.column }}"></div>
+            <strong>Device Model</strong><br />
+            <div class="d-flex flex-wrap flex-row gap-1 mt-2">
+              {% for option in panel.device_model_block.options %}
+              <div class="checkbox-wrapper">
+                <input
+                  type="checkbox"
+                  class="value-filter form-check-input"
+                  name="{{ option }}"
+                  value="{{ option }}"
+                  id="{{ option | replace(' ', '€') }}--{{ panel.device_model_block.column | replace(' ', '€') }}"
+                />
+                <label for="{{ option | replace(' ', '€') }}--{{ panel.device_model_block.column | replace(' ', '€') }}">{{ option }}</label>
+              </div>
+              {% endfor %}
             </div>
           </div>
           {% endif %}

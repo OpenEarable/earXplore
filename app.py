@@ -43,6 +43,12 @@ SPECIAL_FORMAT_EXPLANATIONS = []
 # Columns for combined performance metrics filtering
 PERFORMANCE_METRICS_COLUMNS = []
 
+# Column name for device model custom filter
+DEVICE_MODEL_COLUMN = ""
+
+# Fixed answer options for device model filter
+DEVICE_MODEL_OPTIONS = []
+
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
@@ -84,6 +90,7 @@ class Panel:
         self.select_deselect_buttons = select_deselect_buttons
         self.initial_visibility = initial_visibility
         self.performance_block = None  # Optional special block rendered at the bottom of the panel
+        self.device_model_block = None  # Optional custom device model filter block
 
 # custom sort the values of columns in the data
 def custom_sort(values):
@@ -108,7 +115,7 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS
+    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
     ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
@@ -120,6 +127,8 @@ def load_data(config_path):
     START_CATEGORY_FILTERS = json.dumps(["INFO"] + config.get("start-category-filters", []))
     SPECIAL_FORMAT_EXPLANATIONS = config.get("special-format-explanations", [])
     PERFORMANCE_METRICS_COLUMNS = config.get("performance-metrics-columns", [])
+    DEVICE_MODEL_COLUMN = config.get("device-model-column", "")
+    DEVICE_MODEL_OPTIONS = config.get("device-model-options", [])
 
     # Load data from CSV file into data variable
     try:
@@ -260,6 +269,10 @@ def generate_sidebar_panels(data, explanations):
           # skip all columns that are excluded
           if col in EXCLUDED_SIDEBAR_CATEGORIES:
             continue
+
+          # skip the device model column – it is rendered via a custom block instead
+          if DEVICE_MODEL_COLUMN and col == DEVICE_MODEL_COLUMN:
+            continue
           
           # for numerical columns, get min and max values and add Slider to the respective panel
           if col in SLIDER_CATEGORIES:
@@ -356,6 +369,16 @@ def generate_sidebar_panels(data, explanations):
 
     # Panel for advanced filters should be at the end
     sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
+
+    # Add custom device model filter block at the bottom of the Device panel
+    if DEVICE_MODEL_COLUMN and DEVICE_MODEL_OPTIONS:
+        for panel in sidebar_panels:
+            if panel.value == "Device":
+                panel.device_model_block = {
+                    'column': DEVICE_MODEL_COLUMN,
+                    'options': DEVICE_MODEL_OPTIONS,
+                }
+                break
 
     return sidebar_panels
 
@@ -460,7 +483,7 @@ def home():
     if success_message:
         print(f"Success message detected: {success_message}")
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), success_message=success_message)
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -492,7 +515,7 @@ def bar_chart():
     if not isinstance(titles, list):
         return render_template("error.html", error=titles), 500
 
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
+    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
 
 @app.get("/similarity")
 def similarity():
@@ -516,7 +539,7 @@ def similarity():
     
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
+    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
 
 @app.get("/timeline")
 def timeline():
@@ -543,7 +566,7 @@ def timeline():
     citation_matrix, coauthor_matrix = load_citation_data()
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()))
+    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
 
 @app.get('/add_study')
 def add_study():
