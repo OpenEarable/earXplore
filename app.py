@@ -149,11 +149,6 @@ def load_data(config_path):
         if 'Abstract' in data_entry:
             del data_entry['Abstract']
 
-    # delete the 'Title' column from the data
-    for data_entry in data:
-        if 'Title' in data_entry:
-            del data_entry['Title']
-
     # Load explanations from CSV file into explanations variable
     try:
         csv_path = os.path.join(os.path.dirname(__file__), explanations_path)
