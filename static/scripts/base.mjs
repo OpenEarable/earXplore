@@ -1,4 +1,4 @@
-import { convertToID, updateFilters, processQuery, _dmCol, _dmOptions } from "./dataUtility.mjs";
+import { convertToID, updateFilters, processQuery, _dmCol, _dmOptions, _otCols, _otRareValues } from "./dataUtility.mjs";
 
 
 
@@ -88,6 +88,28 @@ $(document).ready(function () {
       });
       if (valueFilters.length !== before) {
         console.log("[earXplore] Removed", before - valueFilters.length, "stale device model entries from sessionStorage.");
+        filters.valueFilters = valueFilters;
+        updateFilters(filters);
+      }
+    }
+
+    // Clean up stale rare-value filter entries for other-threshold columns.
+    // If a user's session still contains a filter for a value that has now been
+    // collapsed into "Other", remove it to avoid unexpected filtering behaviour.
+    if (_otCols.size > 0) {
+      const beforeOt = valueFilters.length;
+      valueFilters = valueFilters.filter(entry => {
+        const sep = entry.indexOf("--");
+        if (sep === -1) return true;
+        const entryCategory = entry.slice(sep + 2);
+        if (!_otCols.has(entryCategory)) return true;   // not an OT column → keep
+        const entryValue = entry.slice(0, sep);
+        const rareSet = _otRareValues[entryCategory];
+        if (!rareSet) return true;
+        return !rareSet.has(entryValue);                 // remove if value is rare
+      });
+      if (valueFilters.length !== beforeOt) {
+        console.log("[earXplore] Removed", beforeOt - valueFilters.length, "stale other-threshold entries from sessionStorage.");
         filters.valueFilters = valueFilters;
         updateFilters(filters);
       }

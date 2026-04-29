@@ -59,6 +59,27 @@ const _dmKeywords = Array.isArray(_dmOptions)
   ? _dmOptions.filter(o => o !== "Other" && o !== "N/A")
   : [];
 
+// Other-threshold columns and their rare values (values appearing < 2 times in the dataset)
+// These are passed from the server as body data attributes.
+const _otCols = (() => {
+  const raw = $("body").attr("data-other-threshold-columns");
+  if (!raw) return new Set();
+  try { return new Set(JSON.parse(raw)); } catch (e) { return new Set(); }
+})();
+
+const _otRareValues = (() => {
+  const raw = $("body").attr("data-other-threshold-rare-values");
+  if (!raw) return {};
+  try {
+    const obj = JSON.parse(raw);
+    const result = {};
+    for (const [col, vals] of Object.entries(obj)) {
+      result[col] = new Set(vals);
+    }
+    return result;
+  } catch (e) { return {}; }
+})();
+
 // ── Debug: log device-model filter config to the browser console ──────────────
 console.groupCollapsed("[earXplore] Device model filter config");
 console.log("_dmCol      :", JSON.stringify(_dmCol), " (length:", _dmCol.length, ")");
@@ -259,6 +280,19 @@ function filterData(filters) {
         return false;
       }
 
+      // Other-threshold columns: map rare values → "Other" label, then apply inclusive/exclusive match
+      if (_otCols.has(category)) {
+        const rareSet = _otRareValues[category];
+        if (!rareSet) return false;
+        const parts = dataItem[category].toString().split(",").map(s => s.trim());
+        const labels = parts.filter(p => p !== "").map(part => rareSet.has(part) ? "Other" : part);
+        if (labels.length === 0) return false;
+        if (filters.exclusiveFilters.includes(category)) {
+          return labels.every(label => filterValues.includes(label));
+        }
+        return labels.some(label => filterValues.includes(label));
+      }
+
       // If the category is in the exclusive filters, all values must be active
       if (filters.exclusiveFilters.includes(category)) {
         return dataValues.every(dataValue => filterValues.includes(dataValue));
@@ -455,6 +489,27 @@ function getDeviceModelLabels(rawCellValue) {
 }
 
 /**
+ * Maps a raw comma-separated cell value for an "other-threshold" column to display labels.
+ * Values that appear fewer than 2 times in the dataset are mapped to "Other".
+ *
+ * @param {string} category - The column name (must be in _otCols).
+ * @param {string} rawCellValue - The raw cell value from the data.
+ * @returns {string[]} Array of display labels.
+ */
+function getOtherGroupedLabels(category, rawCellValue) {
+  const rareSet = _otRareValues[category];
+  if (!rareSet) return cleanDataString(category, rawCellValue);
+  const parts = rawCellValue.split(",").map(s => s.trim());
+  const labels = new Set();
+  for (const part of parts) {
+    if (part === "") continue;
+    labels.add(rareSet.has(part) ? "Other" : part);
+  }
+  if (labels.size === 0) labels.add("N/A");
+  return Array.from(labels);
+}
+
+/**
  * Sorts an array of nodes based on a specified category, returning the sorted nodes and a color scale function.
  * 
  * This function uses {@link getDataEntry} to extract category values for each node and {@link createColorScale} to generate a color scale for the unique values.
@@ -485,6 +540,13 @@ function sortNodesByCategory(nodes, category) {
         valueMap[node].push(label);
         uniqueValues.add(label);
       });
+    } else if (_otCols.has(category)) {
+      // For other-threshold columns: map rare values to "Other" label
+      const labels = getOtherGroupedLabels(category, getDataEntry(node, category).toString());
+      labels.forEach(label => {
+        valueMap[node].push(label);
+        uniqueValues.add(label);
+      });
     } else {
       // Get the values for the selected category from the data matching the node ID, category is defined at this point
       const rawValues = cleanDataString(category, getDataEntry(node, category).toString());
@@ -507,6 +569,12 @@ function sortNodesByCategory(nodes, category) {
     colorScale = d3.scaleOrdinal()
       .domain(presentOptions)
       .range(colorPalette);
+  } else if (_otCols.has(category)) {
+    // For other-threshold columns: sort alphabetically, "Other" second-to-last, "N/A" last
+    const sortedVals = [...uniqueValues].filter(v => v !== "Other" && v !== "N/A").sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    if (uniqueValues.has("Other")) sortedVals.push("Other");
+    if (uniqueValues.has("N/A")) sortedVals.push("N/A");
+    colorScale = d3.scaleOrdinal().domain(sortedVals).range(colorPalette);
   } else {
     colorScale = createColorScale(uniqueValues);
   }
@@ -663,4 +731,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels};

@@ -8,6 +8,8 @@ import {
   getPerformanceBucket,
   _dmCol,
   _dmOptions,
+  _otCols,
+  _otRareValues,
 } from "./dataUtility.mjs";
 
 // Keywords for device model matching (all options except "Other" and "N/A")
@@ -80,6 +82,15 @@ $(document).ready(function () {
                   return !_dmKeywords.some(kw => p.toLowerCase().includes(kw.toLowerCase()));
                 });
                 return parts.some(p => p.toLowerCase().includes(label.toLowerCase()));
+              }
+              // Other-threshold columns: "Other" bar matches entries with any rare value
+              if (_otCols.has(fullCategory)) {
+                const rareSet = _otRareValues[fullCategory];
+                const parts = entry[fullCategory].toString().split(",").map(s => s.trim());
+                if (label === "Other") {
+                  return parts.some(p => p !== "" && rareSet && rareSet.has(p));
+                }
+                return parts.some(p => p === label);
               }
               return entry[fullCategory].toString().includes(label);
             })
@@ -241,6 +252,36 @@ $(document).ready(function () {
 
       // Keep _dmOptions order; drop options with zero count
       const labels = _dmOptions.filter(opt => occurrences[opt] > 0);
+      return {
+        labels,
+        datasets: [{
+          data: labels.map(l => occurrences[l]),
+          backgroundColor: labels.map((_, i) => defaultColors[i % defaultColors.length]),
+          barThickness: "flex",
+          maxBarThickness: 50,
+        }],
+      };
+    }
+
+    // Other-threshold columns: aggregate rare values under "Other" bar
+    if (_otCols.has(category)) {
+      const rareSet = _otRareValues[category];
+      const occurrences = {};
+      for (const raw of barData) {
+        const parts = raw.toString().split(",").map(s => s.trim());
+        for (const part of parts) {
+          if (part === "") continue;
+          const label = rareSet && rareSet.has(part) ? "Other" : part;
+          occurrences[label] = (occurrences[label] || 0) + 1;
+        }
+      }
+      const labels = Object.keys(occurrences).filter(l => l !== "Other" && l !== "N/A").sort((a, b) => {
+        const prioA = specialOrders[a] ?? 0;
+        const prioB = specialOrders[b] ?? 0;
+        return prioA !== prioB ? prioA - prioB : a.toLowerCase().localeCompare(b.toLowerCase());
+      });
+      if (occurrences["Other"] !== undefined) labels.push("Other");
+      if (occurrences["N/A"] !== undefined) labels.push("N/A");
       return {
         labels,
         datasets: [{

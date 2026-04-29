@@ -1,4 +1,4 @@
-import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels } from './dataUtility.mjs';
+import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels } from './dataUtility.mjs';
 
 const evenPie = d3.pie()
   .value(d => 1)
@@ -11,7 +11,10 @@ function getColors(node, colorCategory, colorScale) {
   }
 
   let values;
-  if (_dmCol && colorCategory === _dmCol) {
+  if (_otCols.has(colorCategory)) {
+    // For other-threshold columns: map rare values to "Other" label
+    values = getOtherGroupedLabels(colorCategory, getDataEntry(node, colorCategory).toString());
+  } else if (_dmCol && colorCategory === _dmCol) {
     // For device model: map raw cell to keyword labels
     values = getDeviceModelLabels(getDataEntry(node, colorCategory).toString());
   } else {
@@ -137,7 +140,17 @@ function createLegend(nodes, colorScale, category, legendContainer) {
   legendContainer.append(`<p id="legendNote">Note: Studies with multiple values are shown as pie charts</p>`);
 
   let uniqueValues;
-  if (_dmCol && category === _dmCol) {
+  if (_otCols.has(category)) {
+    // For other-threshold columns: sort alpha, "Other" second-to-last, "N/A" last
+    const present = new Set();
+    for (const node of nodes) {
+      getOtherGroupedLabels(category, getDataEntry(node, category).toString()).forEach(v => present.add(v));
+    }
+    const sorted = [...present].filter(v => v !== "Other" && v !== "N/A").sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
+    if (present.has("Other")) sorted.push("Other");
+    if (present.has("N/A")) sorted.push("N/A");
+    uniqueValues = sorted;
+  } else if (_dmCol && category === _dmCol) {
     // For device model: collect which keyword options actually appear, keep _dmOptions order
     const present = new Set();
     for (const node of nodes) {
