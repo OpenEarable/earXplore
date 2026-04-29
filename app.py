@@ -381,7 +381,11 @@ def load_citation_data():
 @app.get("/")
 def home():
     config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    data, explanations = load_data(config_path=config_path)
+    result = load_data(config_path=config_path)
+    if isinstance(result, str):
+        return render_template("error.html", error=result), 500
+    
+    data, explanations = result
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
     
@@ -400,7 +404,11 @@ def home():
 @app.get("/bar-chart")
 def bar_chart():
     config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    data, explanations = load_data(config_path=config_path)
+    result = load_data(config_path=config_path)
+    if isinstance(result, str):
+        return render_template("error.html", error=result), 500
+    
+    data, explanations = result
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
     
@@ -428,7 +436,11 @@ def bar_chart():
 @app.get("/similarity")
 def similarity():
     config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    data, explanations = load_data(config_path=config_path)
+    result = load_data(config_path=config_path)
+    if isinstance(result, str):
+        return render_template("error.html", error=result), 500
+    
+    data, explanations = result
     if not isinstance(data, list):
         return render_template("error.html", error=data), 500
     
