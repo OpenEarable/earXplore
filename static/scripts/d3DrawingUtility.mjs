@@ -1,4 +1,4 @@
-import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket } from './dataUtility.mjs';
+import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels } from './dataUtility.mjs';
 
 const evenPie = d3.pie()
   .value(d => 1)
@@ -10,14 +10,19 @@ function getColors(node, colorCategory, colorScale) {
     return [defaultColor];
   }
 
-  const isPerf = performanceColumns.has(colorCategory);
-  const values = cleanDataString(colorCategory, getDataEntry(node, colorCategory).toString());
-  const colors = values.map(value => {
-    const key = isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
-    return colorScale(key);
-  }).filter(Boolean);
+  let values;
+  if (_dmCol && colorCategory === _dmCol) {
+    // For device model: map raw cell to keyword labels
+    values = getDeviceModelLabels(getDataEntry(node, colorCategory).toString());
+  } else {
+    const isPerf = performanceColumns.has(colorCategory);
+    const rawValues = cleanDataString(colorCategory, getDataEntry(node, colorCategory).toString());
+    values = rawValues.map(value => {
+      return isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
+    });
+  }
 
-  return colors;
+  return values.map(v => colorScale(v)).filter(Boolean);
 }
 
 function drawNode(nodeSelection, colorCategory, arc, colorScale) {
@@ -131,18 +136,29 @@ function createLegend(nodes, colorScale, category, legendContainer) {
   legendContainer.append(`<h4 id="legendTitle">${category.split("_").pop()}</h3>`);
   legendContainer.append(`<p id="legendNote">Note: Studies with multiple values are shown as pie charts</p>`);
 
-  const isPerf = performanceColumns.has(category);
-  const uniqueValues = new Set();
-  for (const node of nodes) {
-    const values = cleanDataString(category, getDataEntry(node, category).toString());
-    values.forEach(value => {
-      const key = isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
-      uniqueValues.add(key);
-    });
+  let uniqueValues;
+  if (_dmCol && category === _dmCol) {
+    // For device model: collect which keyword options actually appear, keep _dmOptions order
+    const present = new Set();
+    for (const node of nodes) {
+      getDeviceModelLabels(getDataEntry(node, category).toString()).forEach(v => present.add(v));
+    }
+    uniqueValues = _dmOptions.filter(opt => present.has(opt));
+  } else {
+    const isPerf = performanceColumns.has(category);
+    const valueSet = new Set();
+    for (const node of nodes) {
+      const values = cleanDataString(category, getDataEntry(node, category).toString());
+      values.forEach(value => {
+        const key = isPerf ? (() => { const n = parseFloat(value); return isNaN(n) ? "N/A" : getPerformanceBucket(n); })() : value;
+        valueSet.add(key);
+      });
+    }
+    uniqueValues = Array.from(valueSet);
   }
 
   const legendItems = $("<div id='legendItems'></div>");
-  Array.from(uniqueValues).forEach(value => {
+  uniqueValues.forEach(value => {
     const color = colorScale(value);
     if (color) {
       const box = $(`<div class='legendBox' style='background-color: ${color}; width: 0.8em; height: 0.8em;'></div>`);

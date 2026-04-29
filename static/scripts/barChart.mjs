@@ -6,7 +6,14 @@ import {
   defaultColors,
   performanceColumns,
   getPerformanceBucket,
+  _dmCol,
+  _dmOptions,
 } from "./dataUtility.mjs";
+
+// Keywords for device model matching (all options except "Other" and "N/A")
+const _dmKeywords = Array.isArray(_dmOptions)
+  ? _dmOptions.filter(o => o !== "Other" && o !== "N/A")
+  : [];
 
 
 /*
@@ -63,6 +70,16 @@ $(document).ready(function () {
                 const num = parseFloat(entry[fullCategory]);
                 const bucket = isNaN(num) ? "N/A" : getPerformanceBucket(num);
                 return bucket === label;
+              }
+              // Device model column: use keyword/substring matching
+              if (_dmCol && fullCategory === _dmCol) {
+                const parts = entry[fullCategory].toString().split(",").map(s => s.trim());
+                if (label === "N/A") return parts.some(p => p === "" || p === "N/A");
+                if (label === "Other") return parts.some(p => {
+                  if (p === "" || p === "N/A") return false;
+                  return !_dmKeywords.some(kw => p.toLowerCase().includes(kw.toLowerCase()));
+                });
+                return parts.some(p => p.toLowerCase().includes(label.toLowerCase()));
               }
               return entry[fullCategory].toString().includes(label);
             })
@@ -199,6 +216,41 @@ $(document).ready(function () {
   // Function to create the data in the format required by Chart.js for bar charts
   function createBarChartData(barData, category) {
     const isPerf = performanceColumns.has(category);
+
+    // Device model column: aggregate by keyword option (same logic as the filter)
+    if (_dmCol && category === _dmCol) {
+      const occurrences = {};
+      for (const opt of _dmOptions) occurrences[opt] = 0;
+
+      for (const raw of barData) {
+        const parts = raw.toString().split(",").map(s => s.trim());
+        for (const part of parts) {
+          const isNA = part === "" || part === "N/A";
+          if (isNA) { occurrences["N/A"]++; continue; }
+          const lower = part.toLowerCase();
+          let matchedKeyword = false;
+          for (const kw of _dmKeywords) {
+            if (lower.includes(kw.toLowerCase())) {
+              occurrences[kw]++;
+              matchedKeyword = true;
+            }
+          }
+          if (!matchedKeyword) occurrences["Other"]++;
+        }
+      }
+
+      // Keep _dmOptions order; drop options with zero count
+      const labels = _dmOptions.filter(opt => occurrences[opt] > 0);
+      return {
+        labels,
+        datasets: [{
+          data: labels.map(l => occurrences[l]),
+          backgroundColor: labels.map((_, i) => defaultColors[i % defaultColors.length]),
+          barThickness: "flex",
+          maxBarThickness: 50,
+        }],
+      };
+    }
 
     // Count the occurrences of each value (or bucket) in the data entries
     const occurrences = {};

@@ -432,6 +432,29 @@ function getActiveFilters(category, filters) {
 }
 
 /**
+ * Maps a raw device model cell value (possibly comma-separated) to an array of
+ * keyword-based display labels (e.g. "OpenEarable", "AirPods", "Other", "N/A").
+ * Uses the same substring-matching logic as the sidebar filter and bar chart.
+ *
+ * @param {string} rawCellValue - The raw cell value from the device model column.
+ * @returns {string[]} An array of matched keyword labels (deduplicated).
+ */
+function getDeviceModelLabels(rawCellValue) {
+  const parts = rawCellValue.split(",").map(s => s.trim());
+  const labels = new Set();
+  for (const part of parts) {
+    if (part === "" || part === "N/A") { labels.add("N/A"); continue; }
+    const lower = part.toLowerCase();
+    let matched = false;
+    for (const kw of _dmKeywords) {
+      if (lower.includes(kw.toLowerCase())) { labels.add(kw); matched = true; }
+    }
+    if (!matched) labels.add("Other");
+  }
+  return Array.from(labels);
+}
+
+/**
  * Sorts an array of nodes based on a specified category, returning the sorted nodes and a color scale function.
  * 
  * This function uses {@link getDataEntry} to extract category values for each node and {@link createColorScale} to generate a color scale for the unique values.
@@ -447,28 +470,46 @@ function sortNodesByCategory(nodes, category) {
   }
 
   const isPerf = performanceColumns.has(category);
+  const isDm = _dmCol && category === _dmCol;
 
   // Get the unique values for the selected category
   const uniqueValues = new Set();
   const valueMap = {};
   nodes.forEach(node => {
-    // Get the values for the selected category from the data matching the node ID, category is defined at this point
-    const rawValues = cleanDataString(category, getDataEntry(node, category).toString());
     valueMap[node] = [];
 
-    rawValues.forEach(value => {
-      // For performance columns, map the raw numeric string to a bucket label
-      const displayVal = isPerf ? (() => {
-        const num = parseFloat(value);
-        return isNaN(num) ? "N/A" : getPerformanceBucket(num);
-      })() : value;
-      valueMap[node].push(displayVal);
-      uniqueValues.add(displayVal);
-    });
+    if (isDm) {
+      // For device model: map raw cell to keyword labels (OpenEarable, eSense, etc.)
+      const labels = getDeviceModelLabels(getDataEntry(node, category).toString());
+      labels.forEach(label => {
+        valueMap[node].push(label);
+        uniqueValues.add(label);
+      });
+    } else {
+      // Get the values for the selected category from the data matching the node ID, category is defined at this point
+      const rawValues = cleanDataString(category, getDataEntry(node, category).toString());
+      rawValues.forEach(value => {
+        // For performance columns, map the raw numeric string to a bucket label
+        const displayVal = isPerf ? (() => {
+          const num = parseFloat(value);
+          return isNaN(num) ? "N/A" : getPerformanceBucket(num);
+        })() : value;
+        valueMap[node].push(displayVal);
+        uniqueValues.add(displayVal);
+      });
+    }
   });
 
-  // Create a legend from the unique values
-  const colorScale = createColorScale(uniqueValues);
+  // Create a color scale – for device model use _dmOptions order for consistency with the bar chart
+  let colorScale;
+  if (isDm) {
+    const presentOptions = _dmOptions.filter(opt => uniqueValues.has(opt));
+    colorScale = d3.scaleOrdinal()
+      .domain(presentOptions)
+      .range(colorPalette);
+  } else {
+    colorScale = createColorScale(uniqueValues);
+  }
 
   // Sorts nodes by:
   // 1. Number of values (ascending)
@@ -622,4 +663,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels};
