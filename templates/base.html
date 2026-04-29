@@ -60,6 +60,8 @@
     data-device-model-options="{{ device_model_options }}"
     data-other-threshold-columns="{{ other_threshold_columns }}"
     data-other-threshold-rare-values="{{ other_threshold_rare_values }}"
+    data-token-search-columns="{{ token_search_columns }}"
+    data-token-search-options="{{ token_search_options }}"
   >
     {# Success Message Alert #} {% if success_message %}
     <div
@@ -491,6 +493,24 @@
           </div>
           {% endif %}
 
+          {# Token-search blocks (Main Author, Keywords, Authors, etc.) #}
+          {% for ts in panel.token_search_block %}
+          <div class="filter-group mt-2 token-search-group" data-col="{{ ts.column }}">
+            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+              <strong>{{ ts.label }}</strong>
+              <div class="d-flex gap-1">
+                <button type="button" class="select-button token-select-all" data-col="{{ ts.column }}">Select All</button>
+                <button type="button" class="select-button token-deselect-all" data-col="{{ ts.column }}">Deselect All</button>
+              </div>
+            </div>
+            <div class="token-search-input-wrapper">
+              <input type="text" class="token-search-input form-control form-control-sm" placeholder="Search {{ ts.label }}..." data-col="{{ ts.column }}" autocomplete="off" />
+              <div class="token-suggestions" data-col="{{ ts.column }}"></div>
+            </div>
+            <div class="token-selected-container" data-col="{{ ts.column }}"></div>
+          </div>
+          {% endfor %}
+
         </div>
       </div>
       {% endfor %}
@@ -549,6 +569,10 @@
     <script
       type="module"
       src="{{ url_for('static', filename='scripts/base.mjs') }}"
+    ></script>
+    <script
+      type="module"
+      src="{{ url_for('static', filename='scripts/tokenSearch.mjs') }}"
     ></script>
 
     {% block scripts %} {% endblock scripts %}

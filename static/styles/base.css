@@ -399,6 +399,97 @@ a:visited {
   }
 }
 
+/* ── Token-search filter UI ─────────────────────────────────────────────────── */
+
+.token-search-input-wrapper {
+  position: relative;
+}
+
+.token-search-input {
+  font-size: var(--font-sm);
+  border-color: #ccc;
+}
+
+.token-search-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 0.15rem rgba(184, 148, 145, 0.35);
+  outline: none;
+}
+
+/* Suggestions dropdown */
+.token-suggestions {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: calc(5 * 1.9em); /* show ≈5 items, scrollable beyond */
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.token-suggestion-item {
+  padding: 0.25em 0.5em;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.token-suggestion-item:hover {
+  background-color: #f5eae9;
+}
+
+.token-suggestion-selected {
+  background-color: #ede0df;
+  font-weight: 600;
+}
+
+.token-suggestion-selected:hover {
+  background-color: #ddc8c7;
+}
+
+/* Selected-token badges */
+.token-selected-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em;
+  margin-top: 0.35em;
+  min-height: 0;
+}
+
+.token-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  background-color: var(--color-accent);
+  color: #fff;
+  border-radius: 12px;
+  padding: 0.1em 0.45em;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.token-badge:hover {
+  background-color: var(--color-accent-dark);
+}
+
+.token-badge-remove {
+  font-size: 0.9em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */
+
 @media (max-width: 550px) {
   #nav-r {
     gap: 0.5rem;

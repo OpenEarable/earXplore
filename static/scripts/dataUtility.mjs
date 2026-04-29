@@ -80,6 +80,13 @@ const _otRareValues = (() => {
   } catch (e) { return {}; }
 })();
 
+// Token-search columns – filtering is opt-in; an empty token list means "show all"
+const _tokenSearchCols = (() => {
+  const raw = $("body").attr("data-token-search-columns");
+  if (!raw) return new Set();
+  try { return new Set(JSON.parse(raw)); } catch (e) { return new Set(); }
+})();
+
 // ── Debug: log device-model filter config to the browser console ──────────────
 console.groupCollapsed("[earXplore] Device model filter config");
 console.log("_dmCol      :", JSON.stringify(_dmCol), " (length:", _dmCol.length, ")");
@@ -265,6 +272,9 @@ function filterData(filters) {
   const activeData = data.filter(dataItem => {
     // Each regular category has to be checked
     const passesRegularFilters = filterCategories.every(category => {
+      // Token-search columns are opt-in and handled separately below; skip here
+      if (_tokenSearchCols.has(category)) return true;
+
       const filterValues = getActiveFilters(category, filters);
 
       // For range filters, we need to check if the data falls within the specified range
@@ -343,6 +353,16 @@ function filterData(filters) {
     });
 
     if (!passesRegularFilters) return false;
+
+    // Token-search filter: opt-in (empty token list = all rows pass)
+    const tokenFilters = filters.tokenFilters || {};
+    for (const [col, tokens] of Object.entries(tokenFilters)) {
+      if (!tokens || tokens.length === 0) continue;
+      const raw = dataItem[col];
+      if (raw === undefined || raw === null) return false;
+      const cellValues = raw.toString().split(",").map(s => s.trim());
+      if (!tokens.some(token => cellValues.includes(token))) return false;
+    }
 
     // Additionally check the performance metrics slider when it is present in rangeFilters
     if (filters.rangeFilters && filters.rangeFilters[PERFORMANCE_SLIDER_KEY] !== undefined) {
@@ -731,4 +751,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols};

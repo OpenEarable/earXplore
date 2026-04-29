@@ -55,6 +55,12 @@ OTHER_THRESHOLD_COLUMNS = []
 # Computed at startup: { column: [list of rare values] }
 OTHER_THRESHOLD_RARE_VALUES = {}
 
+# Columns that use token-search UI instead of checkboxes (opt-in filter: empty = show all)
+TOKEN_SEARCH_COLUMNS = []
+
+# Computed at startup: { column: sorted list of unique individual options }
+TOKEN_SEARCH_OPTIONS = {}
+
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
@@ -97,6 +103,7 @@ class Panel:
         self.initial_visibility = initial_visibility
         self.performance_block = None  # Optional special block rendered at the bottom of the panel
         self.device_model_block = None  # Optional custom device model filter block
+        self.token_search_block = []    # Optional token-search entries: [{column, label}, ...]
 
 # custom sort the values of columns in the data
 def custom_sort(values):
@@ -121,7 +128,7 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES
+    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
     ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
@@ -136,6 +143,7 @@ def load_data(config_path):
     DEVICE_MODEL_COLUMN = config.get("device-model-column", "")
     DEVICE_MODEL_OPTIONS = config.get("device-model-options", [])
     OTHER_THRESHOLD_COLUMNS = config.get("other-threshold-columns", [])
+    TOKEN_SEARCH_COLUMNS = config.get("token-search-columns", [])
 
     # Load data from CSV file into data variable
     try:
@@ -167,6 +175,19 @@ def load_data(config_path):
                 if part:
                     counts[part] = counts.get(part, 0) + 1
         OTHER_THRESHOLD_RARE_VALUES[col] = [v for v, c in counts.items() if c < 2]
+
+    # Compute unique individual options for token-search columns
+    TOKEN_SEARCH_OPTIONS = {}
+    for col in TOKEN_SEARCH_COLUMNS:
+        options = set()
+        for row in data:
+            raw = row.get(col, 'N/A')
+            if raw and str(raw) != 'N/A':
+                for part in str(raw).split(','):
+                    part = part.strip()
+                    if part and part != 'N/A':
+                        options.add(part)
+        TOKEN_SEARCH_OPTIONS[col] = sorted(options, key=lambda x: x.lower())
 
     # Load explanations from CSV file into explanations variable
     try:
@@ -287,6 +308,11 @@ def generate_sidebar_panels(data, explanations):
           # skip the device model column – it is rendered via a custom block instead
           if DEVICE_MODEL_COLUMN and col == DEVICE_MODEL_COLUMN:
             continue
+
+          # token-search columns use a custom UI instead of checkboxes
+          if col in TOKEN_SEARCH_COLUMNS:
+            new_panel.token_search_block.append({'column': col, 'label': col.split('_')[-1]})
+            continue
           
           # for numerical columns, get min and max values and add Slider to the respective panel
           if col in SLIDER_CATEGORIES:
@@ -397,6 +423,17 @@ def generate_sidebar_panels(data, explanations):
 
     # Panel for advanced filters should be at the end
     sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
+
+    # Add "Authors" to the Advanced Filters token-search block (Authors is excluded from
+    # normal sidebar processing but should be searchable via the token UI)
+    if "Authors" in TOKEN_SEARCH_COLUMNS:
+        for panel in sidebar_panels:
+            if panel.value == "Advanced Filters":
+                # Only add if not already present from the main loop
+                existing_cols = {entry['column'] for entry in panel.token_search_block}
+                if 'Authors' not in existing_cols:
+                    panel.token_search_block.append({'column': 'Authors', 'label': 'Authors'})
+                break
 
     # Add custom device model filter block at the bottom of the Device panel
     if DEVICE_MODEL_COLUMN and DEVICE_MODEL_OPTIONS:
@@ -511,7 +548,7 @@ def home():
     if success_message:
         print(f"Success message detected: {success_message}")
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), success_message=success_message)
+    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS), success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -543,7 +580,7 @@ def bar_chart():
     if not isinstance(titles, list):
         return render_template("error.html", error=titles), 500
 
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES))
+    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get("/similarity")
 def similarity():
@@ -567,7 +604,7 @@ def similarity():
     
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES))
+    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get("/timeline")
 def timeline():
@@ -594,7 +631,7 @@ def timeline():
     citation_matrix, coauthor_matrix = load_citation_data()
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES))
+    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get('/add_study')
 def add_study():

@@ -15,3 +15,4 @@ parenthical-columns: ["Interaction_PANEL_Accuracy of Interaction Detection (User
 start-category-filters: ["Main Author", "Year", "Location", "Input Body Part", "Gesture"]
 special-format-explanations: []
 other-threshold-columns: ["Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings", "Study_PANEL_Evaluation of User-Related Conditions", "Study_PANEL_Evaluation of Device-Related Conditions", "Study_PANEL_Evaluation of Environment-Related Conditions", "Applications_PANEL_Intended Applications", "Gesture"]
+token-search-columns: ["Main Author", "Keywords", "Authors"]

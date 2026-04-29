@@ -1,4 +1,4 @@
-import { convertToID, updateFilters, processQuery, _dmCol, _dmOptions, _otCols, _otRareValues } from "./dataUtility.mjs";
+import { convertToID, updateFilters, processQuery, _dmCol, _dmOptions, _otCols, _otRareValues, _tokenSearchCols } from "./dataUtility.mjs";
 
 
 
@@ -33,6 +33,12 @@ $(document).ready(function () {
   let valueFilters = filters.valueFilters || null;
   let rangeFilters = filters.rangeFilters || null;
   let exclusiveFilters = filters.exclusiveFilters || null;
+
+  // Ensure tokenFilters object is always present
+  if (!filters.tokenFilters) {
+    filters.tokenFilters = {};
+    updateFilters(filters);
+  }
 
   // If there are no value filters in session storage, meaning user is visiting for the first time, default to all value filters being selected
   if (!valueFilters) {
@@ -110,6 +116,24 @@ $(document).ready(function () {
       });
       if (valueFilters.length !== beforeOt) {
         console.log("[earXplore] Removed", beforeOt - valueFilters.length, "stale other-threshold entries from sessionStorage.");
+        filters.valueFilters = valueFilters;
+        updateFilters(filters);
+      }
+    }
+
+    // Clean up stale valueFilter entries for token-search columns.
+    // These columns no longer use checkboxes; any old entries must be removed
+    // to prevent the value list from accidentally influencing filterData.
+    if (_tokenSearchCols.size > 0) {
+      const beforeTs = valueFilters.length;
+      valueFilters = valueFilters.filter(entry => {
+        const sep = entry.indexOf("--");
+        if (sep === -1) return true;
+        const entryCategory = entry.slice(sep + 2);
+        return !_tokenSearchCols.has(entryCategory);   // remove if token-search column
+      });
+      if (valueFilters.length !== beforeTs) {
+        console.log("[earXplore] Removed", beforeTs - valueFilters.length, "stale token-search column entries from sessionStorage.");
         filters.valueFilters = valueFilters;
         updateFilters(filters);
       }
