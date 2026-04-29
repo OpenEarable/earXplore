@@ -10,7 +10,7 @@ import time
 from sklearn.metrics.pairwise import cosine_similarity
 
 
-df = pd.read_csv('data.csv')
+df = pd.read_csv('datasets/data.csv')
 
 ## DATABASE SIMILARITY RECOMPUTE
 
@@ -224,7 +224,7 @@ for i in range(n):
             similarity_matrix_std.iloc[i, j] = np.nan
 
 # Save the std similarity matrix to a CSV file
-similarity_matrix_std.to_csv('database_similarity_datasets/normalized_database_similarity.csv')
+similarity_matrix_std.to_csv('datasets/database_similarity/normalized_database_similarity.csv')
 
 
 ## ABSTRACT SIMILARITY RECOMPUTE
@@ -262,7 +262,7 @@ def get_gemini_embeddings(abstract):
 
     return result.embeddings[0].values
 
-abstract_embeddings_df = pd.read_csv('abstract_similarity_datasets/data_with_embeddings.csv')
+abstract_embeddings_df = pd.read_csv('datasets/abstract_similarity/data_with_embeddings.csv')
 ids_with_embeddings = abstract_embeddings_df['ID'].to_numpy(dtype=int)
 dataset_ids = df['ID'].to_numpy(dtype=int)
 missing_ids = ids_with_embeddings[~np.isin(ids_with_embeddings, dataset_ids)]
@@ -286,7 +286,7 @@ new_abstract_embeddings = pd.DataFrame(new_rows, columns=['ID', 'Abstract', 'Gem
 
 # Append to the existing embeddings DataFrame
 abstract_embeddings_df = pd.concat([abstract_embeddings_df, new_abstract_embeddings], ignore_index=True)
-abstract_embeddings_df.to_csv('abstract_similarity_datasets/data_with_embeddings.csv')
+abstract_embeddings_df.to_csv('datasets/abstract_similarity/data_with_embeddings.csv')
 
 # Calculate cosine sims again
 # 1. Extract embeddings as a list of vectors
@@ -299,8 +299,8 @@ similarity_matrix = cosine_similarity(embeddings)
 paper_ids = abstract_embeddings_df['ID'].tolist()
 similarity_df = pd.DataFrame(similarity_matrix, index=paper_ids, columns=paper_ids)
 np.fill_diagonal(similarity_df.values, np.nan)
-similarity_df.to_csv('abstract_similarity_datasets/abstract_similarity.csv')
+similarity_df.to_csv('datasets/abstract_similarity/abstract_similarity.csv')
 
 # Apply standard normalization
 normalized_similarity_df = standard_normalize(similarity_df)
-normalized_similarity_df.to_csv('abstract_similarity_datasets/normalized_abstract_similarity.csv')
+normalized_similarity_df.to_csv('datasets/abstract_similarity/normalized_abstract_similarity.csv')

@@ -1,6 +1,6 @@
 database-name: earXplore
-database-path: data.csv
-explanations-path: explanations.csv
+database-path: datasets/data.csv
+explanations-path: datasets/explanations.csv
 excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors", "Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"]
 device-model-column: "Device_PANEL_Device Model"
 device-model-options: ["OpenEarable", "eSense", "AirPods", "Samsung", "Sony", "Bose", "Other", "N/A"]

@@ -1,7 +1,12 @@
-citation_confirmation.xlsx
-dataset_prep.ipynb
-Dimensions_260429.csv
-high_confidence_citations.xlsx
+datasets/interconnections/citation_confirmation.xlsx
+computation_notebooks/dataset_prep.ipynb
+datasets/Dimensions_260429.csv
+datasets/interconnections/high_confidence_citations.xlsx
 .venv
 .env
 __pycache__
+**/.ipynb_checkpoints/
+*.pyc
+*.pyo
+.DS_Store
+Thumbs.db

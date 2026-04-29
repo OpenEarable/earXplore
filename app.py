@@ -208,7 +208,7 @@ def load_data(config_path):
 
 def load_abstracts():
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path, usecols=["Abstract", "ID"])  # Load only the Abstract column
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -224,7 +224,7 @@ def load_abstracts():
 
 def load_titles():
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path, usecols=["Title", "ID"])  # Load only the Title column
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -240,7 +240,7 @@ def load_titles():
 
 def additional_data():
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path, usecols=["Gesture", "Keywords"])
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -463,11 +463,11 @@ def generate_sidebar_panels(data, explanations):
 def load_similarity_data():
     try:
         # Read the similarity matrix with the first column as index
-        csv_path_as = os.path.join(os.path.dirname(__file__), "abstract_similarity_datasets/normalized_abstract_similarity.csv")
+        csv_path_as = os.path.join(os.path.dirname(__file__), "datasets/abstract_similarity/normalized_abstract_similarity.csv")
         abstract_similarity_df = pd.read_csv(csv_path_as, index_col=0)
         abstract_similarity_df = abstract_similarity_df.fillna('N/A')  # Replace actual NaN values
         abstract_similarity_df = abstract_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
-        csv_path_ds = os.path.join(os.path.dirname(__file__), "database_similarity_datasets/normalized_database_similarity.csv")
+        csv_path_ds = os.path.join(os.path.dirname(__file__), "datasets/database_similarity/normalized_database_similarity.csv")
         database_similarity_df = pd.read_csv(csv_path_ds, index_col=0)
         database_similarity_df = database_similarity_df.fillna('N/A')  # Replace actual NaN values
         database_similarity_df = database_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -527,7 +527,7 @@ def load_citation_data(all_data_ids=None):
     coauthor_matrix = {}
 
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/citation_matrix.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/interconnections/citation_matrix.csv")
         citation_matrix = load_matrix(csv_path)
     except Exception as e:
         print(f"Warning: could not load citation matrix: {e}")
@@ -535,7 +535,7 @@ def load_citation_data(all_data_ids=None):
         citation_matrix = {sid: {other: 0 for other in all_data_ids} for sid in all_data_ids}
 
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/coauthor_matrix.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/interconnections/coauthor_matrix.csv")
         coauthor_matrix = load_matrix(csv_path)
     except Exception as e:
         print(f"Warning: could not load coauthor matrix: {e}")
@@ -654,7 +654,7 @@ def timeline():
 def add_study():
     try:
         # Load the data
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path)
         
         # Extract categories and their options for the form
