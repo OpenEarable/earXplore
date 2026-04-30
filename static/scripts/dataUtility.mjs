@@ -3,7 +3,6 @@
  * 
  * @constant
  * @type {Array}
- * @see parseData
  */
 const data = $("body").data("data");
 
@@ -218,26 +217,6 @@ function getValue(htmlID) {
 /*
  * This section capsulates the utility functions for parsing and retrieving data.
  */
-
-/**
- * Parses a string containing multiple object literals into an array of objects.
- *
- * The input string should contain objects in the format `{key: 'value'}` separated by any characters.
- * Single quotes in object values are replaced with double quotes to allow JSON parsing.
- *
- * @param {string} dataString - The string containing object literals to parse.
- * @returns {Object[]} An array of parsed objects.
- */
-function parseData(dataString) {
-  // Parse the data string into an array of objects
-  const dataRegex = /{[^}]*?}/g;
-  const dataMatches = [...dataString.matchAll(dataRegex)];
-  const jsonData = [];
-  dataMatches.forEach((match) => {
-    jsonData.push(JSON.parse(match[0].replaceAll(/'/g, '"')));
-  });
-  return jsonData;
-}
 
 /**
  * Retrieves a data entry from the {@link data} by its ID.
@@ -785,4 +764,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml};

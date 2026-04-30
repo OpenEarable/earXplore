@@ -7,6 +7,7 @@ import pandas as pd
 import json
 import os
 import mimetypes
+import traceback
 import yaml
 mimetypes.add_type('application/javascript', '.mjs')
 
@@ -65,6 +66,9 @@ TOKEN_SEARCH_OPTIONS = {}
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
+
+# Path to the YAML configuration file used by all main views
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
@@ -209,61 +213,28 @@ def load_data(config_path):
 
     return data, explanations
 
-def load_abstracts():
-    try:
-        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
-        df = pd.read_csv(csv_path, usecols=["Abstract", "ID"])  # Load only the Abstract column
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        abstracts = df.to_dict(orient="records")
-    except FileNotFoundError:
-        return "data.csv file not found"
-    except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
-    except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    return abstracts
+def load_abstracts_and_titles():
+    """Load abstracts and titles from the dataset CSV in a single read.
 
-def load_titles():
+    Returns:
+        (abstracts, titles, None) on success, where abstracts and titles are
+        lists of dicts with keys ``"ID"`` and ``"Abstract"``/``"Title"``
+        respectively.
+        (None, None, error_string) on failure.
+    """
     try:
         csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
-        df = pd.read_csv(csv_path, usecols=["Title", "ID"])  # Load only the Title column
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        titles = df.to_dict(orient="records")
+        df = pd.read_csv(csv_path, usecols=["ID", "Abstract", "Title"])
+        df = df.fillna('N/A').replace('nan', 'N/A')
+        abstracts = df[["ID", "Abstract"]].to_dict(orient="records")
+        titles = df[["ID", "Title"]].to_dict(orient="records")
+        return abstracts, titles, None
     except FileNotFoundError:
-        return "data.csv file not found"
+        return None, None, "data.csv file not found"
     except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
+        return None, None, "data.csv file is empty"
     except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    return titles
-
-def additional_data():
-    try:
-        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
-        df = pd.read_csv(csv_path, usecols=["Gesture", "Keywords"])
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        additional_data = df.to_dict(orient="records")
-    except FileNotFoundError:
-        return "data.csv file not found"
-    except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
-    except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    helper = {}
-    for entry in additional_data:
-        for key in entry.keys():
-            if key not in helper:
-                helper[key] = [entry[key]]
-            else:    
-                helper[key].append(entry[key])
-    
-    return helper
+        return None, None, f"Error loading data.csv: {e}"
 
 def get_performance_metrics_mapping():
     """
@@ -546,21 +517,62 @@ def load_citation_data(all_data_ids=None):
 
     return citation_matrix, coauthor_matrix
 
-@app.get("/")
-def home():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
+
+def _load_view_data():
+    """Load, validate, and pre-process all data needed by the four main views.
+
+    Returns:
+        ``((data, explanations, sidebar_panels), None)`` on success.
+        ``(None, (response, status_code))`` on failure — routes can do
+        ``if err: return err`` to short-circuit immediately.
+    """
+    result = load_data(config_path=CONFIG_PATH)
     if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
+        return None, (render_template("error.html", error=result), 500)
     data, explanations = result
     if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
+        return None, (render_template("error.html", error=data), 500)
     if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+        return None, (render_template("error.html", error=explanations), 500)
+    return (data, explanations, generate_sidebar_panels(data, explanations)), None
+
+
+def _build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles):
+    """Build the template kwargs shared by all four main views.
+
+    Centralising these here means adding a new global config key only requires
+    a change in one place instead of four.
+    """
+    return dict(
+        data=data,
+        data_json=json.dumps(data),
+        sidebar_panels=sidebar_panels,
+        explanations=json.dumps(explanations),
+        abstracts=json.dumps(abstracts),
+        titles=json.dumps(titles),
+        parenthical_columns=json.dumps(PARENTHICAL_COLUMNS),
+        filter_categories=json.dumps(filter_categories(data)),
+        start_categories=START_CATEGORY_FILTERS,
+        performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()),
+        device_model_column=json.dumps(DEVICE_MODEL_COLUMN),
+        device_model_options=json.dumps(DEVICE_MODEL_OPTIONS),
+        other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS),
+        other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES),
+        token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS),
+        token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS),
+    )
+
+
+@app.get("/")
+def home():
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
+
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
     # Map allowlisted success codes to user-visible messages
     _success_codes = {
@@ -569,91 +581,78 @@ def home():
     }
     success_message = _success_codes.get(request.args.get('success'))
 
-    return render_template("table-view.html", current_view="tableView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS), success_message=success_message)
+    return render_template(
+        "table-view.html",
+        current_view="tableView",
+        success_message=success_message,
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/bar-chart")
 def bar_chart():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
 
-    categories = []
-    for category in data[0].keys():
-        if category in EXCLUDED_SIDEBAR_CATEGORIES:
-            continue
-        categories.append(category)
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
-    abstracts = load_abstracts()
-    if not isinstance(abstracts, list):
-        return render_template("error.html", error=abstracts), 500
-    
-    titles = load_titles()
-    if not isinstance(titles, list):
-        return render_template("error.html", error=titles), 500
-
-    return render_template("bar-chart.html", current_view="chartView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(abstracts), titles=json.dumps(titles), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template(
+        "bar-chart.html",
+        current_view="chartView",
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/similarity")
 def similarity():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
+
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
     similarity_data = load_similarity_data()
     if not isinstance(similarity_data, dict):
         return render_template("error.html", error=similarity_data), 500
-    
+
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template(
+        "similarity.html",
+        current_view="similarityView",
+        similarity_data=json.dumps(similarity_data),
+        excluded_categories=json.dumps(excluded_categories),
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/timeline")
 def timeline():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
 
-    categories = []
-    for category in data[0].keys():
-        if category in EXCLUDED_SIDEBAR_CATEGORIES or category == "Year":
-            continue
-        categories.append(category)
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
     all_data_ids = [str(entry['ID']) for entry in data]
     citation_matrix, coauthor_matrix = load_citation_data(all_data_ids)
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template(
+        "timeline.html",
+        current_view="timeView",
+        citation_matrix=json.dumps(citation_matrix),
+        coauthor_matrix=json.dumps(coauthor_matrix),
+        excluded_categories=json.dumps(excluded_categories),
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get('/add_study')
 def add_study():
@@ -883,7 +882,6 @@ def submit_study():
 
     except Exception as e:
         print(f"Error processing form submission: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
 
@@ -919,7 +917,6 @@ def submit_mistake():
 
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
     
