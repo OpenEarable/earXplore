@@ -37,6 +37,40 @@ function getPerformanceBucket(value) {
   return `${bucketBot}-${bucketTop}`;
 }
 
+/**
+ * The column name for the gesture count (Number of Selected Gestures).
+ * Used to apply bucket labelling in bar charts and color-by dropdowns.
+ */
+const GESTURE_COUNT_COL = "Interaction_PANEL_Number of Selected Gestures";
+
+/**
+ * Fixed ordered bucket labels for the gesture count column.
+ * Low → high, N/A last.
+ */
+const GESTURE_BUCKET_ORDER = ["0", "1", "2-3", "4-6", "7-10", "11-20", "21-50", "51-100", ">100", "N/A"];
+
+/**
+ * Maps a raw gesture count value to its bucket label.
+ *
+ * Buckets: 0, 1, 2-3, 4-6, 7-10, 11-20, 21-50, 51-100, >100, N/A.
+ *
+ * @param {number|string} value - Raw numeric gesture count.
+ * @returns {string} Bucket label.
+ */
+function getGestureBucket(value) {
+  const n = parseInt(value, 10);
+  if (isNaN(n)) return "N/A";
+  if (n === 0) return "0";
+  if (n === 1) return "1";
+  if (n <= 3) return "2-3";
+  if (n <= 6) return "4-6";
+  if (n <= 10) return "7-10";
+  if (n <= 20) return "11-20";
+  if (n <= 50) return "21-50";
+  if (n <= 100) return "51-100";
+  return ">100";
+}
+
 // Device model filter – column name and option keywords read directly from the
 // body data attributes rendered by the server, available at module load time.
 //
@@ -560,6 +594,7 @@ function sortNodesByCategory(nodes, category) {
 
   const isPerf = performanceColumns.has(category);
   const isDm = _dmCol && category === _dmCol;
+  const isGesture = category === GESTURE_COUNT_COL;
 
   // Get the unique values for the selected category
   const uniqueValues = new Set();
@@ -581,6 +616,11 @@ function sortNodesByCategory(nodes, category) {
         valueMap[node].push(label);
         uniqueValues.add(label);
       });
+    } else if (isGesture) {
+      // For gesture count: map raw value to ordered bucket label
+      const bucket = getGestureBucket(getDataEntry(node, category));
+      valueMap[node].push(bucket);
+      uniqueValues.add(bucket);
     } else {
       // Get the values for the selected category from the data matching the node ID, category is defined at this point
       const rawValues = cleanDataString(category, getDataEntry(node, category).toString());
@@ -608,6 +648,10 @@ function sortNodesByCategory(nodes, category) {
     const sortedVals = [...uniqueValues].filter(v => v !== "Other" && v !== "N/A").sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
     if (uniqueValues.has("Other")) sortedVals.push("Other");
     if (uniqueValues.has("N/A")) sortedVals.push("N/A");
+    colorScale = d3.scaleOrdinal().domain(sortedVals).range(colorPalette);
+  } else if (isGesture) {
+    // For gesture count: use fixed bucket order (low → high, N/A last)
+    const sortedVals = GESTURE_BUCKET_ORDER.filter(b => uniqueValues.has(b));
     colorScale = d3.scaleOrdinal().domain(sortedVals).range(colorPalette);
   } else {
     colorScale = createColorScale(uniqueValues);
@@ -676,7 +720,7 @@ function createColorScale(uniqueValues) {
     if (aMatch || bMatch || aIsNA || bIsNA) {
       if (aIsNA) return 1;
       if (bIsNA) return -1;
-      if (aMatch && bMatch) return parseInt(bMatch[1]) - parseInt(aMatch[1]); // descending
+      if (aMatch && bMatch) return parseInt(aMatch[1]) - parseInt(bMatch[1]); // ascending: low → high
     }
     const orderA = specialOrders[a] || 0;
     const orderB = specialOrders[b] || 0;
@@ -764,4 +808,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket};

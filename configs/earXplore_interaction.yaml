@@ -34,7 +34,7 @@ parenthical-columns:
   - "Study_PANEL_Social Acceptability of Interactions Evaluations"
 
 start-category-filters: ["Main Author", "Year", "Location", "Input Body Part", "Gesture"]
-other-threshold-columns: ["Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings",
+other-threshold-columns: ["Keywords", "Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings",
   "Study_PANEL_Evaluation of User-Related Conditions",
   "Study_PANEL_Evaluation of Device-Related Conditions",
   "Study_PANEL_Evaluation of Environment-Related Conditions", "Gesture"]

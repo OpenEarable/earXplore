@@ -193,7 +193,7 @@ def load_data(config_path):
             for part in parts:
                 if part:
                     counts[part] = counts.get(part, 0) + 1
-        OTHER_THRESHOLD_RARE_VALUES[col] = [v for v, c in counts.items() if c < 2]
+        OTHER_THRESHOLD_RARE_VALUES[col] = [v for v, c in counts.items() if c <= 2]
 
     # Compute unique individual options for token-search columns
     TOKEN_SEARCH_OPTIONS = {}

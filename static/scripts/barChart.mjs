@@ -12,6 +12,9 @@ import {
   _otCols,
   _otRareValues,
   escapeHtml,
+  GESTURE_COUNT_COL,
+  GESTURE_BUCKET_ORDER,
+  getGestureBucket,
 } from "./dataUtility.mjs";
 
 
@@ -48,6 +51,7 @@ $(document).ready(function () {
     );
     const fullCategory = getFullCategory(category);
     const isPerf = performanceColumns.has(fullCategory);
+    const isGesture = fullCategory === GESTURE_COUNT_COL;
   
     const tableHTML = `
       <table class="table table-striped">
@@ -68,6 +72,10 @@ $(document).ready(function () {
               if (isPerf) {
                 const num = parseFloat(entry[fullCategory]);
                 const bucket = isNaN(num) ? "N/A" : getPerformanceBucket(num);
+                return bucket === label;
+              }
+              if (isGesture) {
+                const bucket = getGestureBucket(entry[fullCategory]);
                 return bucket === label;
               }
               // Device model column: use keyword/substring matching
@@ -224,6 +232,26 @@ $(document).ready(function () {
   // Function to create the data in the format required by Chart.js for bar charts
   function createBarChartData(barData, category) {
     const isPerf = performanceColumns.has(category);
+    const isGesture = category === GESTURE_COUNT_COL;
+
+    // Gesture count column: aggregate by fixed bucket labels (0, 1, 2-3, …, >100)
+    if (isGesture) {
+      const occurrences = {};
+      for (const raw of barData) {
+        const key = getGestureBucket(raw);
+        occurrences[key] = (occurrences[key] || 0) + 1;
+      }
+      const labels = GESTURE_BUCKET_ORDER.filter(b => occurrences[b] !== undefined);
+      return {
+        labels,
+        datasets: [{
+          data: labels.map(l => occurrences[l]),
+          backgroundColor: labels.map((_, i) => defaultColors[i % defaultColors.length]),
+          barThickness: "flex",
+          maxBarThickness: 50,
+        }],
+      };
+    }
 
     // Device model column: aggregate by keyword option (same logic as the filter)
     if (_dmCol && category === _dmCol) {
@@ -306,11 +334,11 @@ $(document).ready(function () {
   
     // The keys of the occurrences will be the labels for the chart
     const labels = Object.keys(occurrences).sort((a, b) => {
-      // For performance buckets (e.g. "96-100"), sort by the lower bound numerically descending
+      // For performance buckets (e.g. "96-100"), sort by the lower bound numerically ascending
       if (isPerf) {
         if (a === "N/A") return 1;
         if (b === "N/A") return -1;
-        return parseFloat(b.split("-")[0]) - parseFloat(a.split("-")[0]);
+        return parseFloat(a.split("-")[0]) - parseFloat(b.split("-")[0]);
       }
       // Check if the labels are all convertable to numbers
       if (Object.keys(occurrences).every((key) => !isNaN(key))) {
