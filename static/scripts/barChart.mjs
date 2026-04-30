@@ -10,6 +10,7 @@ import {
   _dmOptions,
   _otCols,
   _otRareValues,
+  escapeHtml,
 } from "./dataUtility.mjs";
 
 // Keywords for device model matching (all options except "Other" and "N/A")
@@ -102,15 +103,15 @@ $(document).ready(function () {
                 <img class="info-circle" src="${$("#table-modal-body").data(
                   "url-path-info-circle"
                 )}" alt="Info cirle for this row" title="Information about this row" data-id="${
-                  elem["ID"]
+                  escapeHtml(elem["ID"])
                 }"/>
               </td>
-              <td>${elem["ID"]}</td>
-              <td>${elem["Main Author"]}</td>
-              <td>${elem["Year"]}</td>
-              <td>${elem["Location"]}</td>
-              <td>${elem["Input Body Part"]}</td>
-              <td>${elem["Gesture"]}</td> 
+              <td>${escapeHtml(elem["ID"])}</td>
+              <td>${escapeHtml(elem["Main Author"])}</td>
+              <td>${escapeHtml(elem["Year"])}</td>
+              <td>${escapeHtml(elem["Location"])}</td>
+              <td>${escapeHtml(elem["Input Body Part"])}</td>
+              <td>${escapeHtml(elem["Gesture"])}</td> 
             </tr>
             `
             )

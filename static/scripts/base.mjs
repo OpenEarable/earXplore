@@ -222,9 +222,9 @@ $(document).ready(function () {
     $(".exclusive-filter").each((index, element) => {
       const category = $(element).data("col");
       if (exclusiveFilters.includes(category)) {
-        $(element).text("Exclusive Filterting: ON");
+        $(element).text("Exclusive Filtering: ON");
       } else {
-        $(element).text("Exclusive Filterting: OFF");
+        $(element).text("Exclusive Filtering: OFF");
       }
     });
   }
@@ -427,11 +427,11 @@ $(document).ready(function () {
           filters.exclusiveFilters.indexOf(category),
           1
         );
-        $(this).text("Exclusive filterting: OFF");
+        $(this).text("Exclusive Filtering: OFF");
       } else {
         // If the category is not in the exclusive filters, add it
         filters.exclusiveFilters.push(category);
-        $(this).text("Exclusive filterting: ON");
+        $(this).text("Exclusive Filtering: ON");
       }
       updateFilters(filters);
     });

@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from flask_mailman import Mail, EmailMessage
+from flask_wtf.csrf import CSRFProtect
 from typing import List
 from dotenv import load_dotenv
 import pandas as pd
@@ -67,7 +68,7 @@ load_dotenv() # Load environment variables from .env file
 
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
-app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
+app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT") or 587)
 app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
@@ -76,7 +77,9 @@ print(f"Mail server: {os.getenv('MAIL_SERVER')}")
 print(f"TLS enabled: {os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'}")
 print(f"Default sender: {os.getenv('MAIL_DEFAULT_SENDER')}")
 
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24).hex())
 mail = Mail(app)
+csrf = CSRFProtect(app)
 
 # Template classes for sidebar panel
 class Slider:
@@ -559,12 +562,14 @@ def home():
     
     sidebar_panels = generate_sidebar_panels(data, explanations)
 
-    # Check for success message
-    success_message = request.args.get('success')
-    if success_message:
-        print(f"Success message detected: {success_message}")
+    # Map allowlisted success codes to user-visible messages
+    _success_codes = {
+        'study_submitted': 'Study submitted successfully!',
+        'mistake_reported': 'Mistake report submitted successfully!',
+    }
+    success_message = _success_codes.get(request.args.get('success'))
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS), success_message=success_message)
+    return render_template("table-view.html", current_view="tableView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS), success_message=success_message)
 
 @app.get("/bar-chart")
 def bar_chart():
@@ -596,7 +601,7 @@ def bar_chart():
     if not isinstance(titles, list):
         return render_template("error.html", error=titles), 500
 
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template("bar-chart.html", current_view="chartView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(abstracts), titles=json.dumps(titles), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get("/similarity")
 def similarity():
@@ -620,7 +625,7 @@ def similarity():
     
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template("similarity.html", current_view="similarityView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get("/timeline")
 def timeline():
@@ -648,7 +653,7 @@ def timeline():
     citation_matrix, coauthor_matrix = load_citation_data(all_data_ids)
     excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
+    return render_template("timeline.html", current_view="timeView", data=data, data_json=json.dumps(data), sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS), other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES), token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS), token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS))
 
 @app.get('/add_study')
 def add_study():
@@ -862,15 +867,19 @@ def submit_study():
             body = body.rstrip("\n") + "\n\n"
         
         # Create and send the email
+        recipients = os.getenv("RECIPIENTS")
+        if not recipients:
+            print("Error: RECIPIENTS environment variable is not set.")
+            return jsonify({"success": False, "message": "Server is not configured to send emails. Please contact the administrator."}), 503
         msg = EmailMessage(
             subject=f"earXplore: New Study - {processed_data.get('title', 'Untitled')}",
-            to=[os.getenv("RECIPIENTS")],
+            to=[recipients],
             body=body
         )
         msg.send()
         
         print("Email sent successfully!")
-        return redirect(url_for('home', success='Study submitted successfully'))
+        return redirect(url_for('home', success='study_submitted'))
 
     except Exception as e:
         print(f"Error processing form submission: {str(e)}")
@@ -893,6 +902,9 @@ def submit_mistake():
         print(f"Body of the email:\n{body}\n")
 
         recipients = os.getenv("RECIPIENTS")
+        if not recipients:
+            print("Error: RECIPIENTS environment variable is not set.")
+            return jsonify({"success": False, "message": "Server is not configured to send emails. Please contact the administrator."}), 503
         
         # Create and send the email
         msg = EmailMessage(
@@ -903,7 +915,7 @@ def submit_mistake():
         msg.send()
         
         print("Email sent successfully!")
-        return redirect(url_for('home', success='Mistake report submitted successfully'))
+        return redirect(url_for('home', success='mistake_reported'))
 
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
@@ -912,4 +924,4 @@ def submit_mistake():
         return jsonify({"success": False, "message": str(e)}), 500
     
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=888)
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=888)

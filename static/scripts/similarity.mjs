@@ -5,6 +5,7 @@ import {
   sortNodesByCategory,
   data,
   performanceColumns,
+  escapeHtml,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -155,13 +156,13 @@ $(document).ready(function () {
           </thead>
           <tbody>
             <tr class="selected-study-row">
-              <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID=${nodeData["ID"]} class="info-circle network-information"/></td>
-              <td>${nodeData["ID"]}</td>
-              <td>${nodeData["Main Author"]}</td>
-              <td>${nodeData["Year"]}</td>
-              <td>${nodeData["Location"]}</td>
-              <td>${nodeData["Input Body Part"]}</td>
-              <td>${nodeData["Gesture"]}</td>
+              <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID="${escapeHtml(nodeData["ID"])}" class="info-circle network-information"/></td>
+              <td>${escapeHtml(nodeData["ID"])}</td>
+              <td>${escapeHtml(nodeData["Main Author"])}</td>
+              <td>${escapeHtml(nodeData["Year"])}</td>
+              <td>${escapeHtml(nodeData["Location"])}</td>
+              <td>${escapeHtml(nodeData["Input Body Part"])}</td>
+              <td>${escapeHtml(nodeData["Gesture"])}</td>
               <td></td> <!-- Empty cell for alignment -->
             </tr>
           </tbody>
@@ -194,15 +195,15 @@ $(document).ready(function () {
                       const nodeData = getDataEntry(node.id);
                       return `
                 <tr>
-                  <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID=${
-                        nodeData["ID"]
-                      } class="info-circle network-information"/></td>
-                  <td>${nodeData["ID"]}</td>
-                  <td>${nodeData["Main Author"]}</td>
-                  <td>${nodeData["Year"]}</td>
-                  <td>${nodeData["Location"]}</td>
-                  <td>${nodeData["Input Body Part"]}</td>
-                  <td>${nodeData["Gesture"]}</td>
+                  <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID="${
+                        escapeHtml(nodeData["ID"])
+                      }" class="info-circle network-information"/></td>
+                  <td>${escapeHtml(nodeData["ID"])}</td>
+                  <td>${escapeHtml(nodeData["Main Author"])}</td>
+                  <td>${escapeHtml(nodeData["Year"])}</td>
+                  <td>${escapeHtml(nodeData["Location"])}</td>
+                  <td>${escapeHtml(nodeData["Input Body Part"])}</td>
+                  <td>${escapeHtml(nodeData["Gesture"])}</td>
                   <td><strong>${node.similarity.toFixed(2)}</strong></td>
                 </tr>
               `;

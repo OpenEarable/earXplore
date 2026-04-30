@@ -57,6 +57,7 @@
     <p>Please provide details about the error you found in our database.</p>
 
     <form id="mistakeForm" action="{{ url_for('submit_mistake') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="mb-3">
         <label for="studyId" class="form-label">Study ID or Title (if known)</label>
         <input type="text" class="form-control" id="studyId" name="studyId" placeholder="e.g., 42 or 'EarGest: A Novel Ear Gesture Recognition System'">
@@ -83,6 +84,7 @@
     <p>Please provide information about your published research on earable interaction. You don't have to provide all the information on your study, although this will make the process of reviewing your study and adding it to the database much faster.</p>
     
     <form id="studyForm" action="{{ url_for('submit_study') }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <!-- Always include these essential fields -->
       <h5 class="section-header">Essential Information</h5>
       <div class="row">

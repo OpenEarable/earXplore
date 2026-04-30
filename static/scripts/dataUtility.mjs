@@ -5,7 +5,7 @@
  * @type {Array}
  * @see parseData
  */
-const data = parseData($("body").data("data"));
+const data = $("body").data("data");
 
 /**
  * The categories for which parenthises should be removed when filtering.
@@ -126,6 +126,22 @@ const abstracts = $("body").data("abstracts");
  */
 const titles = $("body").data("titles");
 
+
+/**
+ * Escapes a string for safe insertion into HTML.
+ * Prevents XSS when inserting data-derived values into innerHTML / jQuery .html().
+ *
+ * @param {*} value - Any value; will be cast to string.
+ * @returns {string} HTML-escaped string.
+ */
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 /**
  * An object mapping specific string labels to their corresponding numeric order or priority.
@@ -731,11 +747,11 @@ function showStudyModal(studyID) {
   // Add Study Summary to the infoHTML
   infoHTML.push(`
     <h5 class="study-info-panel-header">Study Summary</h5>
-    <strong>Title</strong>: ${titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A"}<br />
-    <strong>Main Author</strong>: ${entry["Main Author"] || "N/A"}<br />
-    <strong>Authors</strong>: ${entry["Authors"] || "N/A"}<br />
-    <strong>Abstract</strong>: ${abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A"}<br />
-    <strong>Keywords</strong>: ${entry["Keywords"] || "N/A"}
+    <strong>Title</strong>: ${escapeHtml(titles.find(elem => elem["ID"] === entry["ID"])["Title"] || "N/A")}<br />
+    <strong>Main Author</strong>: ${escapeHtml(entry["Main Author"] || "N/A")}<br />
+    <strong>Authors</strong>: ${escapeHtml(entry["Authors"] || "N/A")}<br />
+    <strong>Abstract</strong>: ${escapeHtml(abstracts.find(elem => elem["ID"] === entry["ID"])["Abstract"] || "N/A")}<br />
+    <strong>Keywords</strong>: ${escapeHtml(entry["Keywords"] || "N/A")}
   `)
 
   // All the selections here are present because the modal is rendered in the base template which every page extends
@@ -752,7 +768,7 @@ function showStudyModal(studyID) {
         .filter(col => col !== undefined);
 
       const filtersHTML = filters
-        .map(filter => `<strong>${filter.split("_").pop()}</strong>: ${entry[filter] || "N/A"}`)
+        .map(filter => `<strong>${escapeHtml(filter.split("_").pop())}</strong>: ${escapeHtml(entry[filter] || "N/A")}`)
         .join("<br />");
 
       const panelHTML = `<h5 class="study-info-panel-header">${heading}</h5>` + filtersHTML;
@@ -769,4 +785,4 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols};
+export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, parseData, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml};

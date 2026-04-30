@@ -158,9 +158,15 @@ MAIL_PORT=587
 MAIL_USE_TLS=True
 MAIL_USERNAME="your-email@example.com"
 MAIL_PASSWORD="your-password"
-MAIL_DEFAULT_SENDER="default-sender'
+MAIL_DEFAULT_SENDER="default-sender@example.com"
 RECIPIENTS="an-email@example.com"
+SECRET_KEY="a-long-random-secret-string"
+GEMINI_API_KEY="your-gemini-api-key"  # required for the abstract similarity notebook and GitHub Actions workflow
 ```
+> **Note:** `SECRET_KEY` is required for CSRF protection. If omitted, a random key is generated on each startup (which invalidates sessions on restart). Set it to a long, random string for any persistent or production deployment. `GEMINI_API_KEY` is required by the GitHub Actions workflow that recomputes similarity matrices and by the `abstract_similarity.ipynb` notebook.
+
+> **Production deployment note:** Do not run the app with `python app.py` in a multi-worker production environment, as the app uses in-memory global state. Use a single-worker WSGI server (e.g. `gunicorn -w 1 app:app`) or ensure sticky sessions. For local development, `python app.py` (or `flask run --debug`) is fine.
+
 If you are unsure about the some of the configurations, please refer to the [Flask Mail Documentation](https://pypi.org/project/Flask-Mail/).
 
 ## 🛠️ Usage

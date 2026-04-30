@@ -132,12 +132,15 @@ $(document).ready(function () {
   }
   
   function downloadCsv(data, filename) {
+    // Properly quote CSV fields to handle values containing commas, quotes, or newlines
+    const escapeField = (v) => `"${String(v).replace(/"/g, '""')}"`;
+
     // Convert data to CSV string
     const header =
       Object.keys(data[0])
-        .map((column) => column.split("_").pop())
+        .map((column) => escapeField(column.split("_").pop()))
         .join(",") + "\n";
-    const rows = data.map((row) => Object.values(row).join(",")).join("\n");
+    const rows = data.map((row) => Object.values(row).map(escapeField).join(",")).join("\n");
     const csvContent = header + rows;
   
     // Create a Blob from the CSV string

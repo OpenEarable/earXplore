@@ -5,6 +5,7 @@ import {
   showStudyModal,
   data,
   performanceColumns,
+  escapeHtml,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -127,13 +128,13 @@ $(document).ready(function () {
           </thead>
           <tbody>
             <tr class="selected-study-row">
-              <td class="centered-cell" ><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID=${entry["ID"]} class="info-circle"/></td>
-              <td class="centered-cell" >${entry["ID"]}</td>
-              <td class="centered-cell" >${entry["Main Author"]}</td>
-              <td class="centered-cell" >${entry["Year"]}</td>
-              <td class="centered-cell" >${entry["Location"]}</td>
-              <td class="centered-cell" >${entry["Input Body Part"]}</td>
-              <td class="centered-cell" >${entry["Gesture"]}</td>
+              <td class="centered-cell" ><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID="${escapeHtml(entry["ID"])}" class="info-circle"/></td>
+              <td class="centered-cell" >${escapeHtml(entry["ID"])}</td>
+              <td class="centered-cell" >${escapeHtml(entry["Main Author"])}</td>
+              <td class="centered-cell" >${escapeHtml(entry["Year"])}</td>
+              <td class="centered-cell" >${escapeHtml(entry["Location"])}</td>
+              <td class="centered-cell" >${escapeHtml(entry["Input Body Part"])}</td>
+              <td class="centered-cell" >${escapeHtml(entry["Gesture"])}</td>
               <td class="centered-cell" ></td> <!-- Empty cell for alignment -->
             </tr>
           </tbody>
@@ -173,15 +174,15 @@ $(document).ready(function () {
                   const entry = getDataEntry(targetID);
                   return `
                   <tr>
-                    <td class="centered-cell"><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID=${
+                    <td class="centered-cell"><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID="${escapeHtml(
                     entry["ID"]
-                  } class="info-circle"/></td>
-                    <td class="centered-cell">${entry["ID"]}</td>
-                    <td class="centered-cell">${entry["Main Author"]}</td>
-                    <td class="centered-cell">${entry["Year"]}</td>
-                    <td class="centered-cell">${entry["Location"]}</td>
-                    <td class="centered-cell">${entry["Input Body Part"]}</td>
-                    <td class="centered-cell">${entry["Gesture"]}</td>
+                  )}" class="info-circle"/></td>
+                    <td class="centered-cell">${escapeHtml(entry["ID"])}</td>
+                    <td class="centered-cell">${escapeHtml(entry["Main Author"])}</td>
+                    <td class="centered-cell">${escapeHtml(entry["Year"])}</td>
+                    <td class="centered-cell">${escapeHtml(entry["Location"])}</td>
+                    <td class="centered-cell">${escapeHtml(entry["Input Body Part"])}</td>
+                    <td class="centered-cell">${escapeHtml(entry["Gesture"])}</td>
                     <td class="centered-cell">${targetIDs[targetID]
                       .map(formatConnectionType)
                       .join(", ")}</td>
