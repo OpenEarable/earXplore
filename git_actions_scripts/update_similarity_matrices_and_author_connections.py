@@ -112,27 +112,22 @@ def calculate_similarity(row1, row2, numeric_columns, string_columns):
 
 # Assign column types for calculation
 single_value_columns = [
-    'Sensing_PANEL_No Additional Sensing', 'Interaction_PANEL_Hands-Free', 'Interaction_PANEL_Eyes-Free', 
+    'Sensing_PANEL_No Additional Sensing', 'Interaction_PANEL_Hands-Free', 'Interaction_PANEL_Eyes-Free',
     'Interaction_PANEL_Adaptation of the Interaction Detection Algorithm to User',
-    'Interaction_PANEL_Discreetness of Interaction Techniques', 
-    'Interaction_PANEL_Accuracy of Interaction Recognition',
-    'Interaction_PANEL_Robustness of Interaction Detection',
     'Study_PANEL_Elicitation Study',
     'Study_PANEL_Usability Evaluations',
-    'Study_PANEL_Cognitive Ease Evaluations',
-    'Study_PANEL_Discreetness of Interactions Evaluations',
+    'Study_PANEL_Cognitive Load Evaluations',
     'Study_PANEL_Social Acceptability of Interactions Evaluations',
-    'Study_PANEL_Accuracy of Interactions Evaluations',
-    'Study_PANEL_Alternative Interaction Validity Evaluations',
     'Device_PANEL_Real-Time Processing', 'Device_PANEL_On-Device Processing'
 ]
 
 multi_value_and_string_columns = [
-    'Location', 'Input Body Part', 'Gesture', 'Sensing_PANEL_Sensors', 'Interaction_PANEL_Resolution', 
-    'Study_PANEL_Evaluation of Different Conditions (User-Related)',
-    'Study_PANEL_Evaluation of Different Conditions (Environment-Related)',
-    'Study_PANEL_Evaluation of Different Settings',
-    'Device_PANEL_Earphone Type', 'Device_PANEL_Development Stage',
+    'Location', 'Input Body Part', 'Gesture', 'Sensing_PANEL_Sensors', 'Interaction_PANEL_Resolution',
+    'Study_PANEL_Evaluation of Settings',
+    'Study_PANEL_Evaluation of User-Related Conditions',
+    'Study_PANEL_Evaluation of Environment-Related Conditions',
+    'Study_PANEL_Evaluation of Device-Related Conditions',
+    'Device_PANEL_Earphone Type', 'Device_PANEL_Development Stage', 'Device_PANEL_Device Model',
     'Motivations_PANEL_Motivations',
     'Applications_PANEL_Intended Applications', 'Keywords'
 ]
@@ -141,11 +136,31 @@ numerical_columns_log_transformed = [
     'Interaction_PANEL_Number of Selected Gestures'
 ]
 
+performance_metric_columns = [
+    'Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)',
+    'Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)',
+    'Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)',
+    'Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)',
+]
+
 single_value_columns_special_treatment = ['Interaction_PANEL_Possible on One Ear']
+
+# Function to extract and normalize performance metric values (e.g. "97 (N=2)" -> 0.97)
+def extract_performance_value(value):
+    if pd.isna(value):
+        return np.nan
+    value_str = str(value).strip()
+    if value_str == 'N/A':
+        return np.nan
+    base = value_str.split('(')[0].strip()
+    try:
+        return float(base) / 100.0  # Normalize percentage to [0, 1]
+    except ValueError:
+        return np.nan
 
 # Recode values for later calculations
 df_transformed = df.copy()
-df_transformed = df_transformed.drop(columns=['Main Author', 'Study Link', 'Abstract'])
+df_transformed = df_transformed.drop(columns=['Main Author', 'Year', 'Study Link', 'Abstract', 'Title', 'Authors'])
 
 # Apply the transformation to each column in single_value_columns
 for col in single_value_columns:
@@ -172,9 +187,19 @@ for col in single_value_columns_special_treatment:
         
         # Apply the mapping directly
         df_transformed[col] = df_transformed[col].map(special_mapping)
-# Get all numeric columns (excluding those in multi_value_and_string_columns)
-# numeric_cols = ['Year', 'Interaction_PANEL_Number of Selected Gestures']
-numeric_cols = ['Interaction_PANEL_Number of Selected Gestures']
+
+# Extract and normalize performance metric values
+for col in performance_metric_columns:
+    if col in df_transformed.columns:
+        df_transformed[col] = df_transformed[col].apply(extract_performance_value)
+
+# Get all numeric columns
+numeric_cols = (
+    numerical_columns_log_transformed +
+    single_value_columns +
+    single_value_columns_special_treatment +
+    performance_metric_columns
+)
 
 
 # Create empty similarity matrix
@@ -211,18 +236,12 @@ for i in range(n):
         if i != j:  # Skip diagonal elements
             similarity_values.append(similarity_matrix.iloc[i, j])
             
-mean_similarity = np.mean(similarity_values)
-std_similarity = np.std(similarity_values)
+mean_similarity = float(np.mean(similarity_values))
+std_similarity = float(np.std(similarity_values))
 
 # Create a new matrix with values in standard deviation units
-similarity_matrix_std = similarity_matrix.copy()
-for i in range(n):
-    for j in range(n):
-        if i != j:  # Skip diagonal elements
-            similarity_matrix_std.iloc[i, j] = (similarity_matrix.iloc[i, j] - mean_similarity) / std_similarity
-        else:
-            # Set diagonal elements to NaN to exclude them from the visualization
-            similarity_matrix_std.iloc[i, j] = np.nan
+similarity_matrix_std = (similarity_matrix.astype(float) - mean_similarity) / std_similarity
+np.fill_diagonal(similarity_matrix_std.values, np.nan)
 
 # Save the std similarity matrix to a CSV file
 similarity_matrix_std.to_csv('datasets/database_similarity/normalized_database_similarity.csv')
@@ -268,14 +287,13 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def get_gemini_embeddings(abstract):
-
     result = client.models.embed_content(
-            model="gemini-embedding-exp-03-07",
-            contents=abstract,
-            config=types.EmbedContentConfig(task_type="CLUSTERING") # see here: https://ai.google.dev/gemini-api/docs/embeddings?hl=de
-
+        model="gemini-embedding-001",
+        contents=abstract,
+        config=types.EmbedContentConfig(task_type="CLUSTERING")  # see here: https://ai.google.dev/gemini-api/docs/embeddings?hl=de
     )
-
+    if not result.embeddings:
+        raise ValueError("No embeddings returned from API.")
     return result.embeddings[0].values
 
 abstract_embeddings_df = pd.read_csv('datasets/abstract_similarity/data_with_embeddings.csv')
