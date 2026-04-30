@@ -195,12 +195,23 @@ h3 {
   text-shadow: none;
 }
 
+.download-button {
+  background-color: var(--color-accent);
+  color: white;
+  border: none;
+  font-size: var(--font-md);
+  padding: 0.1em 0.4em;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
 .exclusive-filter {
   background-color: var(--color-accent);
   border-color: var(--color-accent);
 }
 
 .select-button:hover,
+.download-button:hover,
 .btn-link:hover {
   opacity: 0.6;
 }

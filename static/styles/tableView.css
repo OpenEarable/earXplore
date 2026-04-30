@@ -12,20 +12,6 @@
   text-align: center;
 }
 
-.download-button {
-  background-color: var(--color-accent);
-  color: white;
-  border: none;
-  font-size: var(--font-md);
-  padding: 0.1em 0.4em;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.download-button:hover {
-  opacity: 0.6;
-}
-
 /* Sortable table headers */
 .sortable {
   cursor: pointer;

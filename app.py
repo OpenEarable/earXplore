@@ -713,6 +713,16 @@ def add_study():
                         'max': int(df[col].max())
                     }
                     continue
+
+                # Fields that should always be free-text inputs (not checkboxes)
+                text_field_cols = {'Gesture', DEVICE_MODEL_COLUMN} | set(PERFORMANCE_METRICS_COLUMNS)
+                if col in text_field_cols:
+                    panel_options[col] = {
+                        'type': 'text',
+                        'name': display_name,
+                        'options': []
+                    }
+                    continue
                 
                 # Extract unique values from the column
                 unique_values = []

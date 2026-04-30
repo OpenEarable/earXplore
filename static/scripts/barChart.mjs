@@ -1,4 +1,5 @@
 import {
+  data,
   filterData,
   cleanDataString,
   specialOrders,
@@ -515,5 +516,31 @@ $(document).ready(function () {
     this.noUiSlider.on("end", function () {
       createBarCharts();
     });
+  });
+
+  // CSV download helper (mirrors tableView.mjs logic)
+  function downloadCsv(rows, filename) {
+    const escapeField = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const header = Object.keys(rows[0]).map((c) => escapeField(c.split("_").pop())).join(",") + "\n";
+    const body = rows.map((row) => Object.values(row).map(escapeField).join(",")).join("\n");
+    const blob = new Blob([header + body], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.visibility = "hidden";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  $("#downloadFilteredCsv").on("click", function () {
+    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    downloadCsv(filterData(filters), "filtered_data.csv");
+  });
+
+  $("#downloadFullCsv").on("click", function () {
+    downloadCsv(data, "full_data.csv");
   });
 });
