@@ -8,15 +8,11 @@ import {
   getPerformanceBucket,
   _dmCol,
   _dmOptions,
+  _dmKeywords,
   _otCols,
   _otRareValues,
   escapeHtml,
 } from "./dataUtility.mjs";
-
-// Keywords for device model matching (all options except "Other" and "N/A")
-const _dmKeywords = Array.isArray(_dmOptions)
-  ? _dmOptions.filter(o => o !== "Other" && o !== "N/A")
-  : [];
 
 
 /*

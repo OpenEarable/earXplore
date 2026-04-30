@@ -148,6 +148,13 @@ def load_data(config_path):
     START_CATEGORY_FILTERS = json.dumps(["INFO"] + config.get("start-category-filters", []))
     SPECIAL_FORMAT_EXPLANATIONS = config.get("special-format-explanations", [])
     PERFORMANCE_METRICS_COLUMNS = config.get("performance-metrics-columns", [])
+    # Performance metric columns are automatically excluded from the normal sidebar filter UI
+    # and treated as parenthical — users only need to list them under performance-metrics-columns.
+    for _col in PERFORMANCE_METRICS_COLUMNS:
+        if _col not in EXCLUDED_SIDEBAR_CATEGORIES:
+            EXCLUDED_SIDEBAR_CATEGORIES.append(_col)
+        if _col not in PARENTHICAL_COLUMNS:
+            PARENTHICAL_COLUMNS.append(_col)
     DEVICE_MODEL_COLUMN = config.get("device-model-column", "")
     DEVICE_MODEL_OPTIONS = config.get("device-model-options", [])
     OTHER_THRESHOLD_COLUMNS = config.get("other-threshold-columns", [])

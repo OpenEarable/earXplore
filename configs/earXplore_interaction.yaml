@@ -1,18 +1,41 @@
-database-name: earXplore
 database-path: datasets/data.csv
 explanations-path: datasets/explanations.csv
-excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors", "Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"]
+
+# Columns always excluded from the normal sidebar filter UI.
+# Note: performance-metrics-columns are excluded automatically — no need to repeat them here.
+excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors"]
+
 device-model-column: "Device_PANEL_Device Model"
 device-model-options: ["OpenEarable", "eSense", "AirPods", "Samsung", "Sony", "Bose", "Other", "N/A"]
+
 metadata-sidebar-categories: ["Main Author", "Keywords"]
 slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures"]
-performance-metrics-columns: ["Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"]
-select-deselect-all-categories: ["Location", "Input Body Part", "Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings", "Study_PANEL_Evaluation of User-Related Conditions", "Study_PANEL_Evaluation of Device-Related Conditions", "Study_PANEL_Evaluation of Environment-Related Conditions"]
+
+# Listing a column here automatically excludes it from the normal sidebar and marks it as parenthical.
+performance-metrics-columns:
+  - "Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)"
+  - "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)"
+  - "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)"
+  - "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)"
+
+select-deselect-all-categories: ["Location", "Input Body Part", "Sensing_PANEL_Sensors",
+  "Study_PANEL_Evaluation of Settings", "Study_PANEL_Evaluation of User-Related Conditions",
+  "Study_PANEL_Evaluation of Device-Related Conditions",
+  "Study_PANEL_Evaluation of Environment-Related Conditions"]
 exclusive-filtering-categories: ["Sensing_PANEL_Sensors"]
 select-deselect-all-panels: ["Interaction", "Implementation", "Applications", "Motivations", "Device"]
-initially-hidden-panels: []
-parenthical-columns: ["Interaction_PANEL_Accuracy of Interaction Detection (User-Dependent)", "Interaction_PANEL_Accuracy of Interaction Detection (User-Independent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Dependent)", "Interaction_PANEL_F1-Score of Interaction Detection (User-Independent)", "Study_PANEL_Elicitation Study", "Study_PANEL_Usability Evaluations", "Study_PANEL_Cognitive Load Evaluations", "Study_PANEL_Social Acceptability of Interactions Evaluations"]
+
+# Columns whose values use "base value (details)" format — only the base part is used for filtering.
+# Performance columns are added here automatically; only list additional columns below.
+parenthical-columns:
+  - "Study_PANEL_Elicitation Study"
+  - "Study_PANEL_Usability Evaluations"
+  - "Study_PANEL_Cognitive Load Evaluations"
+  - "Study_PANEL_Social Acceptability of Interactions Evaluations"
+
 start-category-filters: ["Main Author", "Year", "Location", "Input Body Part", "Gesture"]
-special-format-explanations: []
-other-threshold-columns: ["Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings", "Study_PANEL_Evaluation of User-Related Conditions", "Study_PANEL_Evaluation of Device-Related Conditions", "Study_PANEL_Evaluation of Environment-Related Conditions", "Gesture"]
+other-threshold-columns: ["Sensing_PANEL_Sensors", "Study_PANEL_Evaluation of Settings",
+  "Study_PANEL_Evaluation of User-Related Conditions",
+  "Study_PANEL_Evaluation of Device-Related Conditions",
+  "Study_PANEL_Evaluation of Environment-Related Conditions", "Gesture"]
 token-search-columns: ["Main Author", "Gesture", "Keywords", "Authors", "Title"]
