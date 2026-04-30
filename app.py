@@ -63,6 +63,9 @@ TOKEN_SEARCH_COLUMNS = []
 # Computed at startup: { column: sorted list of unique individual options }
 TOKEN_SEARCH_OPTIONS = {}
 
+# Absolute path to the CSV database file — set by load_data() from the YAML config
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
+
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
@@ -136,7 +139,8 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS
+    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, DATABASE_PATH
+    DATABASE_PATH = os.path.join(os.path.dirname(__file__), database_path)
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
     METADATA_SIDEBAR_CATEGORIES = config.get("metadata-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
@@ -230,7 +234,7 @@ def load_abstracts_and_titles():
         (None, None, error_string) on failure.
     """
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
+        csv_path = DATABASE_PATH
         df = pd.read_csv(csv_path, usecols=["ID", "Abstract", "Title"])
         df = df.fillna('N/A').replace('nan', 'N/A')
         abstracts = df[["ID", "Abstract"]].to_dict(orient="records")

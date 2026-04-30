@@ -14,11 +14,6 @@
   font-size: var(--font-bg);
 }
 
-#reset-filters-button {
-  background-color: var(--color-accent);
-  border: 1px solid var(--color-accent);
-}
-
 #columnToggles {
   display: flex;
   flex-wrap: wrap;

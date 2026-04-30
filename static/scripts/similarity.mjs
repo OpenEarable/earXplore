@@ -156,7 +156,7 @@ $(document).ready(function () {
           </thead>
           <tbody>
             <tr class="selected-study-row">
-              <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID="${escapeHtml(nodeData["ID"])}" class="info-circle network-information"/></td>
+              <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-id="${escapeHtml(nodeData["ID"])}" class="info-circle network-information"/></td>
               <td>${escapeHtml(nodeData["ID"])}</td>
               <td>${escapeHtml(nodeData["Main Author"])}</td>
               <td>${escapeHtml(nodeData["Year"])}</td>
@@ -195,7 +195,7 @@ $(document).ready(function () {
                       const nodeData = getDataEntry(node.id);
                       return `
                 <tr>
-                  <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-ID="${
+                  <td><img src="${infoCirclePath}" alt="Info cirle for this row" title="Information about this row" data-id="${
                         escapeHtml(nodeData["ID"])
                       }" class="info-circle network-information"/></td>
                   <td>${escapeHtml(nodeData["ID"])}</td>
@@ -286,7 +286,8 @@ $(document).ready(function () {
         studyIDs: abstractStudyIDs.filter((id) => activeDataIDs.includes(id)),
         similarityMatrix: abstractMatrix,
       };
-    } else if (similarityType === "database") {
+    } else {
+      // Default to "database" for any unrecognised value of similarityType
       return {
         studyIDs: databaseStudyIDs.filter((id) => activeDataIDs.includes(id)),
         similarityMatrix: databaseMatrix,

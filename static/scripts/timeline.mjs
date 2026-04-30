@@ -128,7 +128,7 @@ $(document).ready(function () {
           </thead>
           <tbody>
             <tr class="selected-study-row">
-              <td class="centered-cell" ><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID="${escapeHtml(entry["ID"])}" class="info-circle"/></td>
+              <td class="centered-cell" ><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-id="${escapeHtml(entry["ID"])}" class="info-circle"/></td>
               <td class="centered-cell" >${escapeHtml(entry["ID"])}</td>
               <td class="centered-cell" >${escapeHtml(entry["Main Author"])}</td>
               <td class="centered-cell" >${escapeHtml(entry["Year"])}</td>
@@ -174,7 +174,7 @@ $(document).ready(function () {
                   const entry = getDataEntry(targetID);
                   return `
                   <tr>
-                    <td class="centered-cell"><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-ID="${escapeHtml(
+                    <td class="centered-cell"><img src="${infoCirclePath}" alt="Info cirle for this row" title="View details" data-id="${escapeHtml(
                     entry["ID"]
                   )}" class="info-circle"/></td>
                     <td class="centered-cell">${escapeHtml(entry["ID"])}</td>

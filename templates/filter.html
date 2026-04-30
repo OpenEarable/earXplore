@@ -18,6 +18,7 @@
       <button type="button" class="select-button" id="toggleSelectAllColumns">Select All</button>
       <button type="button" class="select-button" id="toggleDeselectAllColumns">Deselect All</button>
       <button type="button" class="select-button" id="reset-filters-button">Reset Selection</button>
+      {% block toggle_extra_buttons %}{% endblock %}
     </div>
     <div class="mb-4">
       <div id="columnToggles" >
@@ -26,7 +27,7 @@
           {# Wrapping in a div to make sure label and input are on same the row #}
           <div class="filter-wrapper">
             <input type="checkbox" class="form-check-input column-filter" id="{{ col }}" />
-            <label for="{{ col }}">{{ col.split("_").pop() }}</label>
+            <label for="{{ col }}">{{ col.split("_")[-1] }}</label>
           </div>
           
         {% endfor %}

@@ -1,4 +1,4 @@
-import { data, showStudyModal, filterData } from "./dataUtility.mjs";
+import { data, showStudyModal, filterData, escapeHtml } from "./dataUtility.mjs";
 
 $(document).ready(function () {
   const table = $("#table");
@@ -111,11 +111,11 @@ $(document).ready(function () {
                   const link = entry["Study Link"];
   
                   if (category === "INFO") {
-                    return `<td class="centered-cell"><img class="info-circle" src="${infoCirclePath}" alt="Information about this row" title="Information about the study with ID: ${id}" data-id="${id}"></td>`;
+                    return `<td class="centered-cell"><img class="info-circle" src="${infoCirclePath}" alt="Information about this row" title="Information about the study with ID: ${escapeHtml(id)}" data-id="${escapeHtml(id)}"></td>`;
                   } else if (category === "Study Link") {
-                    return `<td class="left-cell"><a href="${link}" target="_blank"><button class="btn-link">Link!</button></a></td>`;
+                    return `<td class="left-cell"><a href="${escapeHtml(link)}" target="_blank"><button class="btn-link">Link!</button></a></td>`;
                   } else {
-                    return `<td class="left-cell" >${entry[category]}</td>`;
+                    return `<td class="left-cell">${escapeHtml(entry[category])}</td>`;
                   }
                 })
                 .join("\n")}
