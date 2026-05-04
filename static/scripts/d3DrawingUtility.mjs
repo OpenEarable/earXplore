@@ -1,4 +1,4 @@
-import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels } from './dataUtility.mjs';
+import { getDataEntry, cleanDataString, defaultColor, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket } from './dataUtility.mjs';
 
 const evenPie = d3.pie()
   .value(d => 1)
@@ -17,6 +17,9 @@ function getColors(node, colorCategory, colorScale) {
   } else if (_dmCol && colorCategory === _dmCol) {
     // For device model: map raw cell to keyword labels
     values = getDeviceModelLabels(getDataEntry(node, colorCategory).toString());
+  } else if (colorCategory === GESTURE_COUNT_COL) {
+    // For gesture count: map raw numeric value to ordered bucket label
+    values = [getGestureBucket(getDataEntry(node, colorCategory))];
   } else {
     const isPerf = performanceColumns.has(colorCategory);
     const rawValues = cleanDataString(colorCategory, getDataEntry(node, colorCategory).toString());
@@ -157,6 +160,13 @@ function createLegend(nodes, colorScale, category, legendContainer) {
       getDeviceModelLabels(getDataEntry(node, category).toString()).forEach(v => present.add(v));
     }
     uniqueValues = _dmOptions.filter(opt => present.has(opt));
+  } else if (category === GESTURE_COUNT_COL) {
+    // For gesture count: collect bucket labels and keep fixed bucket order
+    const present = new Set();
+    for (const node of nodes) {
+      present.add(getGestureBucket(getDataEntry(node, category)));
+    }
+    uniqueValues = GESTURE_BUCKET_ORDER.filter(b => present.has(b));
   } else {
     const isPerf = performanceColumns.has(category);
     const valueSet = new Set();
