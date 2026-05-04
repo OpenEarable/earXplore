@@ -1,4 +1,5 @@
 datasets/interconnections/citation_confirmation.xlsx
+datasets/interconnections/citation_matrix_initial.csv
 computation_notebooks/dataset_prep.ipynb
 datasets/Dimensions_260429.csv
 datasets/interconnections/high_confidence_citations.xlsx

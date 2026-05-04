@@ -668,6 +668,13 @@ def timeline():
 @app.get('/add_study')
 def add_study():
     try:
+        # Ensure global config variables (DEVICE_MODEL_COLUMN, PERFORMANCE_METRICS_COLUMNS, etc.)
+        # are populated before building the form.  These are set as a side-effect of load_data(),
+        # which is normally called by the main view routes.  If a worker receives /add_study
+        # as its very first request, the globals would still hold their module-level defaults
+        # (empty string / empty list), causing wrong field types in the rendered form.
+        load_data(CONFIG_PATH)
+
         # Load the data
         csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path)
