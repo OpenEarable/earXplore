@@ -73,6 +73,7 @@ nav {
 
 #nav-r {
   gap: 1em;
+  padding-right: 1em;
 }
 
 #earXplore-repo,
