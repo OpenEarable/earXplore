@@ -1,19 +1,21 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from flask_mailman import Mail, EmailMessage
+from flask_wtf.csrf import CSRFProtect
 from typing import List
 from dotenv import load_dotenv
 import pandas as pd
 import json
 import os
 import mimetypes
+import traceback
 import yaml
 mimetypes.add_type('application/javascript', '.mjs')
 
 # Categories that should not be filtered for
 EXCLUDED_SIDEBAR_CATEGORIES = []
 
-# Categories that go in the advanced filters panel
-ADVANCED_SIDEBAR_CATEGORIES = []
+# Categories that go in the metadata panel
+METADATA_SIDEBAR_CATEGORIES = []
 
 # Categories that are displayed as sliders in the sidebar, should be numerical !
 SLIDER_CATEGORIES = []
@@ -49,13 +51,31 @@ DEVICE_MODEL_COLUMN = ""
 # Fixed answer options for device model filter
 DEVICE_MODEL_OPTIONS = []
 
+# Columns for which rare values (count < 2) should be grouped into "Other" in sidebar/charts/colors
+OTHER_THRESHOLD_COLUMNS = []
+
+# Computed at startup: { column: [list of rare values] }
+OTHER_THRESHOLD_RARE_VALUES = {}
+
+# Columns that use token-search UI instead of checkboxes (opt-in filter: empty = show all)
+TOKEN_SEARCH_COLUMNS = []
+
+# Computed at startup: { column: sorted list of unique individual options }
+TOKEN_SEARCH_OPTIONS = {}
+
+# Absolute path to the CSV database file — set by load_data() from the YAML config
+DATABASE_PATH = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
+
 app = Flask(__name__)
 
 load_dotenv() # Load environment variables from .env file
 
+# Path to the YAML configuration file used by all main views
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
+
 # Configure Flask-Mail
 app.config['MAIL_SERVER'] = os.getenv("MAIL_SERVER")
-app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT", 587))
+app.config['MAIL_PORT'] = int(os.getenv("MAIL_PORT") or 587)
 app.config['MAIL_USE_TLS'] = os.getenv("MAIL_USE_TLS", "True").lower() == "true"
 app.config['MAIL_USE_SSL'] = False
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv("MAIL_DEFAULT_SENDER")
@@ -64,15 +84,18 @@ print(f"Mail server: {os.getenv('MAIL_SERVER')}")
 print(f"TLS enabled: {os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'}")
 print(f"Default sender: {os.getenv('MAIL_DEFAULT_SENDER')}")
 
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24).hex())
 mail = Mail(app)
+csrf = CSRFProtect(app)
 
 # Template classes for sidebar panel
 class Slider:
-    def __init__(self, value:str, min_value:int, max_value:int, explanation:str = None):
+    def __init__(self, value:str, min_value:int, max_value:int, explanation:str = None, unbounded_max:bool = False):
         self.value = value
         self.min_value = min_value
         self.max_value = max_value
         self.explanation = explanation
+        self.unbounded_max = unbounded_max
 
 class Filter:
     def __init__(self, value:str, explanation:str = None, unique_values:List[str] = None, exclusive_filtering:bool = False, select_deselect_all:bool = False):
@@ -91,6 +114,7 @@ class Panel:
         self.initial_visibility = initial_visibility
         self.performance_block = None  # Optional special block rendered at the bottom of the panel
         self.device_model_block = None  # Optional custom device model filter block
+        self.token_search_block = []    # Optional token-search entries: [{column, label}, ...]
 
 # custom sort the values of columns in the data
 def custom_sort(values):
@@ -115,9 +139,10 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, ADVANCED_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS
+    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, DATABASE_PATH
+    DATABASE_PATH = os.path.join(os.path.dirname(__file__), database_path)
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
-    ADVANCED_SIDEBAR_CATEGORIES = config.get("advanced-sidebar-categories", [])
+    METADATA_SIDEBAR_CATEGORIES = config.get("metadata-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
     SELECT_DESELECT_ALL_CATEGORIES = config.get("select-deselect-all-categories", [])
     EXCLUSIVE_FILTERING_CATEGORIES = config.get("exclusive-filtering-categories", [])
@@ -127,8 +152,17 @@ def load_data(config_path):
     START_CATEGORY_FILTERS = json.dumps(["INFO"] + config.get("start-category-filters", []))
     SPECIAL_FORMAT_EXPLANATIONS = config.get("special-format-explanations", [])
     PERFORMANCE_METRICS_COLUMNS = config.get("performance-metrics-columns", [])
+    # Performance metric columns are automatically excluded from the normal sidebar filter UI
+    # and treated as parenthical — users only need to list them under performance-metrics-columns.
+    for _col in PERFORMANCE_METRICS_COLUMNS:
+        if _col not in EXCLUDED_SIDEBAR_CATEGORIES:
+            EXCLUDED_SIDEBAR_CATEGORIES.append(_col)
+        if _col not in PARENTHICAL_COLUMNS:
+            PARENTHICAL_COLUMNS.append(_col)
     DEVICE_MODEL_COLUMN = config.get("device-model-column", "")
     DEVICE_MODEL_OPTIONS = config.get("device-model-options", [])
+    OTHER_THRESHOLD_COLUMNS = config.get("other-threshold-columns", [])
+    TOKEN_SEARCH_COLUMNS = config.get("token-search-columns", [])
 
     # Load data from CSV file into data variable
     try:
@@ -149,10 +183,30 @@ def load_data(config_path):
         if 'Abstract' in data_entry:
             del data_entry['Abstract']
 
-    # delete the 'Title' column from the data
-    for data_entry in data:
-        if 'Title' in data_entry:
-            del data_entry['Title']
+    # Compute rare values for other-threshold columns (values appearing fewer than 2 times)
+    OTHER_THRESHOLD_RARE_VALUES = {}
+    for col in OTHER_THRESHOLD_COLUMNS:
+        counts = {}
+        for row in data:
+            raw = row.get(col, 'N/A')
+            parts = [v.strip() for v in str(raw).split(',')]
+            for part in parts:
+                if part:
+                    counts[part] = counts.get(part, 0) + 1
+        OTHER_THRESHOLD_RARE_VALUES[col] = [v for v, c in counts.items() if c <= 2]
+
+    # Compute unique individual options for token-search columns
+    TOKEN_SEARCH_OPTIONS = {}
+    for col in TOKEN_SEARCH_COLUMNS:
+        options = set()
+        for row in data:
+            raw = row.get(col, 'N/A')
+            if raw and str(raw) != 'N/A':
+                for part in str(raw).split(','):
+                    part = part.strip()
+                    if part and part != 'N/A':
+                        options.add(part)
+        TOKEN_SEARCH_OPTIONS[col] = sorted(options, key=lambda x: x.lower())
 
     # Load explanations from CSV file into explanations variable
     try:
@@ -170,61 +224,28 @@ def load_data(config_path):
 
     return data, explanations
 
-def load_abstracts():
-    try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
-        df = pd.read_csv(csv_path, usecols=["Abstract", "ID"])  # Load only the Abstract column
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        abstracts = df.to_dict(orient="records")
-    except FileNotFoundError:
-        return "data.csv file not found"
-    except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
-    except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    return abstracts
+def load_abstracts_and_titles():
+    """Load abstracts and titles from the dataset CSV in a single read.
 
-def load_titles():
+    Returns:
+        (abstracts, titles, None) on success, where abstracts and titles are
+        lists of dicts with keys ``"ID"`` and ``"Abstract"``/``"Title"``
+        respectively.
+        (None, None, error_string) on failure.
+    """
     try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
-        df = pd.read_csv(csv_path, usecols=["Title", "ID"])  # Load only the Title column
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        titles = df.to_dict(orient="records")
+        csv_path = DATABASE_PATH
+        df = pd.read_csv(csv_path, usecols=["ID", "Abstract", "Title"])
+        df = df.fillna('N/A').replace('nan', 'N/A')
+        abstracts = df[["ID", "Abstract"]].to_dict(orient="records")
+        titles = df[["ID", "Title"]].to_dict(orient="records")
+        return abstracts, titles, None
     except FileNotFoundError:
-        return "data.csv file not found"
+        return None, None, "data.csv file not found"
     except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
+        return None, None, "data.csv file is empty"
     except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    return titles
-
-def additional_data():
-    try:
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
-        df = pd.read_csv(csv_path, usecols=["Gesture", "Keywords"])
-        df = df.fillna('N/A')  # Replace actual NaN values
-        df = df.replace('nan', 'N/A')  # Replace string 'nan' values
-        additional_data = df.to_dict(orient="records")
-    except FileNotFoundError:
-        return "data.csv file not found"
-    except pd.errors.EmptyDataError:
-        return "data.csv file is empty"
-    except Exception as e:
-        return f"Error loading data.csv: {e}"
-    
-    helper = {}
-    for entry in additional_data:
-        for key in entry.keys():
-            if key not in helper:
-                helper[key] = [entry[key]]
-            else:    
-                helper[key].append(entry[key])
-    
-    return helper
+        return None, None, f"Error loading data.csv: {e}"
 
 def get_performance_metrics_mapping():
     """
@@ -251,7 +272,7 @@ def generate_sidebar_panels(data, explanations):
     sidebar_panels = []
     panels = {}
     for col in data[0].keys(): # all records in the database have the same keys = column headings = data[0].keys()
-        prefix = "Advanced Filters" if col in ADVANCED_SIDEBAR_CATEGORIES else (col.split("_")[0] if "_" in col else "General Information")
+        prefix = "Metadata" if col in METADATA_SIDEBAR_CATEGORIES else (col.split("_")[0] if "_" in col else "General Information")
         if prefix not in panels:
             panels.update({prefix: []})
         panels[prefix].append(col)
@@ -273,6 +294,11 @@ def generate_sidebar_panels(data, explanations):
           # skip the device model column – it is rendered via a custom block instead
           if DEVICE_MODEL_COLUMN and col == DEVICE_MODEL_COLUMN:
             continue
+
+          # token-search columns use a custom UI instead of checkboxes
+          if col in TOKEN_SEARCH_COLUMNS:
+            new_panel.token_search_block.append({'column': col, 'label': col.split('_')[-1]})
+            continue
           
           # for numerical columns, get min and max values and add Slider to the respective panel
           if col in SLIDER_CATEGORIES:
@@ -280,8 +306,14 @@ def generate_sidebar_panels(data, explanations):
             min_value = min(list(map(lambda entry: entry[col], data)))
             max_value = max(list(map(lambda entry: entry[col], data)))
 
+            unbounded_max = False
+            # Fixed / capped overrides for specific sliders
+            if col == "Interaction_PANEL_Number of Selected Gestures":
+                max_value = 25
+                unbounded_max = True  # values > 25 are all captured when slider is at max
+
             # create a new slider
-            new_slider = Slider(value=col, min_value=min_value, max_value=max_value)
+            new_slider = Slider(value=col, min_value=min_value, max_value=max_value, unbounded_max=unbounded_max)
             new_slider.explanation = explanations.get(col, None)
 
             # add the slider to the respective panel
@@ -302,6 +334,20 @@ def generate_sidebar_panels(data, explanations):
 
             # sort the unique values using custom_sort function
             sorted_unique_values = custom_sort(list(unique_values))
+
+            # For other-threshold columns, replace rare values with a single "Other" option
+            if col in OTHER_THRESHOLD_COLUMNS and col in OTHER_THRESHOLD_RARE_VALUES:
+                rare = set(OTHER_THRESHOLD_RARE_VALUES[col])
+                frequent_values = [v for v in sorted_unique_values if v not in rare]
+                if rare:
+                    # Insert "Other" before "N/A" (Other is still a valid option, not not-applicable)
+                    has_na = "N/A" in frequent_values
+                    if has_na:
+                        frequent_values = [v for v in frequent_values if v != "N/A"]
+                    frequent_values.append("Other")
+                    if has_na:
+                        frequent_values.append("N/A")
+                sorted_unique_values = frequent_values
 
             # create a new filter for the column and add it to the respective panel
             if col in EXCLUSIVE_FILTERING_CATEGORIES:
@@ -348,8 +394,8 @@ def generate_sidebar_panels(data, explanations):
                                 pass
 
                 if all_values:
-                    min_value = int(min(all_values))
-                    max_value = int(max(all_values))
+                    min_value = 0    # fixed range: 0–100 regardless of data
+                    max_value = 100
                     performance_slider = Slider(
                         value="Accuracy/F1-Score of Interaction Detection",
                         min_value=min_value,
@@ -367,8 +413,25 @@ def generate_sidebar_panels(data, explanations):
                 }
                 break
 
-    # Panel for advanced filters should be at the end
-    sidebar_panels.sort(key=lambda x: x.value == "Advanced Filters")
+    # Metadata panel should be at the end
+    sidebar_panels.sort(key=lambda x: x.value == "Metadata")
+
+    # Add "Authors" and "Title" to the Metadata token-search block
+    # (both are excluded from normal sidebar processing but should be searchable via the token UI)
+    if TOKEN_SEARCH_COLUMNS:
+        for panel in sidebar_panels:
+            if panel.value == "Metadata":
+                existing_cols = {entry['column'] for entry in panel.token_search_block}
+                for col in ["Authors", "Title"]:
+                    if col in TOKEN_SEARCH_COLUMNS and col not in existing_cols:
+                        panel.token_search_block.append({'column': col, 'label': col})
+                # Sort into desired display order
+                desired_order = ["Keywords", "Main Author", "Authors", "Title"]
+                panel.token_search_block.sort(
+                    key=lambda x: desired_order.index(x['column'])
+                    if x['column'] in desired_order else len(desired_order)
+                )
+                break
 
     # Add custom device model filter block at the bottom of the Device panel
     if DEVICE_MODEL_COLUMN and DEVICE_MODEL_OPTIONS:
@@ -385,11 +448,11 @@ def generate_sidebar_panels(data, explanations):
 def load_similarity_data():
     try:
         # Read the similarity matrix with the first column as index
-        csv_path_as = os.path.join(os.path.dirname(__file__), "abstract_similarity_datasets/normalized_abstract_similarity.csv")
+        csv_path_as = os.path.join(os.path.dirname(__file__), "datasets/abstract_similarity/normalized_abstract_similarity.csv")
         abstract_similarity_df = pd.read_csv(csv_path_as, index_col=0)
         abstract_similarity_df = abstract_similarity_df.fillna('N/A')  # Replace actual NaN values
         abstract_similarity_df = abstract_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
-        csv_path_ds = os.path.join(os.path.dirname(__file__), "database_similarity_datasets/normalized_database_similarity.csv")
+        csv_path_ds = os.path.join(os.path.dirname(__file__), "datasets/database_similarity/normalized_database_similarity.csv")
         database_similarity_df = pd.read_csv(csv_path_ds, index_col=0)
         database_similarity_df = database_similarity_df.fillna('N/A')  # Replace actual NaN values
         database_similarity_df = database_similarity_df.replace('nan', 'N/A')  # Replace string 'nan' values
@@ -413,166 +476,207 @@ def load_similarity_data():
     
     return similarity_data
 
-def load_citation_data():
-    # Load citation and co-author matrices for timeline view
-    citation_matrix = []
-    coauthor_matrix = []
-    
+def load_citation_data(all_data_ids=None):
+    # Load citation and co-author matrices for timeline view.
+    # Returns two dict-of-dicts: { rowId(str): { colId(str): value } }
+    # so that JS can do matrix[nodeA][nodeB] directly.
+    # IDs present in data.csv but absent from the CSV files get all-zero rows.
+
+    if all_data_ids is None:
+        all_data_ids = []
+
+    def load_matrix(csv_path):
+        """Read a square matrix CSV and return a dict-of-dicts keyed by string ID."""
+        df = pd.read_csv(csv_path, index_col=0)
+        # Ensure both index and column names are strings
+        df.index = df.index.astype(str)
+        df.columns = df.columns.astype(str)
+
+        result = {}
+        for row_id in df.index:
+            result[row_id] = {col_id: int(df.at[row_id, col_id])
+                              for col_id in df.columns}
+
+        # Pad any IDs present in data.csv but missing from the matrix
+        for sid in all_data_ids:
+            if sid not in result:
+                # Add a zero row and a zero column entry for every existing row
+                result[sid] = {other: 0 for other in all_data_ids}
+                for other in result:
+                    if sid not in result[other]:
+                        result[other][sid] = 0
+
+        return result
+
+    citation_matrix = {}
+    coauthor_matrix = {}
+
     try:
-        # Read CSV - convert index to a column for proper processing in JS
-        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/citation_matrix.csv")
-        citation_df = pd.read_csv(csv_path, index_col=0)
-        
-        # Get column names and index
-        col_headers = citation_df.columns.tolist()
-        row_indices = citation_df.index.tolist()
-        
-        # Create header row with empty first cell plus column names
-        header_row = [""] + col_headers
-        
-        # Create matrix with header row and data rows (index + values)
-        citation_matrix = [header_row]
-        for idx in row_indices:
-            row_data = [idx] + citation_df.loc[idx].tolist()
-            citation_matrix.append(row_data)
-                
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/interconnections/citation_matrix.csv")
+        citation_matrix = load_matrix(csv_path)
     except Exception as e:
-        return f"Error loading citation matrix: {e}"
-    
+        print(f"Warning: could not load citation matrix: {e}")
+        # Fall back to an all-zero matrix so the timeline still renders
+        citation_matrix = {sid: {other: 0 for other in all_data_ids} for sid in all_data_ids}
+
     try:
-        # Read CSV - convert index to a column for proper processing in JS
-        csv_path = os.path.join(os.path.dirname(__file__), "interconnections_datasets/coauthor_matrix.csv")
-        coauthor_df = pd.read_csv(csv_path, index_col=0)
-        
-        # Get column names and index
-        col_headers = coauthor_df.columns.tolist()
-        row_indices = coauthor_df.index.tolist()
-        
-        # Create header row with empty first cell plus column names
-        header_row = [""] + col_headers
-        
-        # Create matrix with header row and data rows (index + values)
-        coauthor_matrix = [header_row]
-        for idx in row_indices:
-            row_data = [idx] + coauthor_df.loc[idx].tolist()
-            coauthor_matrix.append(row_data)
-            
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/interconnections/coauthor_matrix.csv")
+        coauthor_matrix = load_matrix(csv_path)
     except Exception as e:
-        return f"Error loading coauthor matrix: {e}"
-    
+        print(f"Warning: could not load coauthor matrix: {e}")
+        coauthor_matrix = {sid: {other: 0 for other in all_data_ids} for sid in all_data_ids}
+
     return citation_matrix, coauthor_matrix
+
+
+def _load_view_data():
+    """Load, validate, and pre-process all data needed by the four main views.
+
+    Returns:
+        ``((data, explanations, sidebar_panels), None)`` on success.
+        ``(None, (response, status_code))`` on failure — routes can do
+        ``if err: return err`` to short-circuit immediately.
+    """
+    result = load_data(config_path=CONFIG_PATH)
+    if isinstance(result, str):
+        return None, (render_template("error.html", error=result), 500)
+    data, explanations = result
+    if not isinstance(data, list):
+        return None, (render_template("error.html", error=data), 500)
+    if not isinstance(explanations, dict):
+        return None, (render_template("error.html", error=explanations), 500)
+    return (data, explanations, generate_sidebar_panels(data, explanations)), None
+
+
+def _build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles):
+    """Build the template kwargs shared by all four main views.
+
+    Centralising these here means adding a new global config key only requires
+    a change in one place instead of four.
+    """
+    return dict(
+        data=data,
+        data_json=json.dumps(data),
+        sidebar_panels=sidebar_panels,
+        explanations=json.dumps(explanations),
+        abstracts=json.dumps(abstracts),
+        titles=json.dumps(titles),
+        parenthical_columns=json.dumps(PARENTHICAL_COLUMNS),
+        filter_categories=json.dumps(filter_categories(data)),
+        start_categories=START_CATEGORY_FILTERS,
+        performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()),
+        device_model_column=json.dumps(DEVICE_MODEL_COLUMN),
+        device_model_options=json.dumps(DEVICE_MODEL_OPTIONS),
+        other_threshold_columns=json.dumps(OTHER_THRESHOLD_COLUMNS),
+        other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES),
+        token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS),
+        token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS),
+    )
+
 
 @app.get("/")
 def home():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
 
-    # Check for success message
-    success_message = request.args.get('success')
-    if success_message:
-        print(f"Success message detected: {success_message}")
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
-    return render_template("table-view.html", current_view="tableView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS), success_message=success_message)
+    # Map allowlisted success codes to user-visible messages
+    _success_codes = {
+        'study_submitted': 'Study submitted successfully!',
+        'mistake_reported': 'Mistake report submitted successfully!',
+    }
+    success_message = _success_codes.get(request.args.get('success'))
+
+    return render_template(
+        "table-view.html",
+        current_view="tableView",
+        success_message=success_message,
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/bar-chart")
 def bar_chart():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
 
-    categories = []
-    for category in data[0].keys():
-        if category in EXCLUDED_SIDEBAR_CATEGORIES:
-            continue
-        categories.append(category)
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
-    abstracts = load_abstracts()
-    if not isinstance(abstracts, list):
-        return render_template("error.html", error=abstracts), 500
-    
-    titles = load_titles()
-    if not isinstance(titles, list):
-        return render_template("error.html", error=titles), 500
-
-    return render_template("bar-chart.html", current_view="chartView", data=data, sidebar_panels=sidebar_panels, explanations=json.dumps(explanations), abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), start_categories=START_CATEGORY_FILTERS, performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
+    return render_template(
+        "bar-chart.html",
+        current_view="chartView",
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/similarity")
 def similarity():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
+
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
     similarity_data = load_similarity_data()
     if not isinstance(similarity_data, dict):
         return render_template("error.html", error=similarity_data), 500
-    
-    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("similarity.html", current_view="similarityView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), similarity_data=json.dumps(similarity_data), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
+
+    return render_template(
+        "similarity.html",
+        current_view="similarityView",
+        similarity_data=json.dumps(similarity_data),
+        excluded_categories=json.dumps(excluded_categories),
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get("/timeline")
 def timeline():
-    config_path = os.path.join(os.path.dirname(__file__), "configs", "earXplore_interaction.yaml")
-    result = load_data(config_path=config_path)
-    if isinstance(result, str):
-        return render_template("error.html", error=result), 500
-    
-    data, explanations = result
-    if not isinstance(data, list):
-        return render_template("error.html", error=data), 500
-    
-    if not isinstance(explanations, dict):
-        return render_template("error.html", error=explanations), 500
-    
-    sidebar_panels = generate_sidebar_panels(data, explanations)
+    view_data, err = _load_view_data()
+    if err:
+        return err
+    data, explanations, sidebar_panels = view_data
 
-    categories = []
-    for category in data[0].keys():
-        if category in EXCLUDED_SIDEBAR_CATEGORIES or category == "Year":
-            continue
-        categories.append(category)
+    abstracts, titles, load_err = load_abstracts_and_titles()
+    if load_err:
+        return render_template("error.html", error=load_err), 500
 
-    citation_matrix, coauthor_matrix = load_citation_data()
-    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + ADVANCED_SIDEBAR_CATEGORIES + ["Year"]
+    all_data_ids = [str(entry['ID']) for entry in data]
+    citation_matrix, coauthor_matrix = load_citation_data(all_data_ids)
+    excluded_categories = EXCLUDED_SIDEBAR_CATEGORIES + METADATA_SIDEBAR_CATEGORIES + ["Year"]
 
-    return render_template("timeline.html", current_view="timeView", data=data, sidebar_panels=sidebar_panels, explanations=explanations, abstracts=json.dumps(load_abstracts()), titles=json.dumps(load_titles()), parenthical_columns=json.dumps(PARENTHICAL_COLUMNS), filter_categories=json.dumps(filter_categories(data)), citation_matrix=json.dumps(citation_matrix), coauthor_matrix=json.dumps(coauthor_matrix), excluded_categories=json.dumps(excluded_categories), performance_metrics_mapping=json.dumps(get_performance_metrics_mapping()), device_model_column=json.dumps(DEVICE_MODEL_COLUMN), device_model_options=json.dumps(DEVICE_MODEL_OPTIONS))
+    return render_template(
+        "timeline.html",
+        current_view="timeView",
+        citation_matrix=json.dumps(citation_matrix),
+        coauthor_matrix=json.dumps(coauthor_matrix),
+        excluded_categories=json.dumps(excluded_categories),
+        **_build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles),
+    )
 
 @app.get('/add_study')
 def add_study():
     try:
+        # Ensure global config variables (DEVICE_MODEL_COLUMN, PERFORMANCE_METRICS_COLUMNS, etc.)
+        # are populated before building the form.  These are set as a side-effect of load_data(),
+        # which is normally called by the main view routes.  If a worker receives /add_study
+        # as its very first request, the globals would still hold their module-level defaults
+        # (empty string / empty list), causing wrong field types in the rendered form.
+        load_data(CONFIG_PATH)
+
         # Load the data
-        csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
+        csv_path = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
         df = pd.read_csv(csv_path)
         
         # Extract categories and their options for the form
@@ -614,6 +718,16 @@ def add_study():
                         'name': display_name,
                         'min': int(df[col].min()),
                         'max': int(df[col].max())
+                    }
+                    continue
+
+                # Fields that should always be free-text inputs (not checkboxes)
+                text_field_cols = {'Gesture', DEVICE_MODEL_COLUMN} | set(PERFORMANCE_METRICS_COLUMNS)
+                if col in text_field_cols:
+                    panel_options[col] = {
+                        'type': 'text',
+                        'name': display_name,
+                        'options': []
                     }
                     continue
                 
@@ -667,10 +781,6 @@ def add_study():
 @app.route('/submit_study', methods=['POST'])
 def submit_study():
     try:
-        # Honeypot: hidden from real users; bots that fill it are silently rejected
-        if request.form.get('website', ''):
-            return redirect(url_for('home', success='Study submitted successfully'))
-
         # Get form data from request - use getlist for potential multiple values
         form_data = request.form
         
@@ -680,8 +790,6 @@ def submit_study():
         # First, get all unique field names (without the array notation)
         field_names = set()
         for key in form_data.keys():
-            if key in ('csrf_token', 'website'):  # skip framework internals and honeypot
-                continue
             field_names.add(key)
         
         # Then process each field, using getlist to capture multiple values if present
@@ -786,29 +894,28 @@ def submit_study():
             body = body.rstrip("\n") + "\n\n"
         
         # Create and send the email
+        recipients = os.getenv("RECIPIENTS")
+        if not recipients:
+            print("Error: RECIPIENTS environment variable is not set.")
+            return jsonify({"success": False, "message": "Server is not configured to send emails. Please contact the administrator."}), 503
         msg = EmailMessage(
             subject=f"earXplore: New Study - {processed_data.get('title', 'Untitled')}",
-            to=[os.getenv("RECIPIENTS")],
+            to=[recipients],
             body=body
         )
         msg.send()
         
         print("Email sent successfully!")
-        return redirect(url_for('home', success='Study submitted successfully'))
+        return redirect(url_for('home', success='study_submitted'))
 
     except Exception as e:
         print(f"Error processing form submission: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
 
 @app.route('/submit_mistake', methods=['POST'])
 def submit_mistake():
     try:
-        # Honeypot: hidden from real users; bots that fill it are silently rejected
-        if request.form.get('website', ''):
-            return redirect(url_for('home', success='Mistake report submitted successfully'))
-
         # Get form data from request
         mistake_data = request.form
         
@@ -821,6 +928,9 @@ def submit_mistake():
         print(f"Body of the email:\n{body}\n")
 
         recipients = os.getenv("RECIPIENTS")
+        if not recipients:
+            print("Error: RECIPIENTS environment variable is not set.")
+            return jsonify({"success": False, "message": "Server is not configured to send emails. Please contact the administrator."}), 503
         
         # Create and send the email
         msg = EmailMessage(
@@ -831,13 +941,12 @@ def submit_mistake():
         msg.send()
         
         print("Email sent successfully!")
-        return redirect(url_for('home', success='Mistake report submitted successfully'))
+        return redirect(url_for('home', success='mistake_reported'))
 
     except Exception as e:
         print(f"Error processing mistake report: {str(e)}")
-        import traceback
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
     
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=888)
+    app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=888)
