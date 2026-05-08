@@ -781,6 +781,10 @@ def add_study():
 @app.route('/submit_study', methods=['POST'])
 def submit_study():
     try:
+        # Honeypot: hidden from real users; bots that fill it are silently rejected
+        if request.form.get('website', ''):
+            return redirect(url_for('home', success='study_submitted'))
+
         # Get form data from request - use getlist for potential multiple values
         form_data = request.form
         
@@ -790,6 +794,8 @@ def submit_study():
         # First, get all unique field names (without the array notation)
         field_names = set()
         for key in form_data.keys():
+            if key in ('csrf_token', 'website'):  # skip framework internals and honeypot
+                continue
             field_names.add(key)
         
         # Then process each field, using getlist to capture multiple values if present
@@ -916,6 +922,10 @@ def submit_study():
 @app.route('/submit_mistake', methods=['POST'])
 def submit_mistake():
     try:
+        # Honeypot: hidden from real users; bots that fill it are silently rejected
+        if request.form.get('website', ''):
+            return redirect(url_for('home', success='mistake_reported'))
+
         # Get form data from request
         mistake_data = request.form
         

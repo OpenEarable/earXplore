@@ -58,6 +58,10 @@
 
     <form id="mistakeForm" action="{{ url_for('submit_mistake') }}" method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {# Honeypot: visually hidden; real users never fill it, bots do #}
+      <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
+        <input type="text" name="website" tabindex="-1" autocomplete="off">
+      </div>
       <div class="mb-3">
         <label for="studyId" class="form-label">Study ID or Title (if known)</label>
         <input type="text" class="form-control" id="studyId" name="studyId" placeholder="e.g., 42 or 'EarGest: A Novel Ear Gesture Recognition System'">
@@ -85,6 +89,10 @@
     
     <form id="studyForm" action="{{ url_for('submit_study') }}" method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {# Honeypot: visually hidden; real users never fill it, bots do #}
+      <div style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true">
+        <input type="text" name="website" tabindex="-1" autocomplete="off">
+      </div>
       <!-- Always include these essential fields -->
       <h5 class="section-header">Essential Information</h5>
       <div class="row">
