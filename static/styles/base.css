@@ -12,14 +12,14 @@ body {
   display: flex;
   flex-direction: row;
 
-  --resp-font-size: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
-  --resp-font-ticks: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
-  --resp-font-ticks-bg: calc(clamp(0.25rem, 0.1213rem + 0.5492vw, 1rem) * 1.5);
-  --font-xl: calc(var(--resp-font-size) * 1.25);
-  --font-bg: calc(var(--resp-font-size) * 1.15);
+  --resp-font-size: clamp(0.45rem, 0.31rem + 0.42vw, 1.1rem);
+  --resp-font-ticks: clamp(0.45rem, 0.31rem + 0.42vw, 1.1rem);
+  --resp-font-ticks-bg: calc(clamp(0.23rem, 0.11rem + 0.32vw, 0.9rem) * 1.5);
+  --font-xl: calc(var(--resp-font-size) * 1.15);
+  --font-bg: calc(var(--resp-font-size) * 1.05);
   --font-md: var(--resp-font-size);
   --font-sm: calc(var(--resp-font-size) * 0.85);
-  --resp-padding: clamp(0.5rem, 0.3713rem + 0.5492vw, 1.25rem);
+  --resp-padding: clamp(0.35rem, 0.26rem + 0.37vw, 0.95rem);
 }
 
 /* Hide elements that are only relevant for lower screen resolution */
@@ -51,12 +51,12 @@ header {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  gap: var(--resp-padding);
+  gap: calc(var(--resp-padding) * 0.85);
 }
 
 .left-section {
-  width: 80%;
-  padding: 15px 10px 1px 10px; /* Top padding increased to 15px */
+  width: 82%;
+  padding: 0.5rem 0.5rem 0 0.5rem;
   flex: 2;
   max-height: 100vh;
   overflow-y: scroll;
@@ -68,12 +68,11 @@ nav {
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
-  gap: 1em;
+  gap: 0.75em;
 }
 
 #nav-r {
-  gap: 1em;
-  padding-right: 1em;
+  gap: 0.75em;
 }
 
 #earXplore-repo,
@@ -92,13 +91,14 @@ nav {
   flex-direction: row;
   justify-content: space-around;
   align-items: center;
-  gap: 10px; /* Creates space between each button */
+  gap: 0.35rem;
 }
 
 .navbar-item {
-  padding: var(--resp-padding);
-  text-align: center;
-  border-radius: 5px; /* Rounded corners */
+  padding: calc(var(--resp-padding) * 0.9);
+  display: flex;
+  align-items: center;
+  border-radius: 5px;
 }
 
 .navbar-text {
@@ -137,9 +137,8 @@ h3 {
   flex: 0.8;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding: 5px;
-  padding-bottom: 14rem; /* extra space so the last token-search dropdown isn't clipped */
+  gap: 0.5rem;
+  padding: 0.25rem;
   max-height: 100vh;
   overflow-y: scroll;
 }
@@ -155,7 +154,7 @@ h3 {
 
 .panel {
   background-color: var(--color-gray-light);
-  padding: 1em;
+  padding: 0.85em;
   border: 1px solid #ddd;
   border-radius: 5px;
 }
@@ -168,9 +167,9 @@ h3 {
 }
 
 .slider-container {
-  padding: 10px;
-  margin-top: 5px;
-  margin-bottom: 30px;
+  padding: 0.5rem;
+  margin-top: 0.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .hidden-filters {
@@ -248,7 +247,7 @@ h3 {
 }
 
 .study-info-panel-header:not(:first-child) {
-  margin-top: 20px;
+  margin-top: 1.25rem;
 }
 
 .info-circle {
@@ -317,7 +316,7 @@ a:visited {
     width: 80%;
     background-color: white;
     border-radius: 5px;
-    gap: 1em;
+    gap: 0.75em;
     right: -100%;
     z-index: 2;
     transition: right 0.3s ease;
@@ -378,15 +377,15 @@ a:visited {
 
   header,
   nav {
-    gap: 0.5em;
+    gap: 0.4em;
   }
 
   nav {
-    padding: 0.5em;
+    padding: 0.4em;
   }
 
   .sidebar-buttons {
-    margin-top: 1em;
+    margin-top: 0.75em;
   }
 
   .sidebar-buttons > div {
