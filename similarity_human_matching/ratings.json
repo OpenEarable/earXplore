@@ -1,0 +1,127 @@
+{
+  "author_1": {
+    "submitted_at": "2026-05-11T14:11:36.018875+00:00",
+    "ratings": [
+      {
+        "pair_index": 0,
+        "paper_a": 36,
+        "paper_b": 38,
+        "rating": 8
+      },
+      {
+        "pair_index": 1,
+        "paper_a": 106,
+        "paper_b": 129,
+        "rating": 17
+      },
+      {
+        "pair_index": 2,
+        "paper_a": 60,
+        "paper_b": 109,
+        "rating": 31
+      },
+      {
+        "pair_index": 3,
+        "paper_a": 38,
+        "paper_b": 110,
+        "rating": 72
+      },
+      {
+        "pair_index": 4,
+        "paper_a": 37,
+        "paper_b": 42,
+        "rating": 20
+      },
+      {
+        "pair_index": 5,
+        "paper_a": 74,
+        "paper_b": 126,
+        "rating": 22
+      },
+      {
+        "pair_index": 6,
+        "paper_a": 12,
+        "paper_b": 44,
+        "rating": 3
+      },
+      {
+        "pair_index": 7,
+        "paper_a": 26,
+        "paper_b": 31,
+        "rating": 3
+      },
+      {
+        "pair_index": 8,
+        "paper_a": 13,
+        "paper_b": 21,
+        "rating": 8
+      },
+      {
+        "pair_index": 9,
+        "paper_a": 66,
+        "paper_b": 67,
+        "rating": 10
+      },
+      {
+        "pair_index": 10,
+        "paper_a": 14,
+        "paper_b": 60,
+        "rating": 1
+      },
+      {
+        "pair_index": 11,
+        "paper_a": 41,
+        "paper_b": 112,
+        "rating": 6
+      },
+      {
+        "pair_index": 12,
+        "paper_a": 35,
+        "paper_b": 69,
+        "rating": 47
+      },
+      {
+        "pair_index": 13,
+        "paper_a": 81,
+        "paper_b": 103,
+        "rating": 69
+      },
+      {
+        "pair_index": 14,
+        "paper_a": 29,
+        "paper_b": 132,
+        "rating": 50
+      },
+      {
+        "pair_index": 15,
+        "paper_a": 63,
+        "paper_b": 93,
+        "rating": 3
+      },
+      {
+        "pair_index": 16,
+        "paper_a": 83,
+        "paper_b": 131,
+        "rating": 11
+      },
+      {
+        "pair_index": 17,
+        "paper_a": 15,
+        "paper_b": 117,
+        "rating": 0
+      },
+      {
+        "pair_index": 18,
+        "paper_a": 93,
+        "paper_b": 105,
+        "rating": 2
+      },
+      {
+        "pair_index": 19,
+        "paper_a": 114,
+        "paper_b": 137,
+        "rating": 2
+      }
+    ]
+  }
+}

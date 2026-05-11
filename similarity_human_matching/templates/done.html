@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title_suffix %} – Done{% endblock %}
+
+{% block content %}
+<div class="card centered">
+  <div class="done-icon" aria-hidden="true">✓</div>
+  <h2>Thank you!</h2>
+  <p>
+    Your ratings have been successfully submitted,
+    <strong>{{ author.replace('_', ' ').title() }}</strong>.
+  </p>
+  <p>You may now close this window.</p>
+  <a href="/" class="btn-secondary">← Back to start</a>
+</div>
+{% endblock %}

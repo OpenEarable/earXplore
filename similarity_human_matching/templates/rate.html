@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title_suffix %} – Pair {{ pair_index + 1 }} of {{ total }}{% endblock %}
+
+{% block content %}
+
+{# ── progress ─────────────────────────────────────────────────────────────── #}
+<div class="progress-bar-container">
+  <div class="progress-bar" style="width: {{ (pair_index / total * 100) | int }}%"></div>
+</div>
+<p class="progress-label">Pair {{ pair_index + 1 }} of {{ total }}</p>
+
+{# ── rating form ──────────────────────────────────────────────────────────── #}
+<form method="post" action="/rate/{{ author }}/{{ pair_index }}">
+
+  <div class="abstracts-grid">
+    <div class="abstract-card">
+      <h3>Abstract A</h3>
+      <p>{{ abstract_a }}</p>
+    </div>
+    <div class="abstract-card">
+      <h3>Abstract B</h3>
+      <p>{{ abstract_b }}</p>
+    </div>
+  </div>
+
+  <div class="vas-container">
+    <p class="vas-instruction">How similar are these two abstracts?</p>
+    <div class="vas-scale">
+      <span class="vas-label vas-label-left">Opposite</span>
+      <div class="slider-wrapper">
+        <input
+          type="range"
+          name="rating"
+          id="rating"
+          min="0" max="100"
+          value="{{ current_rating }}"
+          class="vas-slider"
+        />
+      </div>
+      <span class="vas-label vas-label-right">Equal</span>
+    </div>
+  </div>
+
+  <div class="actions">
+    {% if pair_index > 0 %}
+      <a href="/rate/{{ author }}/{{ pair_index - 1 }}" class="btn-secondary">← Previous</a>
+    {% else %}
+      <span></span>
+    {% endif %}
+    <button type="submit" class="btn-primary">
+      {% if pair_index + 1 == total %}Review all →{% else %}Next →{% endif %}
+    </button>
+  </div>
+
+</form>
+{% endblock %}

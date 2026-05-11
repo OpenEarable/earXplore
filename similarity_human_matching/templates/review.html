@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title_suffix %} – Review{% endblock %}
+
+{% block content %}
+
+<h2>Review Your Ratings</h2>
+<p class="review-intro">
+  Below are all {{ total }} abstract pairs with your current ratings. You can adjust
+  any slider before submitting. When you are satisfied with all ratings, click
+  <strong>Submit Ratings</strong> at the bottom.
+</p>
+
+<form method="post" action="/submit/{{ author }}" id="review-form">
+
+  <div class="review-list">
+    {% for pair in pairs %}
+    <div class="review-item">
+
+      <div class="review-pair-header">
+        <span class="review-pair-number">Pair {{ pair.index + 1 }}</span>
+        <a class="btn-reopen" href="/rate/{{ author }}/{{ pair.index }}">Open full pair ↗</a>
+      </div>
+
+      <div class="review-abstracts">
+        <div class="review-abstract">
+          <span class="review-abstract-label">A</span>
+          <p>{{ pair.teaser_a }}</p>
+        </div>
+        <div class="review-abstract">
+          <span class="review-abstract-label">B</span>
+          <p>{{ pair.teaser_b }}</p>
+        </div>
+      </div>
+
+      <div class="review-rating">
+        <div class="vas-scale">
+          <span class="vas-label vas-label-left">Opposite</span>
+          <div class="slider-wrapper">
+            <input
+              type="range"
+              name="rating_{{ pair.index }}"
+              id="slider-{{ pair.index }}"
+              min="0" max="100"
+              value="{{ pair.rating }}"
+              class="vas-slider"
+              data-idx="{{ pair.index }}"
+            />
+          </div>
+          <span class="vas-label vas-label-right">Equal</span>
+        </div>
+        <p class="rating-value-display">
+          Current value: <strong id="val-{{ pair.index }}">{{ pair.rating }}</strong> / 100
+        </p>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="actions submit-section">
+    <button type="button" class="btn-primary" id="submit-btn">Submit Ratings</button>
+  </div>
+
+</form>
+
+{# ── confirmation modal ───────────────────────────────────────────────────── #}
+<div id="confirm-modal" class="modal-overlay hidden" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <h3>Confirm Submission</h3>
+    <p>
+      Are you sure you want to submit your ratings?
+      <strong>This action cannot be undone.</strong>
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="cancel-submit">Cancel</button>
+      <button type="button" class="btn-primary" id="confirm-submit">Yes, submit</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live-update numeric display as sliders move
+  document.querySelectorAll('.vas-slider').forEach(function (slider) {
+    var idx = slider.dataset.idx;
+    var display = document.getElementById('val-' + idx);
+    if (display) {
+      slider.addEventListener('input', function () {
+        display.textContent = slider.value;
+      });
+    }
+  });
+
+  // Confirmation modal
+  var modal = document.getElementById('confirm-modal');
+
+  document.getElementById('submit-btn').addEventListener('click', function () {
+    modal.classList.remove('hidden');
+  });
+
+  document.getElementById('cancel-submit').addEventListener('click', function () {
+    modal.classList.add('hidden');
+  });
+
+  document.getElementById('confirm-submit').addEventListener('click', function () {
+    document.getElementById('review-form').submit();
+  });
+
+  // Close modal on overlay click
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) {
+      modal.classList.add('hidden');
+    }
+  });
+</script>
+{% endblock %}

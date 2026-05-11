@@ -1,0 +1,386 @@
+/* ============================================================
+   Abstract Similarity Rating Tool – Styles
+   Color palette mirrors earXplore's base.css accent colors.
+   ============================================================ */
+
+:root {
+  --accent:       #b89491;
+  --accent-dark:  #a37c79;
+  --gray:         #6c757d;
+  --gray-light:   #f8f9fa;
+  --text:         #333;
+  --border:       #ddd;
+  --radius:       6px;
+  --max-width:    1100px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  margin: 0;
+  background: #fff;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+
+header {
+  background: var(--accent);
+  color: white;
+  padding: 0.65rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.site-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.author-badge {
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 0.2rem 0.65rem;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* ── Main container ─────────────────────────────────────────────────────── */
+
+main {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+h2 { margin-top: 0; font-size: 1.25rem; }
+h3 { font-size: 1rem; margin: 0 0 0.6rem; }
+
+/* ── Progress bar ───────────────────────────────────────────────────────── */
+
+.progress-bar-container {
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin-bottom: 0.4rem;
+}
+
+.progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-label {
+  font-size: 0.82rem;
+  color: var(--gray);
+  margin: 0 0 1rem;
+}
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+
+.card {
+  background: var(--gray-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+}
+
+.card.centered {
+  max-width: 440px;
+  margin: 2.5rem auto;
+  text-align: center;
+}
+
+.card h2 { margin-top: 0; }
+
+/* ── Form controls ──────────────────────────────────────────────────────── */
+
+.form-group {
+  margin-bottom: 1rem;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  background: white;
+  cursor: pointer;
+}
+
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(184, 148, 145, 0.3);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+
+.btn-primary,
+.btn-secondary {
+  display: inline-block;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary  { background: var(--accent); color: white; }
+.btn-secondary {
+  background: var(--gray-light);
+  color: var(--gray);
+  border: 1px solid var(--border);
+}
+.btn-primary:hover,
+.btn-secondary:hover { opacity: 0.72; }
+
+.btn-reopen {
+  font-size: 0.78rem;
+  color: var(--accent-dark);
+  text-decoration: none;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.btn-reopen:hover { opacity: 0.7; }
+
+.full-width { width: 100%; text-align: center; }
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ── Abstract grid (rating page) ────────────────────────────────────────── */
+
+.abstracts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.abstract-card {
+  background: var(--gray-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.abstract-card h3 {
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.6rem;
+}
+
+.abstract-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+
+/* ── VAS slider ─────────────────────────────────────────────────────────── */
+
+.vas-container {
+  margin: 1.25rem 0;
+}
+
+.vas-instruction {
+  text-align: center;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.vas-scale {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.vas-label {
+  font-size: 0.83rem;
+  color: var(--gray);
+  min-width: 58px;
+  white-space: nowrap;
+}
+
+.vas-label-right { text-align: right; }
+
+.slider-wrapper { flex: 1; }
+
+.vas-slider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+  height: 6px;
+}
+
+/* ── Review list ─────────────────────────────────────────────────────────── */
+
+.review-intro {
+  color: var(--gray);
+  margin-bottom: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.review-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+  background: white;
+}
+
+.review-pair-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.55rem;
+}
+
+.review-pair-number {
+  font-weight: 700;
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.review-abstracts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+
+.review-abstract {
+  display: flex;
+  gap: 0.45rem;
+  align-items: flex-start;
+}
+
+.review-abstract-label {
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.38rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.review-abstract p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--gray);
+  line-height: 1.5;
+}
+
+.review-rating {
+  border-top: 1px solid var(--border);
+  padding-top: 0.55rem;
+}
+
+.rating-value-display {
+  font-size: 0.78rem;
+  color: var(--gray);
+  text-align: right;
+  margin: 0.2rem 0 0;
+}
+
+.submit-section {
+  margin-top: 2rem;
+  justify-content: flex-end;
+  padding-bottom: 1rem;
+}
+
+/* ── Modal ──────────────────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden { display: none; }
+
+.modal-box {
+  background: white;
+  border-radius: var(--radius);
+  padding: 1.75rem 2rem;
+  max-width: 380px;
+  width: 90%;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.2);
+}
+
+.modal-box h3 { margin-top: 0; }
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ── Done page ──────────────────────────────────────────────────────────── */
+
+.done-icon {
+  font-size: 3rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+  line-height: 1;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 700px) {
+  .abstracts-grid,
+  .review-abstracts {
+    grid-template-columns: 1fr;
+  }
+
+  main { padding: 1rem; }
+}

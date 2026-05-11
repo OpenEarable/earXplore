@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title_suffix %} – Select Author{% endblock %}
+
+{% block content %}
+<div class="card centered">
+  <h2>Welcome</h2>
+  <p>
+    You will be shown {{ 20 }} pairs of abstracts. For each pair, please judge
+    how similar the two abstracts are using the scale provided — from
+    <strong>Opposite</strong> (completely different) to <strong>Equal</strong>
+    (essentially the same).
+  </p>
+  <p>
+    Select your name below to begin or resume your session.
+  </p>
+
+  <form method="post" action="/start">
+    <div class="form-group">
+      <label for="author">Your name</label>
+      <select name="author" id="author" required>
+        <option value="" disabled selected>— select —</option>
+        {% for a in authors %}
+          <option value="{{ a }}"{% if a in submitted %} disabled{% endif %}>
+            {{ a.replace('_', ' ').title() }}{% if a in submitted %} (already submitted){% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary full-width">Start / Continue →</button>
+  </form>
+</div>
+{% endblock %}
