@@ -1,5 +1,5 @@
 /* ============================================================
-   Abstract Similarity Rating Tool – Styles
+   Similarity Rating Tool – Styles
    Color palette mirrors earXplore's base.css accent colors.
    ============================================================ */
 
@@ -383,4 +383,114 @@ select:focus {
   }
 
   main { padding: 1rem; }
+}
+
+/* ── Task toggle (index page) ───────────────────────────────────────────── */
+
+.task-toggle {
+  display: flex;
+  gap: 0.6rem;
+  flex-direction: column;
+}
+
+.task-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.task-option input[type="radio"] {
+  accent-color: var(--accent);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.task-option-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.task-info-box {
+  min-height: 1.4em;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+
+.task-info-done {
+  color: #856404;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: var(--radius);
+  padding: 0.3rem 0.6rem;
+}
+
+/* ── Document panel cards ───────────────────────────────────────────────── */
+
+.doc-grid .abstract-card {
+  /* allow taller content to scroll cleanly */
+  max-height: 70vh;
+}
+
+.doc-card h3 {
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.doc-panel-header {
+  color: var(--accent-dark);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0.85rem 0 0.3rem;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.doc-panel-header:first-of-type {
+  margin-top: 0;
+}
+
+.doc-field {
+  display: flex;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 0.15rem;
+}
+
+.doc-field-label {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.doc-field-label::after {
+  content: ':';
+}
+
+.doc-field-value {
+  color: #555;
+  word-break: break-word;
+}
+
+/* ── Document teaser (review page) ─────────────────────────────────────── */
+
+.doc-teaser {
+  font-size: 0.8rem;
+}
+
+.doc-teaser-field {
+  display: flex;
+  gap: 0.3rem;
+  line-height: 1.5;
 }

@@ -6,10 +6,22 @@
   <div class="done-icon" aria-hidden="true">✓</div>
   <h2>Thank you!</h2>
   <p>
-    Your ratings have been successfully submitted,
+    Your <strong>{{ task_label }}</strong> ratings have been successfully submitted,
     <strong>{{ author.replace('_', ' ').title() }}</strong>.
   </p>
-  <p>You may now close this window.</p>
+  {% if not other_submitted %}
+  <p>
+    You still need to complete the
+    <strong>{{ other_task_label }}</strong> task.
+  </p>
+  <a href="/?prefill={{ author }}"
+     class="btn-primary"
+     style="display:inline-block;margin-bottom:0.75rem;"
+  >Start {{ other_task_label }} →</a>
+  <br />
+  {% else %}
+  <p>You have completed both tasks. You may now close this window.</p>
+  {% endif %}
   <a href="/" class="btn-secondary">← Back to start</a>
 </div>
 {% endblock %}

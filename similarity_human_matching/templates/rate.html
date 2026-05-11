@@ -10,8 +10,10 @@
 <p class="progress-label">Pair {{ pair_index + 1 }} of {{ total }}</p>
 
 {# ── rating form ──────────────────────────────────────────────────────────── #}
-<form method="post" action="/rate/{{ author }}/{{ pair_index }}">
+<form method="post" action="/rate/{{ task }}/{{ author }}/{{ pair_index }}">
 
+  {# ── abstract task ────────────────────────────────────────────────────── #}
+  {% if task == 'abstract' %}
   <div class="abstracts-grid">
     <div class="abstract-card">
       <h3>Abstract A</h3>
@@ -23,8 +25,40 @@
     </div>
   </div>
 
+  {# ── document task ────────────────────────────────────────────────────── #}
+  {% else %}
+  <div class="abstracts-grid doc-grid">
+    {# ── Paper A ── #}
+    <div class="abstract-card doc-card">
+      <h3>Study A</h3>
+      {% for group in panels_a %}
+        <h5 class="doc-panel-header">{{ group.panel }}</h5>
+        {% for field in group.fields %}
+          <div class="doc-field">
+            <span class="doc-field-label">{{ field.label }}</span>
+            <span class="doc-field-value">{{ field.value }}</span>
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+    {# ── Paper B ── #}
+    <div class="abstract-card doc-card">
+      <h3>Study B</h3>
+      {% for group in panels_b %}
+        <h5 class="doc-panel-header">{{ group.panel }}</h5>
+        {% for field in group.fields %}
+          <div class="doc-field">
+            <span class="doc-field-label">{{ field.label }}</span>
+            <span class="doc-field-value">{{ field.value }}</span>
+          </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <div class="vas-container">
-    <p class="vas-instruction">How similar are these two abstracts?</p>
+    <p class="vas-instruction">How similar are these two {% if task == 'abstract' %}abstracts{% else %}studies{% endif %}?</p>
     <div class="vas-scale">
       <span class="vas-label vas-label-left">Opposite</span>
       <div class="slider-wrapper">
@@ -43,7 +77,7 @@
 
   <div class="actions">
     {% if pair_index > 0 %}
-      <a href="/rate/{{ author }}/{{ pair_index - 1 }}" class="btn-secondary">← Previous</a>
+      <a href="/rate/{{ task }}/{{ author }}/{{ pair_index - 1 }}" class="btn-secondary">← Previous</a>
     {% else %}
       <span></span>
     {% endif %}

@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Abstract Similarity Rating{% block title_suffix %}{% endblock %}</title>
+  <title>Similarity Rating{% block title_suffix %}{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
   {% block head %}{% endblock %}
 </head>
 <body>
   <header>
-    <span class="site-title">Abstract Similarity Rating</span>
+    <span class="site-title">
+      {% if task_label is defined and task_label %}{{ task_label }}{% else %}Similarity Rating{% endif %}
+    </span>
     {% if author is defined and author %}
       <span class="author-badge">{{ author.replace('_', ' ').title() }}</span>
     {% endif %}

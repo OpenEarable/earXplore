@@ -1,18 +1,15 @@
 {% extends "base.html" %}
-{% block title_suffix %} – Select Author{% endblock %}
+{% block title_suffix %} – Select Task{% endblock %}
 
 {% block content %}
 <div class="card centered">
   <h2>Welcome</h2>
   <p>
-    You will be shown {{ 20 }} pairs of abstracts. For each pair, please judge
-    how similar the two abstracts are using the scale provided — from
-    <strong>Opposite</strong> (completely different) to <strong>Equal</strong>
-    (essentially the same).
+    You will be shown 20 pairs. For each pair, please judge how similar the two
+    items are using the scale provided — from <strong>Opposite</strong>
+    (completely different) to <strong>Equal</strong> (essentially the same).
   </p>
-  <p>
-    Select your name below to begin or resume your session.
-  </p>
+  <p>Select your name and the task you want to complete.</p>
 
   <form method="post" action="/start">
     <div class="form-group">
@@ -20,13 +17,58 @@
       <select name="author" id="author" required>
         <option value="" disabled selected>— select —</option>
         {% for a in authors %}
-          <option value="{{ a }}"{% if a in submitted %} disabled{% endif %}>
-            {{ a.replace('_', ' ').title() }}{% if a in submitted %} (already submitted){% endif %}
-          </option>
+          <option value="{{ a }}">{{ a.replace('_', ' ').title() }}</option>
         {% endfor %}
       </select>
     </div>
-    <button type="submit" class="btn-primary full-width">Start / Continue →</button>
+
+    <div class="form-group">
+      <label>Task</label>
+      <div class="task-toggle">
+        {% for t in tasks %}
+        <label class="task-option">
+          <input type="radio" name="task" value="{{ t }}" required
+            {% if loop.first %}checked{% endif %} />
+          <span class="task-option-label">
+            {{ task_labels[t] }}
+            <span class="task-status-badges" id="badges-{{ t }}"></span>
+          </span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div id="task-submit-info" class="task-info-box"></div>
+
+    <button type="submit" class="btn-primary full-width" id="start-btn">Start / Continue →</button>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // submitted = {task: [author1, author2, ...]}
+  var submitted = {{ submitted | tojson }};
+
+  function updateUI() {
+    var author = document.getElementById('author').value;
+    var task   = document.querySelector('input[name="task"]:checked');
+    if (!task) return;
+    var t      = task.value;
+    var done   = submitted[t] && submitted[t].indexOf(author) !== -1;
+    var infoBox = document.getElementById('task-submit-info');
+    if (author && done) {
+      infoBox.textContent = 'You have already submitted this task.';
+      infoBox.className   = 'task-info-box task-info-done';
+    } else {
+      infoBox.textContent = '';
+      infoBox.className   = 'task-info-box';
+    }
+  }
+
+  document.getElementById('author').addEventListener('change', updateUI);
+  document.querySelectorAll('input[name="task"]').forEach(function(r) {
+    r.addEventListener('change', updateUI);
+  });
+</script>
 {% endblock %}

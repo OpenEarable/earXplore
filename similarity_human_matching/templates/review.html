@@ -5,12 +5,12 @@
 
 <h2>Review Your Ratings</h2>
 <p class="review-intro">
-  Below are all {{ total }} abstract pairs with your current ratings. You can adjust
-  any slider before submitting. When you are satisfied with all ratings, click
+  Below are all {{ total }} pairs with your current ratings. You can adjust
+  any slider before submitting. When you are satisfied, click
   <strong>Submit Ratings</strong> at the bottom.
 </p>
 
-<form method="post" action="/submit/{{ author }}" id="review-form">
+<form method="post" action="/submit/{{ task }}/{{ author }}" id="review-form">
 
   <div class="review-list">
     {% for pair in pairs %}
@@ -18,9 +18,11 @@
 
       <div class="review-pair-header">
         <span class="review-pair-number">Pair {{ pair.index + 1 }}</span>
-        <a class="btn-reopen" href="/rate/{{ author }}/{{ pair.index }}">Open full pair ↗</a>
+        <a class="btn-reopen" href="/rate/{{ task }}/{{ author }}/{{ pair.index }}">Open full pair ↗</a>
       </div>
 
+      {# ── abstract teasers ── #}
+      {% if task == 'abstract' %}
       <div class="review-abstracts">
         <div class="review-abstract">
           <span class="review-abstract-label">A</span>
@@ -31,6 +33,40 @@
           <p>{{ pair.teaser_b }}</p>
         </div>
       </div>
+
+      {# ── document teasers: show first panel (General Information) ── #}
+      {% else %}
+      <div class="review-abstracts">
+        <div class="review-abstract">
+          <span class="review-abstract-label">A</span>
+          <div class="doc-teaser">
+            {% if pair.panels_a %}
+              {% set first_group = pair.panels_a[0] %}
+              {% for field in first_group.fields %}
+                <div class="doc-teaser-field">
+                  <span class="doc-field-label">{{ field.label }}</span>
+                  <span class="doc-field-value">{{ field.value }}</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+        <div class="review-abstract">
+          <span class="review-abstract-label">B</span>
+          <div class="doc-teaser">
+            {% if pair.panels_b %}
+              {% set first_group = pair.panels_b[0] %}
+              {% for field in first_group.fields %}
+                <div class="doc-teaser-field">
+                  <span class="doc-field-label">{{ field.label }}</span>
+                  <span class="doc-field-value">{{ field.value }}</span>
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
 
       <div class="review-rating">
         <div class="vas-scale">
