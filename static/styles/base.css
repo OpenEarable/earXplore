@@ -142,6 +142,7 @@ h3 {
   padding-bottom: 10rem; /* extra space so the last token-search dropdown isn't clipped */
   max-height: 100vh;
   overflow-y: scroll;
+  scroll-padding-bottom: 2rem;
 }
 
 .filter-group {
@@ -313,8 +314,8 @@ a:visited {
 /* Chatbot */
 #chatbot-btn {
   position: fixed;
-  right: 1.5rem;
-  bottom: 1.5rem;
+  right: 2rem;
+  bottom: 1rem;
   z-index: 1100;
   border: none;
   border-radius: 1rem;
@@ -326,8 +327,8 @@ a:visited {
 }
 
 #chatbot-btn img {
-  width: 1.5rem;
-  height: 1.5rem;
+  width: 2rem;
+  height: 2rem;
   fill: white;
 }
 
