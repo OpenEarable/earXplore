@@ -516,7 +516,11 @@
 
     {# Chatbot Button #}
     <button id="chatbot-btn" aria-label="Open chatbot" title="Chat">
-      Chat
+      <img
+        src="{{ url_for('static', filename='images/helper-icon.svg') }}"
+        alt="Chatbot Icon"
+        title="Talk to website assistant"
+      />
     </button>
 
     {# Chatbot Overlay #}
@@ -532,20 +536,31 @@
       inert
     >
       <div class="chatbot-header">
-        <div id="chatbot-name">Assistant</div>
+        <div id="chatbot-name">EarBot</div>
         <div id="chatbot-func">
-          <button id="chatbot-reset" aria-label="Reset chatbot">Reset</button>
-          <button id="chatbot-close" aria-label="Close chatbot">X</button>
+          <button id="chatbot-reset" aria-label="Reset chatbot">
+            <img
+              src="{{ url_for('static', filename='images/refresh-icon.svg') }}"
+              alt="Reset Icon"
+              title="Refresh conversation"
+            />
+          </button>
+          <button id="chatbot-close" aria-label="Close chatbot">
+            <img
+              src="{{ url_for('static', filename='images/close-icon.svg') }}"
+              alt="Close Icon"
+              title="Close chatbot"
+            />
+          </button>
         </div>
       </div>
-      <div class="chatbot-body" id="chatbot-messages">
-        <div class="message bot-message">Hi! How can I help you?</div>
-      </div>
+      <div class="chatbot-body" id="chatbot-messages"></div>
       <form class="chatbot-input-row" id="chatbot-form">
         <input
           id="chatbot-input"
           type="text"
           placeholder="Type your message..."
+          autocomplete="off"
         />
         <button type="submit">Send</button>
       </form>

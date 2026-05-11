@@ -533,26 +533,38 @@ $(document).ready(function () {
     messages.push({ sender: "user", text: userInput });
 
     // Display the user message in the chatbot
-    $("#chatbot-messages").append(
-      `<div class="message user-message">${userInput}</div>`,
-    );
+    const userBubble = $("<div>")
+      .addClass("message user-message")
+      .text(userInput);
+    $("#chatbot-messages").append(userBubble);
 
     // Clear the input field
     $("#chatbot-input").val("");
 
+    // Display a thinking bubble while waiting for the bot response
+    const thinkingBubble = $("<div>")
+      .addClass("message bot-message bot-thinking")
+      .append("<span></span><span></span><span></span>");
+    $("#chatbot-messages").append(thinkingBubble);
+    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
+
     // Process the user query and get the bot response
     const botResponse = await processLLMResponse(userInput);
 
+    // Remove the thinking bubble
+    thinkingBubble.remove();
+
     // Display the bot response in the chatbot
-    $("#chatbot-messages").append(
-      `<div class="message bot-message">${botResponse}</div>`,
-    );
+    const botBubble = $("<div>")
+      .addClass("message bot-message")
+      .text(botResponse);
+    $("#chatbot-messages").append(botBubble);
 
     // Push the bot response to the messages array in session storage
     messages.push({ sender: "bot", text: botResponse });
     window.sessionStorage.setItem("messages", JSON.stringify(messages));
 
-    // Scroll to the bottom of the chatbot messages
-    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
+    // Scroll to the top of the last user message
+    userBubble[0].scrollIntoView({ behavior: "smooth", block: "start" });
   });
 });

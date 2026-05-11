@@ -1053,8 +1053,8 @@ def chat():
     if not user_request:
         return jsonify({"ok": False, "response": "Please enter a message."}), 200
 
-    llm_url = "https://ki-toolbox.scc.kit.edu/?model=fadefad"
-    kit_api_key = "..."
+    llm_url = os.getenv("LLM_API_URL")
+    kit_api_key = os.getenv("LLM_API_KEY")
 
     if not llm_url or not kit_api_key:
         return jsonify(
@@ -1070,6 +1070,8 @@ def chat():
     }
 
     payload = {
+        # change to respective model
+        "model": os.getenv("LLM_MODEL"),
         "messages": [{"role": "user", "content": user_request}],
         "max_tokens": 500,
         "temperature": 0.7,
@@ -1085,7 +1087,6 @@ def chat():
             or data.get("reply")
             or (data.get("choices", [{}])[0].get("message", {}).get("content"))
         )
-        print(f"LLM response data: {reply}")
 
         if not reply:
             return jsonify(
