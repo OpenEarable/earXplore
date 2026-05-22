@@ -380,6 +380,100 @@ $(document).ready(function () {
     // Trigger the change event only once for performance
     checkboxSelection.find(".value-filter").first().trigger("change");
   }
+
+  function welcome() {
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+    const welcomeMessage =
+      "Hello! I'm here to help you explore the data. Feel free to ask me any questions or request insights based on the filters you've applied.";
+    messages.push({ sender: "bot", text: welcomeMessage });
+    window.sessionStorage.setItem("messages", JSON.stringify(messages));
+    $("#chatbot-messages").append(
+      `<div class="message bot-message">${welcomeMessage}</div>`,
+    );
+  }
+
+  function openChatbot() {
+    $("#chatbot-btn").attr("hidden", true);
+    $("#chatbot-panel")
+      .addClass("is-open")
+      .attr("aria-hidden", "false")
+      .removeAttr("inert");
+    $("#chatbot-overlay").addClass("is-open").attr("aria-hidden", "false");
+    $("#chatbot-input").trigger("focus");
+
+    // Load previous messages from session storage and display them in the chatbot
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+
+    // Clear the messages displayed in the chatbot before displaying the previous messages to avoid duplicates
+    $("#chatbot-messages").empty();
+
+    // If no previous messages, display a welcome message from the bot
+    if (messages.length === 0) {
+      welcome();
+    } else {
+      messages.forEach((message) => {
+        const messageClass =
+          message.sender === "user" ? "user-message" : "bot-message";
+        $("#chatbot-messages").append(
+          `<div class="message ${messageClass}">${message.text}</div>`,
+        );
+      });
+    }
+
+    // Scroll to the bottom of the chatbot messages
+    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
+  }
+
+  function resetChatbot() {
+    // Clear the messages from session storage
+    window.sessionStorage.removeItem("messages");
+
+    // Clear the messages displayed in the chatbot
+    $("#chatbot-messages").empty();
+
+    // Add a welcome message from the bot
+    welcome();
+
+    // Set focus to the input field
+    $("#chatbot-input").trigger("focus");
+  }
+
+  function closeChatbot() {
+    $("#chatbot-btn").removeAttr("hidden");
+    $("#chatbot-btn").trigger("focus");
+    $("#chatbot-panel")
+      .removeClass("is-open")
+      .attr("aria-hidden", "true")
+      .attr("inert", "");
+    $("#chatbot-overlay").removeClass("is-open").attr("aria-hidden", "true");
+  }
+
+  async function processLLMResponse(userInput) {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: userInput }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          data.error || "An error occurred while processing the query.",
+        );
+      }
+      const botResponse = data.response || "No response from the server.";
+      console.log("LLM response data:", botResponse);
+      return botResponse;
+    } catch (error) {
+      console.error("Error processing LLM response:", error);
+      return "An error occurred while processing your query.";
+    }
+  }
+
     // Add event listener to each value filter to update the session storage
     $(".value-filter").on("change", function () {
       // Get the ID of the checkbox and convert it to a format suitable for storage
