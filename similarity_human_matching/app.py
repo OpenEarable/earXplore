@@ -1,7 +1,7 @@
 """
 Similarity Human Rating Tool
 ======================================
-Authors rate 20 pairs on a Visual Analog Scale (0 = Opposite, 100 = Equal).
+Authors rate 20 pairs on a Visual Analog Scale (0 = Completely Dissimilar, 100 = Completely Equivalent).
 Two tasks are supported:
   - abstract  : rate abstract text similarity (seed 42)
   - document  : rate document/database criteria similarity (seed 43)
