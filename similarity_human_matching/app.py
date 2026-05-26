@@ -1,13 +1,15 @@
 """
 Similarity Human Rating Tool
 ======================================
-Authors rate 20 pairs on a Visual Analog Scale (0 = Opposite, 100 = Equal).
+Authors rate 25 pairs on a Visual Analog Scale (0 = Completely Dissimilar, 100 = Completely Equivalent).
 Two tasks are supported:
   - abstract  : rate abstract text similarity (seed 42)
   - document  : rate document/database criteria similarity (seed 43)
 
-Pair assignments are drawn globally without replacement, so no pair is ever
-shown to more than one author within the same task.
+Pair assignments use stratified sampling: the similarity range is divided into
+25 equal-count percentile bins (each covering 4 % of the distribution) and one
+unique pair is drawn from every bin for each author.  No pair is ever shown to
+more than one author within the same task.
 
 Run with:  python app.py
 Then open:  http://localhost:5001
@@ -24,13 +26,13 @@ from flask import Flask, render_template, request, redirect, url_for
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, '..', 'datasets')
 ASSIGNMENTS_FILE      = os.path.join(BASE_DIR, 'pair_assignments.json')
-ABSTRACT_RATINGS_FILE = os.path.join(BASE_DIR, 'ratings.json')
+ABSTRACT_RATINGS_FILE = os.path.join(BASE_DIR, 'ratings_abstract.json')
 DOCUMENT_RATINGS_FILE = os.path.join(BASE_DIR, 'ratings_document.json')
 DRAFTS_DIR            = os.path.join(BASE_DIR, 'drafts')
 
 # ── constants ──────────────────────────────────────────────────────────────────
-AUTHORS          = ['author_1', 'author_2', 'author_3', 'author_4', 'author_5']
-PAIRS_PER_AUTHOR = 20
+AUTHORS          = ['Jonas', 'Valeria', 'Philipp', 'Michael']
+PAIRS_PER_AUTHOR = 25
 TEASER_LEN       = 200   # chars shown in the review summary per abstract
 ABSTRACT_SEED    = 42
 DOCUMENT_SEED    = 43
@@ -54,25 +56,52 @@ app.secret_key = os.environ.get('SECRET_KEY', 'earXplore-human-rating-2026')
 # ── pair assignment ────────────────────────────────────────────────────────────
 
 def _draw_pairs(sim_csv_path: str, seed: int) -> dict:
-    """Draw PAIRS_PER_AUTHOR * n_authors globally-unique (i<j) pairs."""
+    """
+    Stratified pair assignment.
+
+    The full similarity range is divided into PAIRS_PER_AUTHOR equal-count
+    percentile bins (each covering 4 % of the distribution for the default of
+    25 bins).  One unique pair is drawn from every bin for each author, so
+    every rater receives exactly one pair from each similarity stratum.
+    Presentation order within each author's list is shuffled to avoid
+    systematic ordering effects during rating.
+    """
     sim_df    = pd.read_csv(sim_csv_path, index_col=0)
     paper_ids = [int(x) for x in sim_df.index]
+    n         = len(paper_ids)
+    sim_vals  = sim_df.values
 
-    all_pairs = [
-        [paper_ids[i], paper_ids[j]]
-        for i in range(len(paper_ids))
-        for j in range(i + 1, len(paper_ids))
-    ]
+    # Build all (i < j) pairs, sorted ascending by similarity score
+    all_pairs = sorted(
+        ([paper_ids[i], paper_ids[j], float(sim_vals[i][j])]
+         for i in range(n) for j in range(i + 1, n)),
+        key=lambda x: x[2],
+    )
 
-    total_needed = PAIRS_PER_AUTHOR * len(AUTHORS)
-    rng          = np.random.default_rng(seed)
-    chosen       = rng.choice(len(all_pairs), size=total_needed, replace=False)
-    selected     = [all_pairs[int(idx)] for idx in chosen]
+    total  = len(all_pairs)          # e.g. 9870 for n=141
+    n_bins = PAIRS_PER_AUTHOR        # 25 bins → each covers 4 %
+    bin_w  = total // n_bins
 
-    return {
-        author: selected[k * PAIRS_PER_AUTHOR:(k + 1) * PAIRS_PER_AUTHOR]
-        for k, author in enumerate(AUTHORS)
-    }
+    rng = np.random.default_rng(seed)
+
+    # From each bin draw len(AUTHORS) unique pairs – one per author
+    selected_by_bin = []
+    for b in range(n_bins):
+        start    = b * bin_w
+        end      = (b + 1) * bin_w if b < n_bins - 1 else total
+        bin_pool = all_pairs[start:end]
+        chosen   = rng.choice(len(bin_pool), size=len(AUTHORS), replace=False)
+        selected_by_bin.append(
+            [[bin_pool[int(idx)][0], bin_pool[int(idx)][1]] for idx in chosen]
+        )
+
+    # Author k receives pair k from every bin, then shuffle presentation order
+    result = {}
+    for k, author in enumerate(AUTHORS):
+        author_pairs = [selected_by_bin[b][k] for b in range(n_bins)]
+        rng.shuffle(author_pairs)
+        result[author] = author_pairs
+    return result
 
 
 def load_assignments() -> dict:
