@@ -3,12 +3,20 @@
 
 {% block content %}
 <div class="card centered">
-  <h2>Welcome</h2>
+  <h2>Human Similarity Ratings</h2>
   <p>
-    You will be shown 20 pairs. For each pair, please judge how similar the two
-    items are using the scale provided — from <strong>Completely Dissimilar</strong>
-    (completely different) to <strong>Completely Equivalent</strong> (essentially the same).
+    You will be presented with <strong>25 pairs of papers</strong>, one at a time.
+    For each pair, please judge how similar the two papers are by positioning a
+    marker on a visual analogue scale ranging from
+    <strong>Completely Dissimilar</strong> to <strong>Completely Equivalent</strong>.
   </p>
+  <p>
+    Two tasks are available, each with its own set of 25 pairs:
+  </p>
+  <ul>
+    <li><strong>Abstract Similarity</strong> — rate similarity based on the papers' abstracts.</li>
+    <li><strong>Document Similarity</strong> — rate similarity based on the structured metadata fields used in the earXplore database.</li>
+  </ul>
   <p>Select your name and the task you want to complete.</p>
 
   <form method="post" action="/start">
@@ -17,7 +25,7 @@
       <select name="author" id="author" required>
         <option value="" disabled selected>— select —</option>
         {% for a in authors %}
-          <option value="{{ a }}">{{ a.replace('_', ' ').title() }}</option>
+          <option value="{{ a }}">{{ a }}</option>
         {% endfor %}
       </select>
     </div>
@@ -46,9 +54,9 @@
 {% endblock %}
 
 {% block scripts %}
+<script type="application/json" id="submitted-data">{{ submitted | tojson }}</script>
 <script>
-  // submitted = {task: [author1, author2, ...]}
-  var submitted = {{ submitted | tojson }};
+  var submitted = JSON.parse(document.getElementById('submitted-data').textContent);
 
   function updateUI() {
     var author = document.getElementById('author').value;
