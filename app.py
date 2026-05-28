@@ -997,6 +997,18 @@ def chat():
     if len(user_request) > 400:
         return jsonify({"ok": False, "response": "Message too long. Please keep your question under 400 characters."}), 200
 
+    # Validate and sanitize conversation history from the client.
+    # Cap at the last 10 messages (5 exchanges) to limit token usage.
+    raw_history = body.get("history", [])
+    validated_history = []
+    if isinstance(raw_history, list):
+        for msg in raw_history[-10:]:
+            if isinstance(msg, dict):
+                role = msg.get("role", "")
+                content = str(msg.get("content", "")).strip()
+                if role in ("user", "assistant") and content:
+                    validated_history.append({"role": role, "content": content[:400]})
+
     llm_url = os.getenv("LLM_API_URL")
     kit_api_key = os.getenv("LLM_API_KEY")
 
@@ -1016,7 +1028,7 @@ def chat():
     payload = {
         # change to respective model
         "model": os.getenv("LLM_MODEL"),
-        "messages": [{"role": "user", "content": user_request}],
+        "messages": validated_history + [{"role": "user", "content": user_request}],
         "max_tokens": 600,
         "temperature": 0.3,
         "top_p": 0.9,

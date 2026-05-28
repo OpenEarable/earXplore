@@ -464,14 +464,19 @@ $(document).ready(function () {
     $("#chatbot-overlay").removeClass("is-open").attr("aria-hidden", "true");
   }
 
-  async function processLLMResponse(userInput) {
+  async function processLLMResponse(userInput, history = []) {
+    // Convert sessionStorage history to LLM message format
+    const llmHistory = history.map((msg) => ({
+      role: msg.sender === "user" ? "user" : "assistant",
+      content: msg.text,
+    }));
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: userInput }),
+        body: JSON.stringify({ query: userInput, history: llmHistory }),
       });
       const data = await response.json();
       // For known API errors (rate limit, config issues) the server returns a
@@ -658,7 +663,8 @@ $(document).ready(function () {
     $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
 
     // Process the user query and get the bot response
-    const botResponse = await processLLMResponse(userInput);
+    // Pass all messages before the current one as conversation history
+    const botResponse = await processLLMResponse(userInput, messages.slice(0, -1));
 
     // Remove the thinking bubble
     thinkingBubble.remove();
