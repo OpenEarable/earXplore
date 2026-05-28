@@ -437,7 +437,6 @@ a:visited {
   border-radius: 1rem;
   max-width: 80%;
   font-size: var(--font-md);
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
   scroll-margin-top: 0.25rem;
 }
@@ -448,11 +447,51 @@ a:visited {
   align-self: flex-start;
 }
 
+/* Markdown elements inside bot bubbles */
+.bot-message p,
+.bot-message ul,
+.bot-message ol,
+.bot-message h1,
+.bot-message h2,
+.bot-message h3,
+.bot-message h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+.bot-message *:last-child {
+  margin-bottom: 0;
+}
+.bot-message ul,
+.bot-message ol {
+  padding-left: 1.25rem;
+}
+.bot-message a {
+  color: white;
+  text-decoration: underline;
+}
+.bot-message code {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+.bot-message pre {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+.bot-message pre code {
+  background: none;
+  padding: 0;
+}
+
 .user-message {
   background-color: var(--color-gray-light);
   color: black;
   border: 1px solid var(--color-accent-dark);
   align-self: flex-end;
+  white-space: pre-wrap;
 }
 
 .bot-thinking {

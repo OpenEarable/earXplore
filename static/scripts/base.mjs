@@ -1,4 +1,12 @@
 import { convertToID, updateFilters, _dmCol, _dmOptions, _otCols, _otRareValues, _tokenSearchCols } from "./dataUtility.mjs";
+import { marked } from "https://cdn.jsdelivr.net/npm/marked@15/lib/marked.esm.js";
+import DOMPurify from "https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.es.mjs";
+
+// Render a markdown string to sanitized HTML for bot bubbles.
+// User messages are always inserted with .text() and never pass through here.
+function renderMarkdown(text) {
+  return DOMPurify.sanitize(marked.parse(text));
+}
 
 
 
@@ -389,7 +397,7 @@ $(document).ready(function () {
     messages.push({ sender: "bot", text: welcomeMessage });
     window.sessionStorage.setItem("messages", JSON.stringify(messages));
     $("#chatbot-messages").append(
-      `<div class="message bot-message">${welcomeMessage}</div>`,
+      $("<div>").addClass("message bot-message").html(renderMarkdown(welcomeMessage)),
     );
   }
 
@@ -416,10 +424,14 @@ $(document).ready(function () {
       messages.forEach((message) => {
         const messageClass =
           message.sender === "user" ? "user-message" : "bot-message";
-        // Use .text() to prevent XSS — never inject message content as HTML
-        const bubble = $("<div>")
-          .addClass(`message ${messageClass}`)
-          .text(message.text);
+        // Bot messages are rendered as sanitized markdown; user messages use
+        // .text() so their content is never interpreted as HTML.
+        const bubble = $("<div>").addClass(`message ${messageClass}`);
+        if (message.sender === "bot") {
+          bubble.html(renderMarkdown(message.text));
+        } else {
+          bubble.text(message.text);
+        }
         $("#chatbot-messages").append(bubble);
       });
     }
@@ -654,7 +666,7 @@ $(document).ready(function () {
     // Display the bot response in the chatbot
     const botBubble = $("<div>")
       .addClass("message bot-message")
-      .text(botResponse);
+      .html(renderMarkdown(botResponse));
     $("#chatbot-messages").append(botBubble);
 
     // Push the bot response to the messages array in session storage
