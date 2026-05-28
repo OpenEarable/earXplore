@@ -1017,8 +1017,9 @@ def chat():
         # change to respective model
         "model": os.getenv("LLM_MODEL"),
         "messages": [{"role": "user", "content": user_request}],
-        "max_tokens": 500,
-        "temperature": 0.7,
+        "max_tokens": 600,
+        "temperature": 0.3,
+        "top_p": 0.9,
     }
 
     try:
