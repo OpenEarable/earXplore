@@ -393,7 +393,7 @@ $(document).ready(function () {
     const messages =
       JSON.parse(window.sessionStorage.getItem("messages")) || [];
     const welcomeMessage =
-      "Hello! I'm here to help you explore the data. Feel free to ask me any questions or request insights based on the filters you've applied.";
+      "Hi! I'm **EarBot**, your assistant for exploring the earable interaction study database.\n\nI can help you **find studies** (e.g. by gesture, author, keyword, or year), **explain how the filters work**, or give you an **overview of the data**.\n\nTry asking something like:\n- *\"Show me studies about head gestures\"*\n- *\"How do I filter by sensor type?\"*\n- *\"Which papers are by Michael Beigl?\"*";
     messages.push({ sender: "bot", text: welcomeMessage });
     window.sessionStorage.setItem("messages", JSON.stringify(messages));
     $("#chatbot-messages").append(
