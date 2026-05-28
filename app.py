@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_mailman import Mail, EmailMessage
 from flask_wtf.csrf import CSRFProtect
 from typing import List
@@ -88,6 +90,29 @@ print(f"Default sender: {os.getenv('MAIL_DEFAULT_SENDER')}")
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24).hex())
 mail = Mail(app)
 csrf = CSRFProtect(app)
+
+# Rate limiter — IP-based, no cookies or user tracking required.
+# When running behind a reverse proxy (e.g. nginx), set BEHIND_PROXY=true in
+# the server .env so the real client IP is read from X-Forwarded-For instead
+# of always seeing 127.0.0.1, which would make the limit shared across all users.
+if os.getenv("BEHIND_PROXY", "false").lower() == "true":
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=[],          # no blanket limit on other routes
+    storage_uri="memory://",    # in-memory; resets on restart — fine for single-worker
+)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Return JSON (not HTML) when the chat rate limit is exceeded."""
+    return jsonify({
+        "ok": False,
+        "response": "You have reached the daily limit of 20 questions. Please come back tomorrow.",
+    }), 429
 
 # Template classes for sidebar panel
 class Slider:
@@ -960,12 +985,17 @@ def submit_mistake():
         return jsonify({"success": False, "message": str(e)}), 500
     
 @app.post("/api/chat")
+@csrf.exempt
+@limiter.limit("20 per day")
 def chat():
     body = request.get_json(silent=True) or {}
     user_request = (body.get("query") or "").strip()
 
     if not user_request:
         return jsonify({"ok": False, "response": "Please enter a message."}), 200
+
+    if len(user_request) > 400:
+        return jsonify({"ok": False, "response": "Message too long. Please keep your question under 400 characters."}), 200
 
     llm_url = os.getenv("LLM_API_URL")
     kit_api_key = os.getenv("LLM_API_KEY")

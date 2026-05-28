@@ -416,9 +416,11 @@ $(document).ready(function () {
       messages.forEach((message) => {
         const messageClass =
           message.sender === "user" ? "user-message" : "bot-message";
-        $("#chatbot-messages").append(
-          `<div class="message ${messageClass}">${message.text}</div>`,
-        );
+        // Use .text() to prevent XSS — never inject message content as HTML
+        const bubble = $("<div>")
+          .addClass(`message ${messageClass}`)
+          .text(message.text);
+        $("#chatbot-messages").append(bubble);
       });
     }
 
@@ -460,10 +462,11 @@ $(document).ready(function () {
         body: JSON.stringify({ query: userInput }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        throw new Error(
-          data.error || "An error occurred while processing the query.",
-        );
+      // For known API errors (rate limit, config issues) the server returns a
+      // human-readable message in data.response — surface that directly instead
+      // of falling through to the generic catch message.
+      if (!response.ok || data.ok === false) {
+        return data.response || data.error || "An error occurred while processing your query.";
       }
       const botResponse = data.response || "No response from the server.";
       console.log("LLM response data:", botResponse);
