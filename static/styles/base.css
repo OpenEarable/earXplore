@@ -142,6 +142,7 @@ h3 {
   padding-bottom: 10rem; /* extra space so the last token-search dropdown isn't clipped */
   max-height: 100vh;
   overflow-y: scroll;
+  scroll-padding-bottom: 2rem;
 }
 
 .filter-group {
@@ -310,6 +311,225 @@ a:visited {
   color: inherit;
 }
 
+/* Chatbot */
+#chatbot-btn {
+  position: fixed;
+  right: 2rem;
+  bottom: 1rem;
+  z-index: 1100;
+  border: none;
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-accent);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
+#chatbot-btn img {
+  width: 2rem;
+  height: 2rem;
+  fill: white;
+}
+
+#chatbot-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+  z-index: 1090;
+}
+
+#chatbot-panel {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1rem;
+  height: 80vh;
+  width: 30%;
+  border-radius: 1rem;
+  background: #fff;
+  transform: translateX(105%);
+  transition: transform 0.25s ease;
+  z-index: 1101;
+  display: flex;
+  flex-direction: column;
+}
+
+#chatbot-panel.is-open {
+  transform: translateX(0);
+}
+
+#chatbot-overlay.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.chatbot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  font-size: var(--font-xl);
+  border-bottom: 1px solid #eee;
+}
+
+#chatbot-close,
+#chatbot-reset {
+  background: transparent;
+  border: none;
+  font-size: var(--font-xl);
+  cursor: pointer;
+}
+
+#chatbot-close img {
+  width: 1rem;
+  height: 1rem;
+}
+
+#chatbot-reset img {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.chatbot-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatbot-input-row {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem;
+  font-size: var(--font-bg);
+  border-top: 1px solid #eee;
+}
+
+.chatbot-input-row input {
+  flex: 1;
+  padding-inline: 0.5rem;
+  border-radius: 1rem;
+  border: none;
+}
+
+.chatbot-input-row input:focus {
+  outline: var(--color-accent) solid 2px;
+}
+
+.chatbot-input-row button {
+  border: none;
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--color-accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.message {
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  border-radius: 1rem;
+  max-width: 80%;
+  font-size: var(--font-md);
+  overflow-wrap: anywhere;
+  scroll-margin-top: 0.25rem;
+}
+
+.bot-message {
+  background-color: var(--color-accent);
+  color: white;
+  align-self: flex-start;
+}
+
+/* Markdown elements inside bot bubbles */
+.bot-message p,
+.bot-message ul,
+.bot-message ol,
+.bot-message h1,
+.bot-message h2,
+.bot-message h3,
+.bot-message h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+.bot-message *:last-child {
+  margin-bottom: 0;
+}
+.bot-message ul,
+.bot-message ol {
+  padding-left: 1.25rem;
+}
+.bot-message a {
+  color: white;
+  text-decoration: underline;
+}
+.bot-message code {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  padding: 0.1em 0.3em;
+  font-size: 0.9em;
+}
+.bot-message pre {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  overflow-x: auto;
+}
+.bot-message pre code {
+  background: none;
+  padding: 0;
+}
+
+.user-message {
+  background-color: var(--color-gray-light);
+  color: black;
+  border: 1px solid var(--color-accent-dark);
+  align-self: flex-end;
+  white-space: pre-wrap;
+}
+
+.bot-thinking {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 3rem;
+}
+
+.bot-thinking span {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  animation: bot-dot-pulse 1.2s infinite ease-in-out;
+}
+
+.bot-thinking span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.bot-thinking span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes bot-dot-pulse {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 @media (max-width: 1200px) {
   /* Hide the sidebar from the user */
   #sidebar {
@@ -409,6 +629,10 @@ a:visited {
 
   .navbar-icon:not(#filter-icon) {
     opacity: 0.5;
+  }
+
+  #chatbot-panel {
+    width: 60%;
   }
 }
 

@@ -1,4 +1,12 @@
 import { convertToID, updateFilters, _dmCol, _dmOptions, _otCols, _otRareValues, _tokenSearchCols } from "./dataUtility.mjs";
+import { marked } from "https://cdn.jsdelivr.net/npm/marked@15/lib/marked.esm.js";
+import DOMPurify from "https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.es.mjs";
+
+// Render a markdown string to sanitized HTML for bot bubbles.
+// User messages are always inserted with .text() and never pass through here.
+function renderMarkdown(text) {
+  return DOMPurify.sanitize(marked.parse(text));
+}
 
 
 
@@ -380,6 +388,107 @@ $(document).ready(function () {
     // Trigger the change event only once for performance
     checkboxSelection.find(".value-filter").first().trigger("change");
   }
+
+  function welcome() {
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+    const welcomeMessage =
+      "Hi! I'm **EarBot**, your assistant for exploring the earable interaction study database.\n\nI can help you **find studies** (e.g. by gesture, author, keyword, or year), **explain how the filters work**, or give you an **overview of the data**.\n\nTry asking something like:\n- *\"Show me studies about head gestures\"*\n- *\"How do I filter by sensor type?\"*\n- *\"Which papers are by Michael Beigl?\"*";
+    messages.push({ sender: "bot", text: welcomeMessage });
+    window.sessionStorage.setItem("messages", JSON.stringify(messages));
+    $("#chatbot-messages").append(
+      $("<div>").addClass("message bot-message").html(renderMarkdown(welcomeMessage)),
+    );
+  }
+
+  function openChatbot() {
+    $("#chatbot-btn").attr("hidden", true);
+    $("#chatbot-panel")
+      .addClass("is-open")
+      .attr("aria-hidden", "false")
+      .removeAttr("inert");
+    $("#chatbot-overlay").addClass("is-open").attr("aria-hidden", "false");
+    $("#chatbot-input").trigger("focus");
+
+    // Load previous messages from session storage and display them in the chatbot
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+
+    // Clear the messages displayed in the chatbot before displaying the previous messages to avoid duplicates
+    $("#chatbot-messages").empty();
+
+    // If no previous messages, display a welcome message from the bot
+    if (messages.length === 0) {
+      welcome();
+    } else {
+      messages.forEach((message) => {
+        const messageClass =
+          message.sender === "user" ? "user-message" : "bot-message";
+        // Bot messages are rendered as sanitized markdown; user messages use
+        // .text() so their content is never interpreted as HTML.
+        const bubble = $("<div>").addClass(`message ${messageClass}`);
+        if (message.sender === "bot") {
+          bubble.html(renderMarkdown(message.text));
+        } else {
+          bubble.text(message.text);
+        }
+        $("#chatbot-messages").append(bubble);
+      });
+    }
+
+    // Scroll to the bottom of the chatbot messages
+    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
+  }
+
+  function resetChatbot() {
+    // Clear the messages from session storage
+    window.sessionStorage.removeItem("messages");
+
+    // Clear the messages displayed in the chatbot
+    $("#chatbot-messages").empty();
+
+    // Add a welcome message from the bot
+    welcome();
+
+    // Set focus to the input field
+    $("#chatbot-input").trigger("focus");
+  }
+
+  function closeChatbot() {
+    $("#chatbot-btn").removeAttr("hidden");
+    $("#chatbot-btn").trigger("focus");
+    $("#chatbot-panel")
+      .removeClass("is-open")
+      .attr("aria-hidden", "true")
+      .attr("inert", "");
+    $("#chatbot-overlay").removeClass("is-open").attr("aria-hidden", "true");
+  }
+
+  async function processLLMResponse(userInput) {
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ query: userInput }),
+      });
+      const data = await response.json();
+      // For known API errors (rate limit, config issues) the server returns a
+      // human-readable message in data.response — surface that directly instead
+      // of falling through to the generic catch message.
+      if (!response.ok || data.ok === false) {
+        return data.response || data.error || "An error occurred while processing your query.";
+      }
+      const botResponse = data.response || "No response from the server.";
+      console.log("LLM response data:", botResponse);
+      return botResponse;
+    } catch (error) {
+      console.error("Error processing LLM response:", error);
+      return "An error occurred while processing your query.";
+    }
+  }
+
     // Add event listener to each value filter to update the session storage
     $(".value-filter").on("change", function () {
       // Get the ID of the checkbox and convert it to a format suitable for storage
@@ -500,5 +609,71 @@ $(document).ready(function () {
 
   $("#study-info-modal").on("hidden.bs.modal", function () {
     window.sessionStorage.removeItem("modalID");
+  });
+
+  $("#chatbot-btn").on("click", function () {
+    openChatbot();
+  });
+
+  $("#chatbot-close").on("click", function () {
+    closeChatbot();
+  });
+
+  // Click outside the panel closes it
+  $("#chatbot-overlay").on("click", function () {
+    closeChatbot();
+  });
+
+  $("#chatbot-reset").on("click", function () {
+    resetChatbot();
+  });
+
+  // Remove later
+  $("#chatbot-form").on("submit", async function (e) {
+    e.preventDefault();
+
+    // Push the user input to the messages array in session storage
+    const userInput = $("#chatbot-input").val();
+    if (userInput.trim() === "") {
+      return;
+    }
+    const messages =
+      JSON.parse(window.sessionStorage.getItem("messages")) || [];
+    messages.push({ sender: "user", text: userInput });
+
+    // Display the user message in the chatbot
+    const userBubble = $("<div>")
+      .addClass("message user-message")
+      .text(userInput);
+    $("#chatbot-messages").append(userBubble);
+
+    // Clear the input field
+    $("#chatbot-input").val("");
+
+    // Display a thinking bubble while waiting for the bot response
+    const thinkingBubble = $("<div>")
+      .addClass("message bot-message bot-thinking")
+      .append("<span></span><span></span><span></span>");
+    $("#chatbot-messages").append(thinkingBubble);
+    $("#chatbot-messages").scrollTop($("#chatbot-messages")[0].scrollHeight);
+
+    // Process the user query and get the bot response
+    const botResponse = await processLLMResponse(userInput);
+
+    // Remove the thinking bubble
+    thinkingBubble.remove();
+
+    // Display the bot response in the chatbot
+    const botBubble = $("<div>")
+      .addClass("message bot-message")
+      .html(renderMarkdown(botResponse));
+    $("#chatbot-messages").append(botBubble);
+
+    // Push the bot response to the messages array in session storage
+    messages.push({ sender: "bot", text: botResponse });
+    window.sessionStorage.setItem("messages", JSON.stringify(messages));
+
+    // Scroll to the top of the last user message
+    userBubble[0].scrollIntoView({ behavior: "smooth", block: "start" });
   });
 });

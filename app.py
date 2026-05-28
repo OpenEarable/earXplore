@@ -1,4 +1,6 @@
 from flask import Flask, render_template, request, jsonify, url_for, redirect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_mailman import Mail, EmailMessage
 from flask_wtf.csrf import CSRFProtect
 from typing import List
@@ -9,6 +11,7 @@ import os
 import mimetypes
 import traceback
 import yaml
+import requests
 mimetypes.add_type('application/javascript', '.mjs')
 
 # Categories that should not be filtered for
@@ -87,6 +90,29 @@ print(f"Default sender: {os.getenv('MAIL_DEFAULT_SENDER')}")
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", os.urandom(24).hex())
 mail = Mail(app)
 csrf = CSRFProtect(app)
+
+# Rate limiter — IP-based, no cookies or user tracking required.
+# When running behind a reverse proxy (e.g. nginx), set BEHIND_PROXY=true in
+# the server .env so the real client IP is read from X-Forwarded-For instead
+# of always seeing 127.0.0.1, which would make the limit shared across all users.
+if os.getenv("BEHIND_PROXY", "false").lower() == "true":
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=[],          # no blanket limit on other routes
+    storage_uri="memory://",    # in-memory; resets on restart — fine for single-worker
+)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    """Return JSON (not HTML) when the chat rate limit is exceeded."""
+    return jsonify({
+        "ok": False,
+        "response": "You have reached the daily limit of 20 questions. Please come back tomorrow.",
+    }), 429
 
 # Template classes for sidebar panel
 class Slider:
@@ -958,5 +984,76 @@ def submit_mistake():
         traceback.print_exc()
         return jsonify({"success": False, "message": str(e)}), 500
     
+@app.post("/api/chat")
+@csrf.exempt
+@limiter.limit("20 per day")
+def chat():
+    body = request.get_json(silent=True) or {}
+    user_request = (body.get("query") or "").strip()
+
+    if not user_request:
+        return jsonify({"ok": False, "response": "Please enter a message."}), 200
+
+    if len(user_request) > 400:
+        return jsonify({"ok": False, "response": "Message too long. Please keep your question under 400 characters."}), 200
+
+    llm_url = os.getenv("LLM_API_URL")
+    kit_api_key = os.getenv("LLM_API_KEY")
+
+    if not llm_url or not kit_api_key:
+        return jsonify(
+            {
+                "ok": False,
+                "response": "Server configuration error: missing LLM_API_URL or LLM_API_KEY.",
+            }
+        ), 200
+
+    headers = {
+        "Authorization": f"Bearer {kit_api_key}",
+        "Content-Type": "application/json",
+    }
+
+    payload = {
+        # change to respective model
+        "model": os.getenv("LLM_MODEL"),
+        "messages": [{"role": "user", "content": user_request}],
+        "max_tokens": 500,
+        "temperature": 0.7,
+    }
+
+    try:
+        resp = requests.post(llm_url, headers=headers, json=payload, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+
+        reply = (
+            data.get("response")
+            or data.get("reply")
+            or (data.get("choices", [{}])[0].get("message", {}).get("content"))
+        )
+
+        if not reply:
+            return jsonify(
+                {"ok": False, "response": "LLM returned no text reply."}
+            ), 200
+
+        return jsonify({"ok": True, "response": reply}), 200
+
+    except requests.Timeout:
+        return jsonify(
+            {"ok": False, "response": "The LLM request timed out. Please try again."}
+        ), 200
+
+    except requests.RequestException as exc:
+        return jsonify(
+            {"ok": False, "response": f"LLM request failed: {str(exc)}"}
+        ), 200
+
+    except Exception as exc:
+        return jsonify(
+            {"ok": False, "response": f"Unexpected server error: {str(exc)}"}
+        ), 200
+
+
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "false").lower() == "true", host="0.0.0.0", port=888)
