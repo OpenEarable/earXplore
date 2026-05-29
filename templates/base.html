@@ -305,11 +305,13 @@
           <div class="filter-group" data-col="{{ slider.value }}">
             <strong>{{ slider.value.split('_')[-1] }}</strong>
             {% if slider.explanation is not none %}
-            <span title="{{ slider.explanation }}" class="ms-1">
+            <span class="ms-1">
               <img
                 src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
                 alt="Question Mark Icon within a circle"
                 class="question-circle"
+                data-bs-toggle="tooltip"
+                title="{{ slider.explanation }}"
               />
             </span>
             {% endif %}
@@ -341,6 +343,7 @@
                   src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
                   alt="Question Mark Icon within a circle"
                   class="question-circle"
+                  data-bs-toggle="tooltip"
                   title="{{ category.explanation }}"
                 />
                 {% endif %}
@@ -410,11 +413,13 @@
             {% endfor %}
             <strong>{{ panel.performance_block.slider.value }}</strong>
             {% if panel.performance_block.slider.explanation %}
-            <span title="{{ panel.performance_block.slider.explanation }}" class="ms-1">
+            <span class="ms-1">
               <img
                 src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
                 alt="Question Mark Icon within a circle"
                 class="question-circle"
+                data-bs-toggle="tooltip"
+                title="{{ panel.performance_block.slider.explanation }}"
               />
             </span>
             {% endif %}
@@ -627,5 +632,10 @@
     ></script>
 
     {% block scripts %} {% endblock scripts %}
+    <script>
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+        new bootstrap.Tooltip(el);
+      });
+    </script>
   </body>
 </html>

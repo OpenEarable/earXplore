@@ -206,8 +206,9 @@ $(document).ready(function () {
     chartTitleElement.className = "chart-title";
     chartTitleElement.innerHTML = `
       <h5>${chartTitle}</h5>
-      <img src="${questionCirclePath}" class="question-circle" title="${explanations[category]}" alt="Information about the category of this chart">
+      <img src="${questionCirclePath}" class="question-circle" data-bs-toggle="tooltip" title="${explanations[category]}" alt="Information about the category of this chart">
     `;
+    new bootstrap.Tooltip(chartTitleElement.querySelector('img'));
   
     const chartContainer = document.createElement("div");
     chartContainer.className = "chart-container";
