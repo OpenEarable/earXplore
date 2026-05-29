@@ -744,3 +744,12 @@ a:visited {
     gap: 0;
   }
 }
+
+/* ── Bootstrap tooltip overrides ──────────────────────────────────────────── */
+/* Match the app's responsive font scale and allow wider text containers.      */
+.tooltip-inner {
+  font-size: var(--font-sm);       /* responsive via clamp(), matches old small tooltip size */
+  max-width: min(420px, 80vw);     /* much wider; 80vw cap prevents overflow on narrow screens */
+  text-align: left;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */

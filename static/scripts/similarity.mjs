@@ -30,10 +30,8 @@ $(document).ready(function () {
   const infoCirclePath = $("#graphContainer").data("info-circle-path");
   
   // Define some texts for the tooltips
-  const abstractTooltip =
-    "This visualization shows semantic similarity between paper abstracts. Similarities were calculated using Google Gemini embeddings (gemini-embedding-exp-03-07) with cosine similarity and then z-standardized. Values above 0 indicate above-average similarity (0=mean, 1=one standard deviation above mean). Higher thresholds show only the most similar papers.";
-  const databaseTooltip =
-    "This visualization shows similarity between studies based on features extracted from the database. Features were normalized and similarity was calculated based on their values.";
+  const thresholdTooltip =
+    "Use the slider to set the minimum similarity required to show a connection between two studies. Higher values reduce visual clutter and highlight only the most similar pairs.";
   
   const abstractStudyIDs = similarityData["abstract_study_ids"];
   const abstractMatrix = similarityData["abstract_matrix"];
@@ -46,10 +44,14 @@ $(document).ready(function () {
   $(`input[value='${similarityType}']`).prop("checked", true);
   
   // Add tooltip text based on the selected similarity type
-  $("#thresholdInfoIcon").attr(
-    "title",
-    similarityType === "abstract" ? abstractTooltip : databaseTooltip
-  );
+  function updateThresholdTooltip(text) {
+    const el = document.getElementById("thresholdInfoIcon");
+    el.setAttribute("title", text);
+    const existing = bootstrap.Tooltip.getInstance(el);
+    if (existing) existing.dispose();
+    new bootstrap.Tooltip(el);
+  }
+  updateThresholdTooltip(thresholdTooltip);
   
   // Populate the color nodes dropdown using data[0] key order so performance
   // columns appear at their natural position (not always at the bottom).
@@ -876,11 +878,6 @@ $(document).ready(function () {
     similarityType = $(this).val();
     window.sessionStorage.setItem("similarityType", similarityType);
 
-    // Update the tooltip text based on the selected similarity type
-    $("#thresholdInfoIcon").attr(
-      "title",
-      similarityType === "abstract" ? abstractTooltip : databaseTooltip
-    );
     drawGraph(similarityThreshold); // Redraw the graph with the new similarity type
   });
 

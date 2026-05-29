@@ -27,7 +27,8 @@
           {# Wrapping in a div to make sure label and input are on same the row #}
           <div class="filter-wrapper">
             <input type="checkbox" class="form-check-input column-filter" id="{{ col }}" />
-            <label for="{{ col }}">{{ col.split("_")[-1] }}</label>
+            {% set expl = explanations_raw.get(col, None) %}
+            <label for="{{ col }}"{% if expl %} data-bs-toggle="tooltip" title="{{ expl }}"{% endif %}>{{ col.split("_")[-1] }}</label>
           </div>
           
         {% endfor %}

@@ -323,7 +323,7 @@ def generate_sidebar_panels(data, explanations):
 
           # token-search columns use a custom UI instead of checkboxes
           if col in TOKEN_SEARCH_COLUMNS:
-            new_panel.token_search_block.append({'column': col, 'label': col.split('_')[-1]})
+            new_panel.token_search_block.append({'column': col, 'label': col.split('_')[-1], 'explanation': explanations.get(col, None)})
             continue
           
           # for numerical columns, get min and max values and add Slider to the respective panel
@@ -450,7 +450,7 @@ def generate_sidebar_panels(data, explanations):
                 existing_cols = {entry['column'] for entry in panel.token_search_block}
                 for col in ["Authors", "Title"]:
                     if col in TOKEN_SEARCH_COLUMNS and col not in existing_cols:
-                        panel.token_search_block.append({'column': col, 'label': col})
+                        panel.token_search_block.append({'column': col, 'label': col, 'explanation': explanations.get(col, None)})
                 # Sort into desired display order
                 desired_order = ["Keywords", "Main Author", "Authors", "Title"]
                 panel.token_search_block.sort(
@@ -466,6 +466,7 @@ def generate_sidebar_panels(data, explanations):
                 panel.device_model_block = {
                     'column': DEVICE_MODEL_COLUMN,
                     'options': DEVICE_MODEL_OPTIONS,
+                    'explanation': explanations.get(DEVICE_MODEL_COLUMN, None),
                 }
                 break
 
@@ -585,6 +586,7 @@ def _build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles):
         data_json=json.dumps(data),
         sidebar_panels=sidebar_panels,
         explanations=json.dumps(explanations),
+        explanations_raw=explanations,
         abstracts=json.dumps(abstracts),
         titles=json.dumps(titles),
         parenthical_columns=json.dumps(PARENTHICAL_COLUMNS),

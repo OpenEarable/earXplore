@@ -479,7 +479,7 @@
           <div class="filter-group mt-2" id="device-model-block">
             {# Hidden sentinel kept for compatibility; filtering reads column/options from body data-attributes #}
             <div class="filter-group d-none" data-col="{{ panel.device_model_block.column }}"></div>
-            <strong>Device Model</strong><br />
+            <strong>Device Model</strong>{% if panel.device_model_block.explanation %} <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" class="question-circle" data-bs-toggle="tooltip" title="{{ panel.device_model_block.explanation }}" />{% endif %}<br />
             <div class="d-flex flex-wrap flex-row gap-1 mt-2">
               {% for option in panel.device_model_block.options %}
               <div class="checkbox-wrapper">
@@ -501,7 +501,12 @@
           {% for ts in panel.token_search_block %}
           <div class="filter-group mt-2 token-search-group" data-col="{{ ts.column }}">
             <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
-              <strong>{{ ts.label }}</strong>
+              <div class="d-flex align-items-center gap-1">
+                <strong>{{ ts.label }}</strong>
+                {% if ts.explanation %}
+                <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" class="question-circle" data-bs-toggle="tooltip" title="{{ ts.explanation }}" />
+                {% endif %}
+              </div>
               <div class="d-flex gap-1">
                 <button type="button" class="select-button token-deselect-all" data-col="{{ ts.column }}">Clear Selection</button>
               </div>
