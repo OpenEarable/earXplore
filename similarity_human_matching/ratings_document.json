@@ -308,5 +308,160 @@
         "rating": 3
       }
     ]
+  },
+  "Michael": {
+    "submitted_at": "2026-05-29T12:53:26.889503+00:00",
+    "ratings": [
+      {
+        "pair_index": 0,
+        "paper_a": 33,
+        "paper_b": 45,
+        "rating": 11
+      },
+      {
+        "pair_index": 1,
+        "paper_a": 110,
+        "paper_b": 116,
+        "rating": 31
+      },
+      {
+        "pair_index": 2,
+        "paper_a": 88,
+        "paper_b": 119,
+        "rating": 57
+      },
+      {
+        "pair_index": 3,
+        "paper_a": 62,
+        "paper_b": 130,
+        "rating": 36
+      },
+      {
+        "pair_index": 4,
+        "paper_a": 48,
+        "paper_b": 81,
+        "rating": 35
+      },
+      {
+        "pair_index": 5,
+        "paper_a": 7,
+        "paper_b": 48,
+        "rating": 51
+      },
+      {
+        "pair_index": 6,
+        "paper_a": 18,
+        "paper_b": 77,
+        "rating": 7
+      },
+      {
+        "pair_index": 7,
+        "paper_a": 55,
+        "paper_b": 101,
+        "rating": 74
+      },
+      {
+        "pair_index": 8,
+        "paper_a": 1,
+        "paper_b": 115,
+        "rating": 22
+      },
+      {
+        "pair_index": 9,
+        "paper_a": 93,
+        "paper_b": 109,
+        "rating": 28
+      },
+      {
+        "pair_index": 10,
+        "paper_a": 35,
+        "paper_b": 50,
+        "rating": 69
+      },
+      {
+        "pair_index": 11,
+        "paper_a": 21,
+        "paper_b": 130,
+        "rating": 44
+      },
+      {
+        "pair_index": 12,
+        "paper_a": 18,
+        "paper_b": 133,
+        "rating": 16
+      },
+      {
+        "pair_index": 13,
+        "paper_a": 39,
+        "paper_b": 139,
+        "rating": 39
+      },
+      {
+        "pair_index": 14,
+        "paper_a": 65,
+        "paper_b": 66,
+        "rating": 31
+      },
+      {
+        "pair_index": 15,
+        "paper_a": 79,
+        "paper_b": 93,
+        "rating": 13
+      },
+      {
+        "pair_index": 16,
+        "paper_a": 13,
+        "paper_b": 54,
+        "rating": 32
+      },
+      {
+        "pair_index": 17,
+        "paper_a": 38,
+        "paper_b": 39,
+        "rating": 84
+      },
+      {
+        "pair_index": 18,
+        "paper_a": 61,
+        "paper_b": 75,
+        "rating": 7
+      },
+      {
+        "pair_index": 19,
+        "paper_a": 19,
+        "paper_b": 141,
+        "rating": 19
+      },
+      {
+        "pair_index": 20,
+        "paper_a": 70,
+        "paper_b": 124,
+        "rating": 21
+      },
+      {
+        "pair_index": 21,
+        "paper_a": 92,
+        "paper_b": 140,
+        "rating": 27
+      },
+      {
+        "pair_index": 22,
+        "paper_a": 1,
+        "paper_b": 97,
+        "rating": 8
+      },
+      {
+        "pair_index": 23,
+        "paper_a": 8,
+        "paper_b": 92,
+        "rating": 20
+      },
+      {
+        "pair_index": 24,
+        "paper_a": 43,
+        "paper_b": 104,
+        "rating": 28
+      }
+    ]
   }
 }
