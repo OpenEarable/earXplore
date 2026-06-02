@@ -1,0 +1,50 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   studyLogger.css — styles for the earXplore user-study recording button
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── "Start / End Recording Usage" button ─────────────────────────────────── */
+#study-log-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  padding: 0;          /* match the zero-padding of .add-study-button */
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  font-size: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
+/* ── Recording-active state: label turns red ──────────────────────────────── */
+#study-log-btn[data-recording="1"] .sl-label {
+  color: #d9534f;
+}
+
+/* ── Pulsing red dot shown while recording ────────────────────────────────── */
+.sl-dot {
+  display: none;          /* hidden by default; shown by JS when recording */
+  width:  9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #d9534f;
+  flex-shrink: 0;
+  animation: sl-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes sl-pulse {
+  0%,
+  100% { opacity: 1;    transform: scale(1);    }
+  50%  { opacity: 0.4;  transform: scale(0.65); }
+}
+
+/* ── Participant-code entry modal tweaks ──────────────────────────────────── */
+#study-logger-modal .modal-header {
+  border-bottom: 1px solid #dee2e6;
+}
+
+#study-logger-modal #sl-code-input {
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
