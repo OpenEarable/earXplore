@@ -339,8 +339,11 @@ function _classifyAndLogClick(e) {
 
   // Token-search areas — token add/remove is fully captured by MutationObserver.
   // The suggestion list uses mousedown+preventDefault, causing a synthetic click to land
-  // on the token-selected-container div after the suggestion hides; skip it too.
-  if (raw.closest?.('.token-selected-container') || raw.closest?.('.token-suggestions')) return;
+  // on .token-search-group (the outer wrapper div) or .token-selected-container after the
+  // suggestion hides; guard all three token-related elements.
+  if (raw.closest?.('.token-search-group') ||
+      raw.closest?.('.token-selected-container') ||
+      raw.closest?.('.token-suggestions')) return;
 
   // INPUT / TEXTAREA / SELECT state changes are captured by the 'change' listener.
   // Labels for checkboxes/radios: skip here too — let 'change' handle the action.
