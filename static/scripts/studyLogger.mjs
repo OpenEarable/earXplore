@@ -384,6 +384,8 @@ function _classifyAndLogClick(e) {
   if (el.id === 'chatbot-btn'   || el.closest?.('#chatbot-btn'))   { _log('chatbot_opened', {}); return; }
   if (el.id === 'chatbot-close' || el.closest?.('#chatbot-close')) { _log('chatbot_closed', {}); return; }
   if (el.id === 'chatbot-reset' || el.closest?.('#chatbot-reset')) { _log('chatbot_reset',  {}); return; }
+  // Chatbot backdrop — clicking outside the panel closes it; treat as chatbot_closed
+  if (el.id === 'chatbot-overlay' || el.closest?.('#chatbot-overlay')) { _log('chatbot_closed', {}); return; }
   // All other clicks inside the chatbot panel (e.g. Send button) are already
   // covered by the form 'submit' listener → chatbot_message_sent. Skip here.
   if (raw.closest?.('#chatbot-panel')) return;
@@ -431,6 +433,9 @@ function _classifyAndLogClick(e) {
       subtype = 'token_clear_all';
       extra.col = b.dataset.col;
     }
+    // Skip unclassified sidebar noise: form-check wrappers, panel/section container divs,
+    // tooltip icons, etc. All meaningful filter actions are captured by the 'change' listener.
+    if (subtype === 'general') return;
     _log('sidebar_interaction', { subtype, ...extra, el: desc });
     return;
   }
