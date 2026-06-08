@@ -68,23 +68,6 @@ $(document).ready(function () {
         : $(element).prop("checked", false);
     });
 
-    // Auto-add any newly introduced checkboxes that are not yet in session storage
-    // (e.g. the device model filter added after user's first visit).
-    // These default to checked so they don't silently hide rows.
-    let newFiltersAdded = false;
-    $(".value-filter").each((index, element) => {
-      const id = convertToID($(element).attr("id"));
-      if (!valueFilters.includes(id)) {
-        $(element).prop("checked", true);
-        valueFilters.push(id);
-        newFiltersAdded = true;
-      }
-    });
-    if (newFiltersAdded) {
-      filters.valueFilters = valueFilters;
-      updateFilters(filters);
-    }
-
     // Remove stale device model entries: exact device names stored by a previous
     // version of the filter (when Device Model was a regular checklist).  Any
     // session-storage entry whose category matches the device model column but
