@@ -1,6 +1,6 @@
 # EarXplore
 
-![Paper Teaser Figure](./teaser_figure_interactive.png)
+![Paper Teaser Figure](./readme_figures/teaser_figure_interactive.png)
 
 EarXplore is an interactive research database for earable interaction studies. It combines a Flask backend with four synchronized exploration views and configurable filtering logic driven by YAML and CSV data.
 
@@ -283,19 +283,27 @@ Open full study details and relation-specific overlays from charts/nodes.
 
 #### Tabular View
 
-<img width="2513" height="969" alt="Tabular View" src="https://github.com/user-attachments/assets/afe5826d-585a-4bb2-b476-8557143a3df4" />
+![Tabular View](./readme_figures/Tabular_View.svg)
+
+Tabular View — (1) The Tabular View serves as landing page and can also be selected via the view selection menu. (2) By default, key information on each study (*Main Author*, *Year*, *Location*, *Input Body Part*, and *Gesture*) is displayed. (3) The top toggle menu allows users to show or hide columns with additional information. (4) Filters in the sidebar enable users to refine the database by including or excluding specific attribute values. (5) A chatbot can optionally be consulted for assistance in selecting and filtering criteria. (6) Clicking the info icons at the beginning of each row opens a modal overlay that displays all available information for the selected study. (7) The entire dataset or a selected subset can be downloaded as a csv file.
 
 #### Graphical View
 
-<img width="2507" height="968" alt="Graphical View" src="https://github.com/user-attachments/assets/a2d7f7aa-c1a5-4c09-92e5-5aebf63a8aab" />
+![Graphical View](./readme_figures/Graphical_View.svg)
+
+Graphical View — (1) The Graphical View can be selected via the view selection menu. (2) The top toggle menu allows users to show or hide bar charts with additional information. (3) Filters in the sidebar enable users to refine the database by including or excluding specific attribute values. (4) A chatbot can optionally be consulted for assistance in selecting and filtering criteria. (5) For each selected criterion, a bar chart displays the distribution of answer options. Chart size automatically adapts to the number of bars. (6) Users can adjust the threshold for the maximum number of bars shown per chart. (7) Clicking on a bar opens a modal overlay showing key information on all studies represented by that bar. (8) Clicking on the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study. (9) The entire dataset or a selected subset can be downloaded as a csv file.
 
 #### Similarity View
 
-<img width="2493" height="935" alt="Similarity View" src="https://github.com/user-attachments/assets/cb998750-08e0-404e-bbe1-2a3738c1f4d7" />
+![Similarity View](./readme_figures/Similarity_View.svg)
+
+Similarity View — (1) The Similarity View can be selected via the view selection menu. (2) Filters allow the user to refine the database along several criteria. (3) A chatbot can optionally be consulted for assistance in selecting and filtering criteria. (4) The user can choose between *Database Similarity* and *Abstract Similarity*. (5) A threshold slider controls which similarity connections are displayed. (6) The nodes representing the studies can be colored and sorted along several criteria. (7) Clicking on a node opens a modal overlay showing key information on all studies that meet the similarity threshold with the selected study. (8) Clicking the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study. The full information view can also be displayed via the info icons attached to each study node.
 
 #### Timeline View
 
-<img width="2506" height="915" alt="Timeline View" src="https://github.com/user-attachments/assets/38d581a1-4386-4466-b338-990198b6af20" />
+![Timeline View](./readme_figures/Timeline_View.svg)
+
+Timeline View — (1) The Timeline View can be selected via the view selection menu. (2) Filters allow the user to refine the database along several criteria. (3) A chatbot can optionally be consulted for assistance in selecting and filtering criteria. (4) The user can display shared author connections as dashed lines. (5) Citation connections, including their direction, can be shown as solid lines. (6) The nodes representing the studies can be colored and sorted along several criteria. (7) Clicking on a node opens a modal overlay displaying key information on all studies connected to the selected study through shared authorship or citations based on the user's selection. (8) Clicking the info icons at the beginning of each row within the modal overlay reveals the full information modal overlay for the respective study.
 
 ---
 
