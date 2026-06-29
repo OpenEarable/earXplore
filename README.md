@@ -1,6 +1,6 @@
 # EarXplore
 
-![Paper Teaser Figure](./teaser_figure_interactive.pdf)
+![Paper Teaser Figure](./teaser_figure_interactive.png)
 
 EarXplore is an interactive research database for earable interaction studies. It combines a Flask backend with four synchronized exploration views and configurable filtering logic driven by YAML and CSV data.
 
@@ -131,12 +131,14 @@ RECIPIENTS="reviewer@example.com"
 ### Chatbot (EarBot)
 
 ```bash
-LLM_API_URL="https://your-llm-endpoint"
+LLM_API_URL="https://your-llm-endpoint/chat/completions"
 LLM_API_KEY="your-key"
 LLM_MODEL="your-model-name"
 ```
 
-If these are missing, `/api/chat` responds with a configuration error message instead of crashing.
+The endpoint must accept OpenAI-style chat-completions requests (`POST` with `Authorization: Bearer <key>`, a `messages` array, `model`, `max_tokens`, etc.) and return either an OpenAI-compatible `choices[0].message.content` response or a simpler `response`/`reply` field. This is compatible with OpenAI, Azure OpenAI, Mistral, Groq, university/KIT API gateways, and any other OpenAI-compatible provider.
+
+If these variables are missing, `/api/chat` returns a configuration error to the client instead of crashing the server.
 
 ### Similarity recomputation (embeddings)
 
