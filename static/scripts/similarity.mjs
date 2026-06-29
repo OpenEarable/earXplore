@@ -245,7 +245,7 @@ $(document).ready(function () {
   */
   // Generate graph data from the similarity matrix, create links based on the threshold, and return sorted nodes, links and the color scale
   function generateGraphData(threshold) {
-    const { studyIDs, similarityMatrix } = getCurrentSimilarityData();
+    const { studyIDs, allStudyIDs, similarityMatrix } = getCurrentSimilarityData();
     const links = [];
   
     // Sort the nodes by category if a category is selected
@@ -260,8 +260,10 @@ $(document).ready(function () {
         const nodeA = sortedNodes[i];
         const nodeB = sortedNodes[j];
   
+        const idxA = allStudyIDs.indexOf(nodeA);
+        const idxB = allStudyIDs.indexOf(nodeB);
         const similarity =
-          similarityMatrix[parseInt(nodeA) - 1][parseInt(nodeB) - 1];
+          similarityMatrix[idxA][idxB];
         if (similarity && similarity >= threshold) {
           links.push({
             sourceID: nodeA,
@@ -286,12 +288,14 @@ $(document).ready(function () {
     if (similarityType === "abstract") {
       return {
         studyIDs: abstractStudyIDs.filter((id) => activeDataIDs.includes(id)),
+        allStudyIDs: abstractStudyIDs,
         similarityMatrix: abstractMatrix,
       };
     } else {
       // Default to "database" for any unrecognised value of similarityType
       return {
         studyIDs: databaseStudyIDs.filter((id) => activeDataIDs.includes(id)),
+        allStudyIDs: databaseStudyIDs,
         similarityMatrix: databaseMatrix,
       };
     }
