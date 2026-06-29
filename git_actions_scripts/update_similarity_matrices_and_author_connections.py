@@ -348,8 +348,8 @@ normalized_similarity_df.to_csv('datasets/abstract_similarity/normalized_abstrac
 df_id_authors = df[['ID', 'Authors']].copy()
 
 # Build exact co-author matrix from comma-separated author strings
-coauthor_matrix = pd.DataFrame(0, index=np.arange(1, len(df_id_authors)+1), columns=np.arange(1, len(df_id_authors)+1))
 ids = df_id_authors['ID'].to_numpy(dtype=int)
+coauthor_matrix = pd.DataFrame(0, index=ids, columns=ids)
 
 def normalize_name(name: str) -> str:
     # lowercase + collapse internal whitespace
@@ -370,9 +370,9 @@ def to_author_set(value) -> set:
 id_to_authors = {int(row['ID']): to_author_set(row['Authors']) for _, row in df_id_authors.iterrows()}
 
 # Only connect papers sharing at least one EXACT author name (distance == 0)
-for id_i in ids:
+for idx_i, id_i in enumerate(ids):
     authors_i = id_to_authors.get(id_i, set())
-    for id_j in range(id_i + 1, len(ids) + 1):
+    for id_j in ids[idx_i + 1:]:
         authors_j = id_to_authors.get(id_j, set())
         if authors_i and authors_j and authors_i.intersection(authors_j):
             coauthor_matrix.loc[id_i, id_j] = 1
