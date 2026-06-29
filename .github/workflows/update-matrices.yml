@@ -5,7 +5,7 @@ on:
   # Runs only when a pull request is merged so the data.csv has been altered
   pull_request:
     types: [closed]
-    branches: [main]
+    branches: [master]
   # Also allows manual triggering from the GitHub Actions UI (Actions tab → Run workflow)
   workflow_dispatch:
 
