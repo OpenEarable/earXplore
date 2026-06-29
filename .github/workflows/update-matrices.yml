@@ -6,13 +6,15 @@ on:
   pull_request:
     types: [closed]
     branches: [main]
+  # Also allows manual triggering from the GitHub Actions UI (Actions tab → Run workflow)
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   update-matrices:
-    if: github.event.pull_request.merged == true
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
