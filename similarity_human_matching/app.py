@@ -31,7 +31,7 @@ DOCUMENT_RATINGS_FILE = os.path.join(BASE_DIR, 'ratings_document.json')
 DRAFTS_DIR            = os.path.join(BASE_DIR, 'drafts')
 
 # ── constants ──────────────────────────────────────────────────────────────────
-AUTHORS          = ['Jonas', 'Valeria', 'Philipp', 'Michael']
+AUTHORS          = ['author_1', 'author_3', 'author_4', 'author_5']
 PAIRS_PER_AUTHOR = 25
 TEASER_LEN       = 200   # chars shown in the review summary per abstract
 ABSTRACT_SEED    = 42
