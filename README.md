@@ -44,10 +44,11 @@ earXplore/
 │   │   ├── citation_matrix.csv
 │   │   └── coauthor_matrix.csv
 │   └── usage_logs/                       # Optional study logs exported by participants
-├── computation_notebooks/                # Data prep and analysis notebooks
+├── computation_notebooks/                # One-off Jupyter notebooks for initial matrix computation
 ├── git_actions_scripts/
-│   ├── update_similarity_matrices.py
-│   └── update_similarity_matrices_and_author_connections.py
+│   ├── update_similarity_matrices.py                        # Similarity matrices only (no author connections)
+│   └── update_similarity_matrices_and_author_connections.py # Full update — used by CI workflow
+├── readme_figures/                       # Images and SVGs embedded in this README
 ├── static/                               # Frontend JS/CSS/assets
 ├── templates/                            # Main Flask templates
 └── similarity_human_matching/            # Separate rating/annotation mini-app
@@ -123,10 +124,15 @@ MAIL_SERVER="your-smtp-server.example.com"
 MAIL_PORT=587
 MAIL_USE_TLS=true
 MAIL_DEFAULT_SENDER="default-sender@example.com"
-MAIL_USERNAME="your-email@example.com"
-MAIL_PASSWORD="your-password"
 RECIPIENTS="reviewer@example.com"
 ```
+
+> **Note on SMTP authentication:** `app.py` currently configures only `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, and `MAIL_DEFAULT_SENDER`. If your SMTP server requires a username and password, add the following two lines to `app.py` alongside the other `app.config` assignments:
+> ```python
+> app.config['MAIL_USERNAME'] = os.getenv("MAIL_USERNAME")
+> app.config['MAIL_PASSWORD'] = os.getenv("MAIL_PASSWORD")
+> ```
+> Then add `MAIL_USERNAME` and `MAIL_PASSWORD` to your `.env` accordingly.
 
 ### Chatbot (EarBot)
 
@@ -207,9 +213,22 @@ If citation/coauthor matrices are missing, timeline view falls back to zero matr
 
 ## Recomputing Similarity and Connection Matrices
 
-You can update derived matrices either manually or via GitHub Actions.
+There are two ways to (re)compute the derived matrix files, depending on your situation.
 
-### Manual (local)
+### Initial computation (first setup or full rebuild)
+
+Use the Jupyter notebooks in `computation_notebooks/`:
+
+| Notebook | Output |
+|---|---|
+| `database_similarity.ipynb` | `datasets/database_similarity/normalized_database_similarity.csv` |
+| `abstract_similarity.ipynb` | `datasets/abstract_similarity/data_with_embeddings.csv` + normalized similarity CSV (requires `GEMINI_API_KEY`) |
+| `author_connections_timeline.ipynb` | `datasets/interconnections/coauthor_matrix.csv` |
+| `grobid_citations_metadata.ipynb` | `datasets/interconnections/citation_matrix.csv` (requires a running [GROBID](https://grobid.readthedocs.io/en/latest/Run-Grobid/) Docker instance) |
+
+> **Note:** The citation matrix is only produced by the GROBID notebook; the automated scripts do not update it. If no citation matrix is present, the Timeline View falls back to an all-zero matrix.
+
+### Incremental update (new studies added to an existing deployment)
 
 Run from repository root:
 
