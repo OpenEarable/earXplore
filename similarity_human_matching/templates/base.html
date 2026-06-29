@@ -13,7 +13,7 @@
       {% if task_label is defined and task_label %}{{ task_label }}{% else %}Similarity Rating{% endif %}
     </span>
     {% if author is defined and author %}
-      <span class="author-badge">{{ author.replace('_', ' ').title() }}</span>
+      <span class="author-badge">{{ author }}</span>
     {% endif %}
   </header>
 

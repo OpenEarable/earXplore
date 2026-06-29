@@ -8,8 +8,8 @@ Two tasks are supported:
 
 Pair assignments use stratified sampling: the similarity range is divided into
 25 equal-count percentile bins (each covering 4 % of the distribution) and one
-unique pair is drawn from every bin for each author.  No pair is ever shown to
-more than one author within the same task.
+unique pair is drawn from every bin for each author.  No pair is ever used more
+than once across either task or rater — all 200 drawn pairs are globally unique.
 
 Run with:  python app.py
 Then open:  http://localhost:5001
@@ -55,7 +55,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'earXplore-human-rating-2026')
 
 # ── pair assignment ────────────────────────────────────────────────────────────
 
-def _draw_pairs(sim_csv_path: str, seed: int) -> dict:
+def _draw_pairs(sim_csv_path: str, seed: int, exclude=None) -> dict:
     """
     Stratified pair assignment.
 
@@ -65,7 +65,13 @@ def _draw_pairs(sim_csv_path: str, seed: int) -> dict:
     every rater receives exactly one pair from each similarity stratum.
     Presentation order within each author's list is shuffled to avoid
     systematic ordering effects during rating.
+
+    exclude : set of frozenset({id_a, id_b}) – pairs already drawn for another
+              task that must not be reused, ensuring global uniqueness.
     """
+    if exclude is None:
+        exclude = set()
+
     sim_df    = pd.read_csv(sim_csv_path, index_col=0)
     paper_ids = [int(x) for x in sim_df.index]
     n         = len(paper_ids)
@@ -89,7 +95,11 @@ def _draw_pairs(sim_csv_path: str, seed: int) -> dict:
     for b in range(n_bins):
         start    = b * bin_w
         end      = (b + 1) * bin_w if b < n_bins - 1 else total
-        bin_pool = all_pairs[start:end]
+        # Remove pairs already assigned to the other task
+        bin_pool = [
+            p for p in all_pairs[start:end]
+            if frozenset([p[0], p[1]]) not in exclude
+        ]
         chosen   = rng.choice(len(bin_pool), size=len(AUTHORS), replace=False)
         selected_by_bin.append(
             [[bin_pool[int(idx)][0], bin_pool[int(idx)][1]] for idx in chosen]
@@ -110,10 +120,10 @@ def load_assignments() -> dict:
     doc_sim_path = os.path.join(DATA_DIR, 'database_similarity', 'normalized_database_similarity.csv')
 
     if not os.path.exists(ASSIGNMENTS_FILE):
-        assignments = {
-            'abstract': _draw_pairs(abs_sim_path, ABSTRACT_SEED),
-            'document': _draw_pairs(doc_sim_path, DOCUMENT_SEED),
-        }
+        abs_asgn = _draw_pairs(abs_sim_path, ABSTRACT_SEED)
+        used     = {frozenset(p) for pairs in abs_asgn.values() for p in pairs}
+        doc_asgn = _draw_pairs(doc_sim_path, DOCUMENT_SEED, exclude=used)
+        assignments = {'abstract': abs_asgn, 'document': doc_asgn}
         with open(ASSIGNMENTS_FILE, 'w') as fh:
             json.dump(assignments, fh, indent=2)
         return assignments
@@ -133,7 +143,8 @@ def load_assignments() -> dict:
 
     # Add document block if missing (e.g. file only had abstract)
     if 'document' not in data:
-        data['document'] = _draw_pairs(doc_sim_path, DOCUMENT_SEED)
+        used = {frozenset(p) for pairs in data['abstract'].values() for p in pairs}
+        data['document'] = _draw_pairs(doc_sim_path, DOCUMENT_SEED, exclude=used)
         with open(ASSIGNMENTS_FILE, 'w') as fh:
             json.dump(data, fh, indent=2)
 
