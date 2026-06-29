@@ -1,6 +1,6 @@
 # EarXplore
 
-![Paper Teaser Figure](./readme_figures/teaser_figure_interactive.png)
+![Paper Teaser Figure](./readme_figures/teaser_figure_interactive.svg)
 
 EarXplore is an interactive research database for earable interaction studies. It combines a Flask backend with four synchronized exploration views and configurable filtering logic driven by YAML and CSV data.
 
