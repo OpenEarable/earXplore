@@ -925,6 +925,13 @@ $(document).ready(function () {
   });
 
   $("#connectionsModal").on("hidden.bs.modal", function () {
-    window.sessionStorage.removeItem("modalID");
+    // An info-circle in this modal hides it and immediately opens the study
+    // modal, which takes ownership of modalID so that "Find Similar Studies"
+    // can read it. This handler fires after that fade finishes, so clearing
+    // unconditionally would wipe the id the study modal just stored. The study
+    // modal does its own cleanup when it closes (see base.mjs).
+    if (!$("#study-info-modal").hasClass("show")) {
+      window.sessionStorage.removeItem("modalID");
+    }
   });
 });
