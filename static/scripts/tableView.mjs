@@ -1,4 +1,4 @@
-import { data, showStudyModal, filterData, escapeHtml } from "./dataUtility.mjs";
+import { data, showStudyModal, filterData, escapeHtml, downloadBibtex } from "./dataUtility.mjs";
 
 $(document).ready(function () {
   const table = $("#table");
@@ -220,5 +220,15 @@ $(document).ready(function () {
   // Add event listener to the download full dataset button
   $("#downloadFullCsv").on("click", function () {
     downloadCsv(data, "full_data.csv");
+  });
+
+  // Add event listeners to the BibTeX download buttons
+  $("#downloadFilteredBibtex").on("click", function () {
+    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    downloadBibtex(filterData(filters));
+  });
+
+  $("#downloadFullBibtex").on("click", function () {
+    downloadBibtex();
   });
 });

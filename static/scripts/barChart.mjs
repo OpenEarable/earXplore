@@ -16,6 +16,7 @@ import {
   GESTURE_COUNT_COL,
   GESTURE_BUCKET_ORDER,
   getGestureBucket,
+  downloadBibtex,
 } from "./dataUtility.mjs";
 
 
@@ -543,5 +544,14 @@ $(document).ready(function () {
 
   $("#downloadFullCsv").on("click", function () {
     downloadCsv(data, "full_data.csv");
+  });
+
+  $("#downloadFilteredBibtex").on("click", function () {
+    const filters = JSON.parse(window.sessionStorage.getItem("filters"));
+    downloadBibtex(filterData(filters));
+  });
+
+  $("#downloadFullBibtex").on("click", function () {
+    downloadBibtex();
   });
 });
