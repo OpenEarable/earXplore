@@ -230,6 +230,11 @@
  *     was clicked, triggering a file download.
  *     Extra fields: id {string} – HTML id of the button ("downloadFilteredCsv" or
  *                                  "downloadFullCsv").
+ * *   bibtex_download_clicked
+ *     The "Download Selection as .bib" or "Download Full Dataset as .bib" button
+ *     was clicked, triggering a file download.
+ *     Extra fields: id {string} – HTML id of the button ("downloadFilteredBibtex"
+ *                                  or "downloadFullBibtex").
  * *   general_click
  *     A click that did not match any of the more specific categories above.
  *     Extra fields: el {object} – element description (tag, id, text, href).
@@ -463,6 +468,10 @@ function _classifyAndLogClick(e) {
   // Download buttons live inside #toggle-menu-container — handle them before the generic branch
   if (el.id === 'downloadFilteredCsv' || el.id === 'downloadFullCsv') {
     _log('csv_download_clicked', { id: el.id });
+    return;
+  }
+  if (el.id === 'downloadFilteredBibtex' || el.id === 'downloadFullBibtex') {
+    _log('bibtex_download_clicked', { id: el.id });
     return;
   }
   // Button clicks (Select All, Deselect All, Reset) — checkbox changes are
