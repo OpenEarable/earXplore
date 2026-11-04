@@ -46,16 +46,33 @@ function drawNode(nodeSelection, colorCategory, arc, colorScale) {
 }
 
 /**
+ * Reads the radius a node was actually drawn with.
+ *
+ * A view that sizes its nodes individually records each radius on the node
+ * group as data-radius (see the centrality option in timeline.mjs). Views whose
+ * nodes all share one radius never set it and get the fallback, so they behave
+ * exactly as they did before this existed.
+ *
+ * @param {Element} element - The node group element.
+ * @param {number} fallback - Radius to use when the node has no data-radius.
+ * @returns {number} The radius for this node.
+ */
+function nodeRadiusOf(element, fallback) {
+  const stored = element.getAttribute("data-radius");
+  return stored === null ? fallback : Number(stored);
+}
+
+/**
  * Highlights the node and its connected links in a D3 visualization.
  * The CSS classes for highlighting and blurring need to be defined
  * in the CSS separately for this to work.
- * 
+ *
  * - Highlights all links connected to the specified node.
  * - Blurs all nodes and links not involved with the specified node.
  * - Increases the radius of the highlighted node's pie chart.
  *
  * @param {string|number} nodeID - The ID of the node to highlight.
- * @param {number} nodeRadius - The base radius of the node, used to scale the highlight.
+ * @param {number} nodeRadius - The base radius, used when the node has no data-radius.
  */
 function highlightNode(nodeID, nodeRadius, unidirectional) {
   // Highlight the links connected to the hovered node
@@ -75,15 +92,17 @@ function highlightNode(nodeID, nodeRadius, unidirectional) {
     .filter(node => !involvedNodes.has(node))
     .classed("blurred", true);
 
-  // Increase the radius of the highlighted node
-  const arc = d3.arc()
-    .innerRadius(0)
-    .outerRadius(nodeRadius * 1.4);
-
+  // Increase the radius of the highlighted node, growing it from its own radius
+  // rather than the default one
   d3.selectAll(".node")
     .filter(node => node === nodeID)
-    .selectAll(".pie")
-    .attr("d", arc);
+    .each(function () {
+      d3.select(this)
+        .selectAll(".pie")
+        .attr("d", d3.arc()
+          .innerRadius(0)
+          .outerRadius(nodeRadiusOf(this, nodeRadius) * 1.4));
+    });
 
   // Blur the other links
   d3.selectAll(".link")
@@ -96,7 +115,7 @@ function highlightNode(nodeID, nodeRadius, unidirectional) {
  * and resets the node radius to the specified default value. The CSS classes for highlighting
  * and blurring need to be defined in the CSS separately for this to work.
  *
- * @param {number} nodeRadius - The default radius to reset each node's arc to.
+ * @param {number} nodeRadius - Radius to reset nodes that have no data-radius to.
  */
 function removeHighlighting(nodeRadius) {
   // Remove the highlight from the links connected to the hovered node
@@ -111,14 +130,18 @@ function removeHighlighting(nodeRadius) {
   d3.selectAll(".node")
     .classed("blurred", false);
 
-  // Reset the node radius to the default value
-  const arc = d3.arc()
-    .innerRadius(0)
-    .outerRadius(nodeRadius);
+  // Reset each node to the radius it was drawn with. Resetting them all to one
+  // value would flatten a view that sizes its nodes individually.
+  const defaultArc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
 
-  d3.selectAll(".node")
-    .selectAll(".pie")
-    .attr("d", arc);
+  d3.selectAll(".node").each(function () {
+    const stored = this.getAttribute("data-radius");
+    d3.select(this)
+      .selectAll(".pie")
+      .attr("d", stored === null
+        ? defaultArc
+        : d3.arc().innerRadius(0).outerRadius(Number(stored)));
+  });
 }
 
 /**

@@ -56,6 +56,12 @@ $(document).ready(function () {
   // Set the current citation mode
   let citationMode = window.sessionStorage.getItem("citationMode") || "both";
   $(`#timeline-mode-${citationMode}`).prop("checked", true);
+
+  // Set the centrality option — off by default, so the graph looks unchanged
+  // until a user asks for node sizes to carry meaning
+  let showCentrality =
+    window.sessionStorage.getItem("showCentrality") || "false";
+  $("#timeline-toggle-centrality").prop("checked", showCentrality === "true");
   
   function showNetworkModal(id) {
     // Get the data entry for the selected ID
@@ -334,6 +340,42 @@ $(document).ready(function () {
   
     // Base node radius
     const nodeRadius = Math.min(12, innerWidth / 100);
+
+    // Which link sets the current settings put on screen. Hoisted so that the
+    // centrality count here and the link drawing further down cannot drift
+    // apart — node sizes have to match the lines actually drawn.
+    const drawCoauthors = showSharedAuthors === "true";
+    const drawCiting = citationMode === "both" || citationMode === "cites";
+    const drawCitedBy = citationMode === "both" || citationMode === "cited-by";
+
+    // Centrality: distinct connected studies per node. The link arrays hold
+    // both directions of every connection, so one pass over the links leaving
+    // each node gives the full count, and the Set collapses a pair joined by
+    // both a citation and shared authorship into a single connection.
+    const neighbours = new Map(nodes.map((node) => [node.id, new Set()]));
+    [
+      ...(drawCoauthors ? coauthorLinks : []),
+      ...(drawCiting ? citingLinks : []),
+      ...(drawCitedBy ? citedByLinks : []),
+    ].forEach((link) => neighbours.get(link.sourceID)?.add(link.targetID));
+
+    const degreeOf = (id) => neighbours.get(id)?.size ?? 0;
+    const maxDegree = Math.max(0, ...nodes.map((node) => degreeOf(node.id)));
+
+    // Square root rather than linear because the degree distribution is skewed:
+    // linear would push most nodes below their current size, while sqrt keeps
+    // the median study at roughly today's radius. Falls back to the uniform
+    // radius when centrality is off, and when no link type is enabled at all
+    // (shared authors off plus citation mode "none"), where every degree is 0
+    // and a [0, 0] domain would be meaningless.
+    const radiusScale =
+      showCentrality === "true" && maxDegree > 0
+        ? d3
+            .scaleSqrt()
+            .domain([0, maxDegree])
+            .range([nodeRadius * 0.5, nodeRadius * 1.5])
+        : () => nodeRadius;
+    const radiusFor = (id) => radiusScale(degreeOf(id));
   
     // Calculate height based on max years count
     const height = $("#timeline-graph-container").height();
@@ -431,8 +473,6 @@ $(document).ready(function () {
     // Create a node group for the nodes
     const nodeGroup = g.append("g").attr("class", "nodes");
   
-    const arc = d3.arc().innerRadius(0).outerRadius(nodeRadius);
-  
     // Draw the nodes on the timeline
     nodeGroup
       .selectAll(".node")
@@ -443,8 +483,16 @@ $(document).ready(function () {
         const year = nodes.find((node) => node.id === d).year;
         return `translate(${xScale(year)}, ${yScale(years[year].indexOf(d))})`;
       })
+      // Recorded even when centrality is off, where it is simply nodeRadius, so
+      // that the hover reset in removeHighlighting() has one code path
+      .attr("data-radius", (d) => radiusFor(d))
       .each(function (d) {
-        drawNode(d3.select(this), colorCategory, arc, colorScale);
+        drawNode(
+          d3.select(this),
+          colorCategory,
+          d3.arc().innerRadius(0).outerRadius(radiusFor(d)),
+          colorScale
+        );
       })
       .on("click", function (event, d) {
         showNetworkModal(d);
@@ -483,7 +531,7 @@ $(document).ready(function () {
       .style("visibility", "hidden");
   
     // Draw the links between the nodes
-    if (showSharedAuthors === "true") {
+    if (drawCoauthors) {
       linkGroup
         .selectAll(".link .coauthor")
         .data(coauthorLinks)
@@ -492,7 +540,7 @@ $(document).ready(function () {
         .attr("d", (d) => drawLink(d));
     }
   
-    if (citationMode === "both" || citationMode === "cites") {
+    if (drawCiting) {
       linkGroup
         .selectAll(".link .citing")
         .data(citingLinks)
@@ -501,7 +549,7 @@ $(document).ready(function () {
         .attr("d", (d) => drawLink(d));
     }
   
-    if (citationMode === "both" || citationMode === "cited-by") {
+    if (drawCitedBy) {
       linkGroup
         .selectAll(".link .cited-by")
         .data(citedByLinks)
@@ -589,6 +637,12 @@ $(document).ready(function () {
   $("#timeline-toggle-shared-authors").on("click", function () {
     showSharedAuthors = $(this).is(":checked").toString();
     window.sessionStorage.setItem("showSharedAuthors", showSharedAuthors);
+    drawTimelineGraph();
+  });
+
+  $("#timeline-toggle-centrality").on("click", function () {
+    showCentrality = $(this).is(":checked").toString();
+    window.sessionStorage.setItem("showCentrality", showCentrality);
     drawTimelineGraph();
   });
 
