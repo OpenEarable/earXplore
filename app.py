@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, url_for, redirect
+from flask import Flask, render_template, request, jsonify, url_for, redirect, Response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mailman import Mail, EmailMessage
@@ -75,6 +75,10 @@ DATABASE_PATH = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
 # It is the source of truth for the columns listed in BIBTEX_COLUMNS; every
 # other column comes from the CSV database.
 BIBTEX_PATH = os.path.join(os.path.dirname(__file__), "datasets/bibtexs.bib")
+
+# One BibTeX entry: the citation key up to the first comma, then the fields up
+# to the closing brace in column 0
+_BIBTEX_ENTRY = re.compile(r'^@\w+\s*\{\s*([^,]+),(.*?)^\}', re.M | re.S)
 
 # BibTeX field -> the data column name the rest of the app already uses
 BIBTEX_COLUMNS = {
@@ -234,7 +238,7 @@ def load_bibtex_metadata(path=None):
         return {}
 
     metadata = {}
-    for entry in re.finditer(r'^@\w+\s*\{\s*([^,]+),(.*?)^\}', raw, re.M | re.S):
+    for entry in _BIBTEX_ENTRY.finditer(raw):
         study_id = entry.group(1).strip().split('_')[0]
         if not study_id.isdigit():
             continue
@@ -259,6 +263,26 @@ def load_bibtex_metadata(path=None):
         metadata[study_id] = row
 
     return metadata
+
+def load_bibtex_entries():
+    """Parse the BibTeX file into ``{ID: raw entry text}`` for the export.
+
+    Entries are kept verbatim rather than rebuilt from BIBTEX_COLUMNS, so every
+    BibTeX field the file carries (journal, year, doi, pages, ...) survives the
+    round trip into a reference manager.
+    """
+    try:
+        with open(BIBTEX_PATH, encoding='utf-8') as f:
+            raw = f.read()
+    except (OSError, UnicodeDecodeError):
+        return {}
+
+    entries = {}
+    for entry in _BIBTEX_ENTRY.finditer(raw):
+        study_id = entry.group(1).strip().split('_')[0]
+        if study_id.isdigit():
+            entries[study_id] = entry.group(0).strip()
+    return entries
 
 def apply_bibtex_metadata(df):
     """Overwrite the BIBTEX_COLUMNS of ``df`` with the BibTeX values, keyed on
@@ -725,6 +749,36 @@ def _build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles):
         other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES),
         token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS),
         token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS),
+    )
+
+
+@app.get("/export_bibtex")
+def export_bibtex():
+    """Download BibTeX for the studies named in the ``ids`` query parameter
+    (comma-separated), or for the whole collection when it is absent.
+
+    BIBTEX_PATH is set by load_data(), which every view calling this route has
+    already run.
+    """
+    entries = load_bibtex_entries()
+    if not entries:
+        return render_template("error.html", error="BibTeX file not found"), 500
+
+    requested = request.args.get("ids", "").strip()
+    if requested:
+        wanted = {part.strip() for part in requested.split(",")}
+        # Iterate over entries, not over wanted, so the export keeps the file's
+        # ID order and ignores unknown or duplicated IDs
+        selected = [entry for study_id, entry in entries.items() if study_id in wanted]
+        filename = "filtered_data.bib"
+    else:
+        selected = list(entries.values())
+        filename = "full_data.bib"
+
+    return Response(
+        "\n\n".join(selected) + "\n",
+        mimetype="application/x-bibtex",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
 
 
