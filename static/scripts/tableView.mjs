@@ -12,6 +12,11 @@ $(document).ready(function () {
   categories.push("Study Link", "Authors");
   const infoCirclePath = table.data("info-circle-path");
   
+  // The column the table is sorted by. categoryOrder below holds the direction
+  // per column, but without remembering which column is active, every re-render
+  // that is not a header click would fall back to the data's own ID order.
+  let activeSortCategory = window.sessionStorage.getItem("sortCategory") || null;
+
   let categoryOrder =
     JSON.parse(window.sessionStorage.getItem("sortByCategory")) || null;
   if (!categoryOrder) {
@@ -26,7 +31,7 @@ $(document).ready(function () {
     );
   }
   
-  function showTableData(filters, sortCategory) {
+  function showTableData(filters, sortCategory = activeSortCategory) {
     const activeData = filterData(filters);
     const categoryFilters = filters.categoryFilters.sort(
       (a, b) => categories.indexOf(a) - categories.indexOf(b)
@@ -205,6 +210,10 @@ $(document).ready(function () {
       "sortByCategory",
       JSON.stringify(categoryOrder)
     );
+
+    // Remember the column so filter and column-toggle re-renders keep this order
+    activeSortCategory = sortCategory;
+    window.sessionStorage.setItem("sortCategory", sortCategory);
 
     // Show the table data with the new sorting order
     showTableData(filters, sortCategory);
