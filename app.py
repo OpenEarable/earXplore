@@ -9,7 +9,9 @@ import pandas as pd
 import json
 import os
 import mimetypes
+import re
 import traceback
+import unicodedata
 import yaml
 import requests
 mimetypes.add_type('application/javascript', '.mjs')
@@ -68,6 +70,20 @@ TOKEN_SEARCH_OPTIONS = {}
 
 # Absolute path to the CSV database file — set by load_data() from the YAML config
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
+
+# Absolute path to the BibTeX file — set by load_data() from the YAML config.
+# It is the source of truth for the columns listed in BIBTEX_COLUMNS; every
+# other column comes from the CSV database.
+BIBTEX_PATH = os.path.join(os.path.dirname(__file__), "datasets/bibtexs.bib")
+
+# BibTeX field -> the data column name the rest of the app already uses
+BIBTEX_COLUMNS = {
+    "keywords": "Keywords",
+    "author": "Authors",
+    "url": "Study Link",
+    "title": "Title",
+    "abstract": "Abstract",
+}
 
 app = Flask(__name__)
 
@@ -154,6 +170,112 @@ def filter_categories(data):
     # Filter out categories that should not be filtered for
     return [category for category in data[0].keys() if category not in EXCLUDED_SIDEBAR_CATEGORIES]
 
+# BibTeX accent commands -> Unicode combining marks, e.g. {\"o} -> ö
+_BIBTEX_ACCENTS = {
+    '"': "\u0308", "'": "\u0301", "`": "\u0300", "^": "\u0302", "~": "\u0303",
+    "=": "\u0304", ".": "\u0307", "c": "\u0327", "v": "\u030c", "u": "\u0306",
+    "H": "\u030b",
+}
+
+def _unescape_bibtex(value):
+    """Turn BibTeX markup into the plain text the frontend displays.
+
+    Handles accent commands (``Tr{\\"o}ster`` -> ``Tröster``), escaped
+    characters (``94.7\\%`` -> ``94.7%``) and the braces used to protect
+    capitalisation (``{Earphone}`` -> ``Earphone``).
+    """
+    # Accents written as \"o, \"{o} or \c{c}
+    value = re.sub(r'\\([\"\'`^~=.])\{?(\w)\}?',
+                   lambda m: m.group(2) + _BIBTEX_ACCENTS[m.group(1)], value)
+    value = re.sub(r'\\([cvuH])\{(\w)\}',
+                   lambda m: m.group(2) + _BIBTEX_ACCENTS[m.group(1)], value)
+    value = value.replace(r'\l{}', 'ł').replace(r'\L{}', 'Ł')
+    for escaped in ('&', '%', '_', '$', '#'):
+        value = value.replace('\\' + escaped, escaped)
+    value = value.replace('{', '').replace('}', '')
+    return unicodedata.normalize('NFC', ' '.join(value.split()))
+
+def _format_authors(value):
+    """``Last, First and Last, First`` -> ``First Last, First Last``.
+
+    Matches the format the CSV used, which the token-search filter and the
+    study modal both expect.
+    """
+    names = []
+    for name in value.split(' and '):
+        name = name.strip()
+        if ',' in name:
+            last, first = name.split(',', 1)
+            name = f"{first.strip()} {last.strip()}".strip()
+        if name:
+            names.append(name)
+    return ', '.join(names)
+
+def _format_keywords(value):
+    """Normalise to comma-separated — a third of the entries use IEEE-style
+    semicolons, which the token-search and other-threshold filters do not split
+    on."""
+    parts = [part.strip() for part in value.replace(';', ',').split(',')]
+    return ', '.join(part for part in parts if part)
+
+def load_bibtex_metadata(path=None):
+    """Parse the BibTeX file into ``{ID: {column: value}}``.
+
+    The entry key's leading number is the study ID, so ``@article{7_simpson_2008``
+    supplies the metadata for ID 7. Returns an empty dict when the file is
+    missing or unreadable, which leaves the CSV values untouched.
+    """
+    # ponytail: assumes one field per line and no nested @-entries, which holds
+    # for this file. Swap in bibtexparser if the format ever gets hairier.
+    try:
+        with open(path or BIBTEX_PATH, encoding='utf-8') as f:
+            raw = f.read()
+    except (OSError, UnicodeDecodeError):
+        return {}
+
+    metadata = {}
+    for entry in re.finditer(r'^@\w+\s*\{\s*([^,]+),(.*?)^\}', raw, re.M | re.S):
+        study_id = entry.group(1).strip().split('_')[0]
+        if not study_id.isdigit():
+            continue
+        fields = {}
+        for field, raw_value in re.findall(r'^\s*(\w+)\s*=\s*\{(.*)\}\s*,?\s*$',
+                                           entry.group(2), re.M):
+            field = field.lower()
+            if field in BIBTEX_COLUMNS:
+                fields[field] = _unescape_bibtex(raw_value)
+
+        row = {}
+        for field, column in BIBTEX_COLUMNS.items():
+            value = fields.get(field, '')
+            if field == 'author':
+                value = _format_authors(value)
+            elif field == 'keywords':
+                value = _format_keywords(value)
+            # Fields the entry does not define are left out, so the CSV value
+            # survives — a few entries have no abstract or keywords.
+            if value:
+                row[column] = value
+        metadata[study_id] = row
+
+    return metadata
+
+def apply_bibtex_metadata(df):
+    """Overwrite the BIBTEX_COLUMNS of ``df`` with the BibTeX values, keyed on
+    ID. IDs without a BibTeX entry keep whatever the CSV held."""
+    metadata = load_bibtex_metadata()
+    if not metadata:
+        return df
+
+    ids = df['ID'].astype(str).str.strip()
+    for column in BIBTEX_COLUMNS.values():
+        if column not in df.columns:
+            df[column] = 'N/A'
+        df[column] = ids.map(
+            lambda study_id: metadata.get(study_id, {}).get(column)
+        ).fillna(df[column])
+    return df
+
 def load_data(config_path):
     try:
         with open(config_path, 'r') as f:
@@ -165,8 +287,10 @@ def load_data(config_path):
     
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
-    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, DATABASE_PATH
+    bibtex_path = config.get("bibtex-path", "datasets/bibtexs.bib")
+    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, DATABASE_PATH, BIBTEX_PATH
     DATABASE_PATH = os.path.join(os.path.dirname(__file__), database_path)
+    BIBTEX_PATH = os.path.join(os.path.dirname(__file__), bibtex_path)
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
     METADATA_SIDEBAR_CATEGORIES = config.get("metadata-sidebar-categories", [])
     SLIDER_CATEGORIES = config.get("slider-categories", [])
@@ -194,6 +318,7 @@ def load_data(config_path):
     try:
         csv_path = os.path.join(os.path.dirname(__file__), database_path)
         df = pd.read_csv(csv_path)
+        df = apply_bibtex_metadata(df)  # Keywords/Authors/Study Link/Title/Abstract
         df = df.fillna('N/A')  # Replace actual NaN values
         df = df.replace('nan', 'N/A')  # Replace string 'nan' values
         data = df.to_dict(orient="records")
@@ -262,6 +387,7 @@ def load_abstracts_and_titles():
     try:
         csv_path = DATABASE_PATH
         df = pd.read_csv(csv_path, usecols=["ID", "Abstract", "Title"])
+        df = apply_bibtex_metadata(df)
         df = df.fillna('N/A').replace('nan', 'N/A')
         abstracts = df[["ID", "Abstract"]].to_dict(orient="records")
         titles = df[["ID", "Title"]].to_dict(orient="records")
