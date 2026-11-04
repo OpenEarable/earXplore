@@ -808,4 +808,22 @@ function showStudyModal(studyID) {
   $(`#study-info-modal`).modal("show");
 }
 
-export  {data, colorPalette, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket};
+/**
+ * Download the BibTeX entries for the given rows, or the whole collection when
+ * called without arguments.
+ *
+ * The .bib file lives on the server, so this only hands it the IDs — unlike the
+ * CSV export, which the browser can assemble from the data it already has. The
+ * response carries Content-Disposition: attachment, so setting location starts
+ * the download without navigating away.
+ *
+ * @param {Array<Object>} [rows] Data rows to export; omit for the full dataset.
+ */
+function downloadBibtex(rows) {
+  const query = rows
+    ? `?ids=${encodeURIComponent(rows.map((row) => row["ID"]).join(","))}`
+    : "";
+  window.location.href = `/export_bibtex${query}`;
+}
+
+export  {data, colorPalette, downloadBibtex, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket};
