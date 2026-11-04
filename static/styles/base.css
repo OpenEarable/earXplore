@@ -755,3 +755,32 @@ a:visited {
   text-align: left;
 }
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── Sortable table headers ───────────────────────────────────────────────── */
+/* Used by the tabular overview and by the study tables inside the chart,      */
+/* similarity and timeline modals, so these rules live here rather than in     */
+/* tableView.css, which only the tabular overview loads.                       */
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortable:hover {
+  background-color: #f8f9fa;
+}
+
+/* Style for sort arrows */
+.sort-arrows {
+  color: #6c757d;
+  opacity: 0.5;
+  margin-left: 5px;
+  font-size: var(--font-sm);
+  white-space: pre; /* Preserves whitespace */
+}
+
+/* Active sort arrow styling */
+.sort-arrows.active {
+  color: inherit;
+  opacity: 1;
+}
+/* ─────────────────────────────────────────────────────────────────────────── */

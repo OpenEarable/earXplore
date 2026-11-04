@@ -17,6 +17,7 @@ import {
   GESTURE_BUCKET_ORDER,
   getGestureBucket,
   downloadBibtex,
+  makeTableSortable,
 } from "./dataUtility.mjs";
 
 
@@ -414,6 +415,7 @@ $(document).ready(function () {
           `Studies for ${category.split("_").pop()} filtered by "${label}"`
         );
         $("#rowDetailsContainerBarCharts").html(tableHTML);
+        makeTableSortable($("#rowDetailsContainerBarCharts table"));
         $("#table-modal").modal("show");
       },
     };

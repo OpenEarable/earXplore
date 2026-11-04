@@ -833,4 +833,84 @@ function downloadBibtex(rows) {
   window.location.href = `/export_bibtex${query}`;
 }
 
-export  {data, colorPalette, downloadBibtex, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket};
+/**
+ * Makes an already-rendered table's headers click-to-sort, by reordering the
+ * table's existing <tr> nodes.
+ *
+ * Appending a node that is already in the document *moves* it, so the rows are
+ * never rebuilt: anything living on a cell survives a sort untouched — the
+ * info-circle images, their data-id, the network-information class that closes
+ * the connections modal, and the delegated click handlers bound further up on
+ * the container.
+ *
+ * Headers with no text (the info-icon and alignment columns) are skipped, and a
+ * table with fewer than two body rows is left alone — that covers the
+ * single-row "Selected Study" tables and the "No connected studies" message.
+ *
+ * Sort state lives in this closure, so it resets whenever a modal re-renders
+ * its table. Sorting is applied per column rather than per comparison, which
+ * keeps the comparator a total order; the sort is stable, so ties keep the
+ * order the table was rendered in (sorting the similarity table by Location
+ * leaves each location's studies in similarity order).
+ *
+ * A <td> can carry data-sort-value to sort by something other than its text.
+ * Mirrors the comparison in showTableData() in tableView.mjs.
+ *
+ * @param {jQuery} $table The rendered <table> to make sortable.
+ */
+function makeTableSortable($table) {
+  const $tbody = $table.children("tbody");
+  if ($tbody.children("tr").length < 2) return;
+
+  const $headers = $table.find("thead th");
+  let sortIndex = null;
+  let order = 1;
+
+  $headers.each(function (index) {
+    if (!$(this).text().trim()) return; // info-icon and alignment columns
+    $(this)
+      .addClass("sortable")
+      .attr("data-sort-col", index)
+      .append(`<span class="sort-arrows">▲▼</span>`);
+  });
+
+  // Bound on the table, not on the container: every modal open injects a fresh
+  // table, so the old node and this handler are discarded together. Binding on
+  // the (persistent) container would stack a handler per open instead.
+  $table.on("click", "thead th.sortable", function () {
+    const index = Number($(this).attr("data-sort-col"));
+    order = sortIndex === index ? -order : 1;
+    sortIndex = index;
+
+    // Read each row's key once, before sorting, rather than inside the comparator
+    const keyedRows = $tbody
+      .children("tr")
+      .get()
+      .map((row) => {
+        const $cell = $(row).children().eq(index);
+        const override = $cell.attr("data-sort-value");
+        return {
+          row,
+          key: (override !== undefined ? override : $cell.text()).trim(),
+        };
+      });
+
+    // Decide numeric vs text once per column, so a column mixing numbers with
+    // "N/A" cannot produce inconsistent comparisons
+    const isNumeric = keyedRows.every((r) => r.key !== "" && !isNaN(r.key));
+    keyedRows.sort((a, b) =>
+      isNumeric
+        ? (a.key - b.key) * order
+        : a.key.localeCompare(b.key) * order
+    );
+    $tbody.append(keyedRows.map((r) => r.row));
+
+    $headers.find(".sort-arrows").removeClass("active").html("▲▼");
+    $(this)
+      .find(".sort-arrows")
+      .addClass("active")
+      .html(order === 1 ? "▲&nbsp;&nbsp;&nbsp;" : "▼&nbsp;&nbsp;&nbsp;");
+  });
+}
+
+export  {data, colorPalette, downloadBibtex, makeTableSortable, defaultColor, updateFilters, convertToID, getCategory, getValue, filterData, getActiveFilters, getDataEntry, showStudyModal, createColorScale, sortNodesByCategory, cleanDataString, specialOrders, defaultColors, processQuery, performanceColumns, getPerformanceBucket, _dmCol, _dmOptions, _dmKeywords, getDeviceModelLabels, _otCols, _otRareValues, getOtherGroupedLabels, _tokenSearchCols, escapeHtml, GESTURE_COUNT_COL, GESTURE_BUCKET_ORDER, getGestureBucket};

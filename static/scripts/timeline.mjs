@@ -6,6 +6,7 @@ import {
   data,
   performanceColumns,
   escapeHtml,
+  makeTableSortable,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -154,7 +155,7 @@ $(document).ready(function () {
       connectionsHTML = `
         <h5 class="mb-3 text-start">Study Network</h5>
         <div class="table-responsive">
-          <table class="table table-striped">
+          <table class="table table-striped network-table">
           ${colgroupHTML}
             <thead>
               <tr>
@@ -183,7 +184,9 @@ $(document).ready(function () {
                     <td class="centered-cell">${escapeHtml(entry["Location"])}</td>
                     <td class="centered-cell">${escapeHtml(entry["Input Body Part"])}</td>
                     <td class="centered-cell">${escapeHtml(entry["Gesture"])}</td>
-                    <td class="centered-cell">${targetIDs[targetID]
+                    <td class="centered-cell" data-sort-value="${targetIDs[targetID].length}">${targetIDs[
+                      targetID
+                    ]
                       .map(formatConnectionType)
                       .join(", ")}</td>
                   </tr>`;
@@ -201,6 +204,10 @@ $(document).ready(function () {
     // Append the generated HTML to the modal and show it
     $("#timelineConnectionsContainer").html(headerHTML);
     $("#timelineConnectionsContainer").append(connectionsHTML);
+
+    // Make the network table sortable — not the single-row Selected Study table
+    makeTableSortable($("#timelineConnectionsContainer .network-table"));
+
     $("#timelineConnectionsModal").modal("show");
   }
   

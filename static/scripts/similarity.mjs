@@ -6,6 +6,7 @@ import {
   data,
   performanceColumns,
   escapeHtml,
+  makeTableSortable,
 } from "./dataUtility.mjs";
 import {
   createLegend,
@@ -175,7 +176,7 @@ $(document).ready(function () {
     const connectionsHTML = `
       <h5 class="mb-3">Study Network</h5>
       <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped network-table">
           ${colGroupHTML}
           <thead>
             <tr>
@@ -225,7 +226,10 @@ $(document).ready(function () {
     $("#connectionsContainer").html(sourceHTML);
     $("#connectionsContainer").append(connectionsHTML);
     $("#connectionsContainer").append(totalConnectionsHTML);
-  
+
+    // Make the network table sortable — not the single-row Selected Study table
+    makeTableSortable($("#connectionsContainer .network-table"));
+
     // Show the modal
     $("#connectionsModal").modal("show");
   }

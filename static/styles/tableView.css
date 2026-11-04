@@ -12,30 +12,8 @@
   text-align: center;
 }
 
-/* Sortable table headers */
-.sortable {
-  cursor: pointer;
-  user-select: none;
-}
-
-.sortable:hover {
-  background-color: #f8f9fa;
-}
-
-/* Style for sort arrows */
-.sort-arrows {
-  color: #6c757d;
-  opacity: 0.5;
-  margin-left: 5px;
-  font-size: var(--font-sm);
-  white-space: pre; /* Preserves whitespace */
-}
-
-/* Active sort arrow styling */
-.sort-arrows.active {
-  color: inherit;
-  opacity: 1;
-}
+/* Sortable header styles live in base.css — the modal tables on the chart,
+   similarity and timeline views need them too and do not load this file. */
 
 #table thead {
   font-size: var(--font-bg);
