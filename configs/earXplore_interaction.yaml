@@ -1,5 +1,7 @@
 database-path: datasets/data.csv
 explanations-path: datasets/explanations.csv
+# Source of truth for Keywords, Authors, Study Link, Title and Abstract
+bibtex-path: datasets/bibtexs.bib
 
 # Columns always excluded from the normal sidebar filter UI.
 # Note: performance-metrics-columns are excluded automatically — no need to repeat them here.
