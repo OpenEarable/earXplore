@@ -771,6 +771,14 @@ def export_bibtex():
         # ID order and ignores unknown or duplicated IDs
         selected = [entry for study_id, entry in entries.items() if study_id in wanted]
         filename = "filtered_data.bib"
+        if len(selected) == 1:
+            # A single study downloads under its citation key, e.g.
+            # 7_simpson_2008.bib. The key reaches a response header, so only
+            # accept the plain word characters a BibTeX key should hold.
+            match = _BIBTEX_ENTRY.match(selected[0])
+            key = match.group(1).strip() if match else ""
+            if re.fullmatch(r'[\w.-]+', key):
+                filename = f"{key}.bib"
     else:
         selected = list(entries.values())
         filename = "full_data.bib"

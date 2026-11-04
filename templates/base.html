@@ -199,7 +199,8 @@
 
         {# Add Study Button #}
         <div class="d-flex align-items-center" id="nav-r">
-          {# User-study behavior recorder — participants click this to start/stop logging #}
+          {# User-study behavior recorder — participants click this to
+          start/stop logging #}
           <button
             id="study-log-btn"
             class="add-study-button"
@@ -415,17 +416,16 @@
               {% endfor %}
             </div>
           </div>
-          {% endfor %}
-
-          {# Performance metrics block – rendered last, no sub-headings for type checkboxes #}
-          {% if panel.performance_block and panel.performance_block.slider %}
+          {% endfor %} {# Performance metrics block – rendered last, no
+          sub-headings for type checkboxes #} {% if panel.performance_block and
+          panel.performance_block.slider %}
           <div class="filter-group mt-2" id="performance-metrics-block">
-            {# Hidden sentinel divs so the modal loop picks up the 4 real performance columns #}
-            {% for metric_type, eval_map in panel.performance_block.col_map.items() %}
-              {% for eval_type, col_name in eval_map.items() %}
-              <div class="filter-group d-none" data-col="{{ col_name }}"></div>
-              {% endfor %}
-            {% endfor %}
+            {# Hidden sentinel divs so the modal loop picks up the 4 real
+            performance columns #} {% for metric_type, eval_map in
+            panel.performance_block.col_map.items() %} {% for eval_type,
+            col_name in eval_map.items() %}
+            <div class="filter-group d-none" data-col="{{ col_name }}"></div>
+            {% endfor %} {% endfor %}
             <strong>{{ panel.performance_block.slider.value }}</strong>
             {% if panel.performance_block.slider.explanation %}
             <span class="ms-1">
@@ -460,10 +460,12 @@
                   value="{{ value }}"
                   id="{{ value | replace(' ', '€') }}--Performance_Metric_Type"
                 />
-                <label for="{{ value | replace(' ', '€') }}--Performance_Metric_Type">{{ value }}</label>
+                <label
+                  for="{{ value | replace(' ', '€') }}--Performance_Metric_Type"
+                  >{{ value }}</label
+                >
               </div>
-              {% endfor %}
-              {% for value in panel.performance_block.eval_types %}
+              {% endfor %} {% for value in panel.performance_block.eval_types %}
               <div class="checkbox-wrapper">
                 <input
                   type="checkbox"
@@ -472,7 +474,10 @@
                   value="{{ value }}"
                   id="{{ value | replace(' ', '€') }}--Performance_Evaluation_Type"
                 />
-                <label for="{{ value | replace(' ', '€') }}--Performance_Evaluation_Type">{{ value }}</label>
+                <label
+                  for="{{ value | replace(' ', '€') }}--Performance_Evaluation_Type"
+                  >{{ value }}</label
+                >
               </div>
               {% endfor %}
               <div class="checkbox-wrapper">
@@ -483,18 +488,30 @@
                   value="Include N/A"
                   id="Include€N/A--Performance_NA_Include"
                 />
-                <label for="Include€N/A--Performance_NA_Include">Include N/A</label>
+                <label for="Include€N/A--Performance_NA_Include"
+                  >Include N/A</label
+                >
               </div>
             </div>
           </div>
-          {% endif %}
-
-          {# Device Model custom filter block – fixed brand options with keyword matching #}
-          {% if panel.device_model_block %}
+          {% endif %} {# Device Model custom filter block – fixed brand options
+          with keyword matching #} {% if panel.device_model_block %}
           <div class="filter-group mt-2" id="device-model-block">
-            {# Hidden sentinel kept for compatibility; filtering reads column/options from body data-attributes #}
-            <div class="filter-group d-none" data-col="{{ panel.device_model_block.column }}"></div>
-            <strong>Device Model</strong>{% if panel.device_model_block.explanation %} <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" class="question-circle" data-bs-toggle="tooltip" title="{{ panel.device_model_block.explanation }}" />{% endif %}<br />
+            {# Hidden sentinel kept for compatibility; filtering reads
+            column/options from body data-attributes #}
+            <div
+              class="filter-group d-none"
+              data-col="{{ panel.device_model_block.column }}"
+            ></div>
+            <strong>Device Model</strong>{% if
+            panel.device_model_block.explanation %}
+            <img
+              src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
+              alt="Question Mark Icon within a circle"
+              class="question-circle"
+              data-bs-toggle="tooltip"
+              title="{{ panel.device_model_block.explanation }}"
+            />{% endif %}<br />
             <div class="d-flex flex-wrap flex-row gap-1 mt-2">
               {% for option in panel.device_model_block.options %}
               <div class="checkbox-wrapper">
@@ -505,35 +522,61 @@
                   value="{{ option }}"
                   id="{{ option | replace(' ', '€') }}--{{ panel.device_model_block.column | replace(' ', '€') }}"
                 />
-                <label for="{{ option | replace(' ', '€') }}--{{ panel.device_model_block.column | replace(' ', '€') }}">{{ option }}</label>
+                <label
+                  for="{{ option | replace(' ', '€') }}--{{ panel.device_model_block.column | replace(' ', '€') }}"
+                  >{{ option }}</label
+                >
               </div>
               {% endfor %}
             </div>
           </div>
-          {% endif %}
-
-          {# Token-search blocks (Main Author, Keywords, Authors, etc.) #}
-          {% for ts in panel.token_search_block %}
-          <div class="filter-group mt-2 token-search-group" data-col="{{ ts.column }}">
-            <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+          {% endif %} {# Token-search blocks (Main Author, Keywords, Authors,
+          etc.) #} {% for ts in panel.token_search_block %}
+          <div
+            class="filter-group mt-2 token-search-group"
+            data-col="{{ ts.column }}"
+          >
+            <div
+              class="d-flex justify-content-between align-items-center gap-2 mb-1"
+            >
               <div class="d-flex align-items-center gap-1">
                 <strong>{{ ts.label }}</strong>
                 {% if ts.explanation %}
-                <img src="{{ url_for('static', filename='images/question-circle-fill.svg') }}" alt="Question Mark Icon within a circle" class="question-circle" data-bs-toggle="tooltip" title="{{ ts.explanation }}" />
+                <img
+                  src="{{ url_for('static', filename='images/question-circle-fill.svg') }}"
+                  alt="Question Mark Icon within a circle"
+                  class="question-circle"
+                  data-bs-toggle="tooltip"
+                  title="{{ ts.explanation }}"
+                />
                 {% endif %}
               </div>
               <div class="d-flex gap-1">
-                <button type="button" class="select-button token-deselect-all" data-col="{{ ts.column }}">Clear Selection</button>
+                <button
+                  type="button"
+                  class="select-button token-deselect-all"
+                  data-col="{{ ts.column }}"
+                >
+                  Clear Selection
+                </button>
               </div>
             </div>
             <div class="token-search-input-wrapper">
-              <input type="text" class="token-search-input form-control form-control-sm" placeholder="Search {{ ts.label }}..." data-col="{{ ts.column }}" autocomplete="off" />
+              <input
+                type="text"
+                class="token-search-input form-control form-control-sm"
+                placeholder="Search {{ ts.label }}..."
+                data-col="{{ ts.column }}"
+                autocomplete="off"
+              />
               <div class="token-suggestions" data-col="{{ ts.column }}"></div>
             </div>
-            <div class="token-selected-container" data-col="{{ ts.column }}"></div>
+            <div
+              class="token-selected-container"
+              data-col="{{ ts.column }}"
+            ></div>
           </div>
           {% endfor %}
-
         </div>
       </div>
       {% endfor %}
@@ -615,6 +658,9 @@
           </div>
           <div class="modal-body" id="study-info-modal-body"></div>
           <div class="modal-footer" id="study-info-modal-footer">
+            <button class="btn btn-secondary" id="study-bibtex-btn">
+              <a id="study-bibtex-link">Download .bib</a>
+            </button>
             <button class="btn btn-secondary" id="similar-studies-btn">
               <a href="{{ url_for('similarity') }}">Find Similar Studies</a>
             </button>
@@ -668,7 +714,9 @@
               type="button"
               class="btn btn-secondary"
               data-bs-dismiss="modal"
-            >Cancel</button>
+            >
+              Cancel
+            </button>
             <button type="button" class="btn btn-primary" id="sl-confirm-btn">
               Start Recording
             </button>
@@ -701,7 +749,7 @@
       src="{{ url_for('static', filename='scripts/studyLogger.mjs') }}"
     ></script>
     <script>
-      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+      document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach((el) => {
         new bootstrap.Tooltip(el);
       });
     </script>

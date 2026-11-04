@@ -233,8 +233,9 @@
  * *   bibtex_download_clicked
  *     The "Download Selection as .bib" or "Download Full Dataset as .bib" button
  *     was clicked, triggering a file download.
- *     Extra fields: id {string} – HTML id of the button ("downloadFilteredBibtex"
- *                                  or "downloadFullBibtex").
+ *     Extra fields: id {string} – HTML id of the button ("downloadFilteredBibtex",
+ *                                  "downloadFullBibtex", or "study-bibtex-btn"
+ *                                  for the single-study button in the modal).
  * *   general_click
  *     A click that did not match any of the more specific categories above.
  *     Extra fields: el {object} – element description (tag, id, text, href).
@@ -383,6 +384,11 @@ function _classifyAndLogClick(e) {
   // "Find Similar Studies" button inside the study detail modal
   if (el.id === 'similar-studies-btn' || el.closest?.('#similar-studies-btn')) {
     _log('find_similar_clicked', {});
+    return;
+  }
+  // "Download .bib" button inside the study detail modal
+  if (el.id === 'study-bibtex-btn' || el.closest?.('#study-bibtex-btn')) {
+    _log('bibtex_download_clicked', { id: 'study-bibtex-btn' });
     return;
   }
   // Chatbot open / close / reset

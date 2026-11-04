@@ -804,6 +804,13 @@ function showStudyModal(studyID) {
   // Add link to the study in the modal body
   $("#study-link").attr("href", entry["Study Link"]);
 
+  // Point the BibTeX button at this one study — the response is served as an
+  // attachment, so the link downloads instead of navigating
+  $("#study-bibtex-link").attr(
+    "href",
+    `/export_bibtex?ids=${encodeURIComponent(studyID)}`
+  );
+
   // Show the modal
   $(`#study-info-modal`).modal("show");
 }
