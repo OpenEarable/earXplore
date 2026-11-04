@@ -599,6 +599,37 @@ $(document).ready(function () {
     window.sessionStorage.removeItem("modalID");
   });
 
+  // ── Modal focus handling ───────────────────────────────────────────────────
+  // Bootstrap puts aria-hidden="true" on a closing modal, but it only restores
+  // focus for modals opened through data-bs-toggle. Every modal here is opened
+  // programmatically with .modal("show"), so focus stays on whatever was
+  // clicked inside it and ends up inside an aria-hidden subtree — which the
+  // browser reports as an aria-hidden/focus conflict. Remember what had focus
+  // before the modal opened, move focus out before it hides, and hand it back
+  // afterwards so keyboard users return to where they were.
+  let focusBeforeModal = null;
+
+  document.addEventListener("show.bs.modal", function () {
+    focusBeforeModal = document.activeElement;
+  });
+
+  document.addEventListener("hide.bs.modal", function (event) {
+    if (event.target.contains(document.activeElement)) {
+      document.activeElement.blur();
+    }
+  });
+
+  document.addEventListener("hidden.bs.modal", function () {
+    // A modal can hand straight over to another one (the connections modal
+    // opens study details), so only restore focus once nothing is left open.
+    // Elements re-rendered or removed while the modal was open are skipped.
+    const stillOpen = document.querySelector(".modal.show");
+    if (!stillOpen && focusBeforeModal?.isConnected) {
+      focusBeforeModal.focus();
+    }
+    focusBeforeModal = null;
+  });
+
   $("#chatbot-btn").on("click", function () {
     openChatbot();
   });
