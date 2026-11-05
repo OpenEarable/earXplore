@@ -167,7 +167,7 @@ def make_example_finder(corpus, negatives):
     pools = {'included': corpus, 'not included': negatives}
     texts = pd.concat([p.title + ' ' + p.abstract for p in pools.values()])
     vectorizer = TfidfVectorizer(stop_words='english', sublinear_tf=True).fit(texts)
-    matrices = {name: vectorizer.transform(p.title + ' ' + p.abstract) for name, p in pools.items()}
+    matrices = {name: vectorizer.transform(p.title + ' ' + p.abstract) for name, p in pools.items() if len(p)}
 
     def find(row):
         query = vectorizer.transform([row.title + ' ' + row.abstract])
@@ -212,19 +212,20 @@ def build_prompt(row, system, find_examples):
     return system, '\n'.join(parts)
 
 
-def ask_llm(system, user):
+def ask_llm(system, user, max_tokens=1000, model=None):
     """One chat completion against an OpenAI-compatible endpoint.
 
     system=None sends no system message, for a KI-Toolbox model that brings its own.
+    model overrides LLM_MODEL (categorise_studies.py uses one model per panel).
     """
     messages = ([{'role': 'system', 'content': system}] if system else []) + [{'role': 'user', 'content': user}]
     for _ in range(4):
         r = requests.post(
             os.environ['LLM_API_URL'],
             headers={'Authorization': f'Bearer {os.environ["LLM_API_KEY"]}'},
-            json={'model': os.environ['LLM_MODEL'], 'temperature': 0,
+            json={'model': model or os.environ['LLM_MODEL'], 'temperature': 0,
                   # generous: "thinking" models spend tokens before answering
-                  'max_tokens': 1000,
+                  'max_tokens': max_tokens,
                   'messages': messages},
             timeout=120)
         if r.status_code != 429:
