@@ -12,3 +12,9 @@ __pycache__
 *.pyo
 .DS_Store
 Thumbs.db
+
+# Candidate pipeline outputs (datasets/candidates/seen.csv is state and IS committed)
+/candidates.csv
+/rejected.csv
+/*_raw.csv
+/test.csv
