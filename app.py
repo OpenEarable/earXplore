@@ -68,6 +68,10 @@ TOKEN_SEARCH_COLUMNS = []
 # Computed at startup: { column: sorted list of unique individual options }
 TOKEN_SEARCH_OPTIONS = {}
 
+# Loaded at startup: { column: { name: [regex patterns] } } for token-search columns
+# whose options are fixed names (e.g. Venue -> configs/venues.yaml)
+TOKEN_SEARCH_PATTERNS = {}
+
 # Absolute path to the CSV database file — set by load_data() from the YAML config
 DATABASE_PATH = os.path.join(os.path.dirname(__file__), "datasets/data.csv")
 
@@ -325,7 +329,7 @@ def load_data(config_path):
     database_path = config.get("database-path", "data.csv")
     explanations_path = config.get("explanations-path", "explanations.csv")
     bibtex_path = config.get("bibtex-path", "datasets/bibtexs.bib")
-    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, DATABASE_PATH, BIBTEX_PATH
+    global EXCLUDED_SIDEBAR_CATEGORIES, METADATA_SIDEBAR_CATEGORIES, SLIDER_CATEGORIES, SELECT_DESELECT_ALL_CATEGORIES, EXCLUSIVE_FILTERING_CATEGORIES, PARENTHICAL_COLUMNS, SELECT_DESELECT_ALL_PANELS, INITIALLY_HIDDEN_PANELS, START_CATEGORY_FILTERS, SPECIAL_FORMAT_EXPLANATIONS, PERFORMANCE_METRICS_COLUMNS, DEVICE_MODEL_COLUMN, DEVICE_MODEL_OPTIONS, OTHER_THRESHOLD_COLUMNS, OTHER_THRESHOLD_RARE_VALUES, TOKEN_SEARCH_COLUMNS, TOKEN_SEARCH_OPTIONS, TOKEN_SEARCH_PATTERNS, DATABASE_PATH, BIBTEX_PATH
     DATABASE_PATH = os.path.join(os.path.dirname(__file__), database_path)
     BIBTEX_PATH = os.path.join(os.path.dirname(__file__), bibtex_path)
     EXCLUDED_SIDEBAR_CATEGORIES = config.get("excluded-sidebar-categories", [])
@@ -395,6 +399,16 @@ def load_data(config_path):
                     if part and part != 'N/A':
                         options.add(part)
         TOKEN_SEARCH_OPTIONS[col] = sorted(options, key=lambda x: x.lower())
+
+    # Pattern columns offer the fixed names from their file (in file order) instead
+    TOKEN_SEARCH_PATTERNS = {}
+    for col, patterns_path in config.get("token-search-patterns", {}).items():
+        try:
+            with open(os.path.join(os.path.dirname(__file__), patterns_path), encoding='utf-8') as f:
+                TOKEN_SEARCH_PATTERNS[col] = yaml.safe_load(f) or {}
+        except (OSError, yaml.YAMLError) as e:
+            return f"Error loading token-search patterns {patterns_path}: {e}"
+        TOKEN_SEARCH_OPTIONS[col] = list(TOKEN_SEARCH_PATTERNS[col])
 
     # Load explanations from CSV file into explanations variable
     try:
@@ -619,7 +633,7 @@ def generate_sidebar_panels(data, explanations):
                     if col in TOKEN_SEARCH_COLUMNS and col not in existing_cols:
                         panel.token_search_block.append({'column': col, 'label': col, 'explanation': explanations.get(col, None)})
                 # Sort into desired display order
-                desired_order = ["Keywords", "Main Author", "Authors", "Title", "Abstract"]
+                desired_order = ["Keywords", "Main Author", "Authors", "Title", "Abstract", "Venue"]
                 panel.token_search_block.sort(
                     key=lambda x: desired_order.index(x['column'])
                     if x['column'] in desired_order else len(desired_order)
@@ -766,6 +780,7 @@ def _build_common_kwargs(data, explanations, sidebar_panels, abstracts, titles):
         other_threshold_rare_values=json.dumps(OTHER_THRESHOLD_RARE_VALUES),
         token_search_columns=json.dumps(TOKEN_SEARCH_COLUMNS),
         token_search_options=json.dumps(TOKEN_SEARCH_OPTIONS),
+        token_search_patterns=json.dumps(TOKEN_SEARCH_PATTERNS),
     )
 
 

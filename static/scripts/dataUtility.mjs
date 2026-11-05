@@ -120,6 +120,24 @@ const _tokenSearchCols = (() => {
   try { return new Set(JSON.parse(raw)); } catch (e) { return new Set(); }
 })();
 
+// Token-search columns with fixed names (e.g. Venue, see configs/venues.yaml):
+// { column: { name: [RegExp] } }. A cell matches a name when any of its patterns matches.
+const _tokenSearchPatterns = (() => {
+  const result = {};
+  let raw = {};
+  try { raw = JSON.parse($("body").attr("data-token-search-patterns") || "{}"); } catch (e) { return result; }
+  for (const [col, names] of Object.entries(raw)) {
+    result[col] = {};
+    for (const [name, patterns] of Object.entries(names || {})) {
+      result[col][name] = (patterns || []).flatMap(pattern => {
+        try { return [new RegExp(pattern, "i")]; }
+        catch (e) { console.warn(`[earXplore] Invalid ${col} pattern for "${name}":`, pattern); return []; }
+      });
+    }
+  }
+  return result;
+})();
+
 // Sliders with unbounded upper end: when the slider handle is at data-max, values above that
 // threshold are also included (e.g. "25+" gesture slider captures everything ≥25).
 const _unboundedMaxThresholds = (() => {
@@ -422,6 +440,12 @@ function filterData(filters) {
       if (col === FREE_TEXT_COL) {
         const text = _normalizedAbstracts.get(dataItem["ID"]) || "";
         if (!tokens.some(token => text.includes(normalizeText(token)))) return false;
+        continue;
+      }
+      const patterns = _tokenSearchPatterns[col];
+      if (patterns) {
+        const cell = String(dataItem[col] ?? "");
+        if (!tokens.some(token => (patterns[token] || []).some(re => re.test(cell)))) return false;
         continue;
       }
       const raw = dataItem[col];

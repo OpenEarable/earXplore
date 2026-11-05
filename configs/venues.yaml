@@ -1,0 +1,25 @@
+# Venues offered in the Venue search of the Metadata panel.
+#
+# Each key is a venue name users can pick (in this order). A study matches the
+# venue when its "Venue" cell in data.csv matches ANY of the listed patterns.
+# Patterns are case-insensitive regular expressions searched anywhere in the
+# cell, so a plain piece of text works as-is. Use \b for word boundaries
+# (\bCHI\b matches "CHI '25" but not "OzCHI") and \. for a literal dot.
+# Write patterns in single quotes so backslashes are kept.
+#
+# To add a venue, add a new key with its patterns; no code changes needed.
+
+CHI:
+  - '\bCHI\b'                                  # CHI '25, CHI EA '21, 2023 CHI Conference on Human Factors ...
+  - 'SIGCHI Conference on Human Factors'       # older proceedings titles
+
+IMWUT:
+  - '\bIMWUT\b'
+  - 'Interact\. Mob\. Wearable Ubiquitous'     # Proc. ACM Interact. Mob. Wearable Ubiquitous Technol.
+  - 'Interactive, Mobile, Wearable and Ubiquitous Technologies'
+
+UbiComp/ISWC:
+  - '\bUbiComp\b'
+  - '\bISWC\b'
+  - 'Pervasive and Ubiquitous Computing'       # International Joint Conference on Pervasive and Ubiquitous Computing
+  - 'Symposium on Wearable Comput'             # International Symposium on Wearable Computers / Computing

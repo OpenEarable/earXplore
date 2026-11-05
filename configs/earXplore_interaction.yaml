@@ -10,7 +10,7 @@ excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors"
 device-model-column: "Device_PANEL_Device Model"
 device-model-options: ["OpenEarable", "eSense", "AirPods", "Samsung", "Sony", "Bose", "Other", "N/A"]
 
-metadata-sidebar-categories: ["Main Author", "Keywords", "Pages"]
+metadata-sidebar-categories: ["Main Author", "Keywords", "Pages", "Venue"]
 slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures", "Pages"]
 
 # Listing a column here automatically excludes it from the normal sidebar and marks it as parenthical.
@@ -40,4 +40,8 @@ other-threshold-columns: ["Keywords", "Sensing_PANEL_Sensors", "Study_PANEL_Eval
   "Study_PANEL_Evaluation of User-Related Conditions",
   "Study_PANEL_Evaluation of Device-Related Conditions",
   "Study_PANEL_Evaluation of Environment-Related Conditions", "Gesture"]
-token-search-columns: ["Main Author", "Gesture", "Keywords", "Authors", "Title", "Abstract"]
+token-search-columns: ["Main Author", "Gesture", "Keywords", "Authors", "Title", "Abstract", "Venue"]
+# Token-search columns whose options are fixed names, each identified by the patterns in the
+# given file, instead of the values found in the column (see configs/venues.yaml).
+token-search-patterns:
+  Venue: configs/venues.yaml
