@@ -5,7 +5,11 @@ import { updateFilters } from "./dataUtility.mjs";
 const _tokenSearchOptions = (() => {
   const raw = $("body").attr("data-token-search-options");
   if (!raw) return {};
-  try { return JSON.parse(raw); } catch (e) { return {}; }
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return {};
+  }
 })();
 
 /**
@@ -16,17 +20,21 @@ const _tokenSearchOptions = (() => {
 function scoreMatch(option, query) {
   if (!query) return 0;
   // Normalize: lowercase + strip diacritics so "roddiger" matches "Röddiger"
-  const normalize = s => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const normalize = (s) =>
+    s
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
   const o = normalize(option);
   const q = normalize(query);
 
-  if (o === q)            return 100;
-  if (o.startsWith(q))   return 90;
+  if (o === q) return 100;
+  if (o.startsWith(q)) return 90;
 
   const words = o.split(/\s+/);
-  if (words.some(w => w.startsWith(q))) return 80;
-  if (o.includes(q))     return 60;
-  if (words.some(w => w.includes(q))) return 40;
+  if (words.some((w) => w.startsWith(q))) return 80;
+  if (o.includes(q)) return 60;
+  if (words.some((w) => w.includes(q))) return 40;
   return 0;
 }
 
@@ -35,7 +43,7 @@ function getMatches(col, query) {
   if (!query.trim()) return [];
   const options = _tokenSearchOptions[col] || [];
   return options
-    .map(opt => ({ opt, score: scoreMatch(opt, query) }))
+    .map((opt) => ({ opt, score: scoreMatch(opt, query) }))
     .filter(({ score }) => score > 0)
     .sort((a, b) => b.score - a.score || a.opt.localeCompare(b.opt))
     .map(({ opt }) => opt);
@@ -66,7 +74,7 @@ function addToken(col, token) {
 /** Remove a token from col. Returns true if the list changed. */
 function removeToken(col, token) {
   const current = getTokens(col);
-  const updated = current.filter(t => t !== token);
+  const updated = current.filter((t) => t !== token);
   if (updated.length === current.length) return false;
   setTokens(col, updated);
   return true;
@@ -76,7 +84,9 @@ function removeToken(col, token) {
 
 /** CSS.escape polyfill-safe helper */
 function escapeCSS(str) {
-  return CSS.escape ? CSS.escape(str) : str.replace(/([^a-zA-Z0-9_-])/g, "\\$1");
+  return CSS.escape
+    ? CSS.escape(str)
+    : str.replace(/([^a-zA-Z0-9_-])/g, "\\$1");
 }
 
 function getGroupEl(col) {
@@ -96,8 +106,10 @@ function renderTokenBadges(col) {
   const container = getSelectedEl(col);
   container.empty();
   const tokens = getTokens(col);
-  tokens.forEach(token => {
-    const badge = $(`<span class="token-badge"><span class="token-badge-text"></span><span class="token-badge-remove" title="Remove">×</span></span>`);
+  tokens.forEach((token) => {
+    const badge = $(
+      `<span class="token-badge"><span class="token-badge-text"></span><span class="token-badge-remove" title="Remove">×</span></span>`,
+    );
     badge.find(".token-badge-text").text(token);
     badge.on("click", () => {
       removeToken(col, token);
@@ -117,11 +129,11 @@ function renderSuggestions(col, matches) {
     return;
   }
   const selected = new Set(getTokens(col));
-  matches.forEach(match => {
+  matches.forEach((match) => {
     const item = $(`<div class="token-suggestion-item"></div>`);
     item.text(match);
     if (selected.has(match)) item.addClass("token-suggestion-selected");
-    item.on("mousedown", e => {
+    item.on("mousedown", (e) => {
       e.preventDefault(); // keep input focused
       const inputEl = getGroupEl(col).find(".token-search-input");
       if (selected.has(match)) {
@@ -170,6 +182,22 @@ $(document).ready(function () {
     const col = $(this).data("col");
     const query = $(this).val();
     renderSuggestions(col, getMatches(col, query));
+  });
+
+  // Columns without a suggestion list (Abstract) are free text: Enter adds the typed query
+  $(".token-search-input").each(function () {
+    const col = $(this).data("col");
+    if (!_tokenSearchOptions[col]?.length)
+      $(this).attr("placeholder", `Search ${col}...`);
+  });
+  $(document).on("keydown", ".token-search-input", function (e) {
+    const col = $(this).data("col");
+    const query = $(this).val().trim();
+    if (e.key !== "Enter" || !query || _tokenSearchOptions[col]?.length) return;
+    e.preventDefault();
+    if (addToken(col, query)) notifyFilterChange();
+    $(this).val("");
+    renderTokenBadges(col);
   });
 
   // Re-open suggestions on re-focus if there is text

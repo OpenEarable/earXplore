@@ -151,6 +151,14 @@ console.groupEnd();
  */
 const abstracts = $("body").data("abstracts");
 
+// Abstract search is free text: a token matches when it appears anywhere in the
+// abstract, ignoring case and accents. Abstracts are not part of `data`, so look them up by ID.
+const FREE_TEXT_COL = "Abstract";
+const normalizeText = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const _normalizedAbstracts = new Map(
+  (abstracts || []).map(elem => [elem["ID"], normalizeText(String(elem["Abstract"] || ""))])
+);
+
 /**
  * The titles for the studies passed from the backend.
  *
@@ -322,6 +330,11 @@ function filterData(filters) {
       if (filters.rangeFilters && Object.keys(filters.rangeFilters).includes(category)) {
         const lo = parseFloat(filterValues[0]);
         const hi = parseFloat(filterValues[1]);
+        // Missing values (e.g. no page count) only show while the slider spans its full range
+        if (typeof dataItem[category] !== "number") {
+          const sliderEl = $(`.range-slider[data-col="${category}"]`);
+          return lo <= parseFloat(sliderEl.data("min")) && hi >= parseFloat(sliderEl.data("max"));
+        }
         const threshold = _unboundedMaxThresholds[category];
         // When the slider is at its max on an unbounded-max slider, include all values above too
         const upperOk = (threshold !== undefined && hi >= threshold)
@@ -406,6 +419,11 @@ function filterData(filters) {
     const tokenFilters = filters.tokenFilters || {};
     for (const [col, tokens] of Object.entries(tokenFilters)) {
       if (!tokens || tokens.length === 0) continue;
+      if (col === FREE_TEXT_COL) {
+        const text = _normalizedAbstracts.get(dataItem["ID"]) || "";
+        if (!tokens.some(token => text.includes(normalizeText(token)))) return false;
+        continue;
+      }
       const raw = dataItem[col];
       if (raw === undefined || raw === null) return false;
       const cellValues = raw.toString().split(",").map(s => s.trim());

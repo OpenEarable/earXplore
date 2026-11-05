@@ -10,8 +10,8 @@ excluded-sidebar-categories: ["ID", "Abstract", "Study Link", "Title", "Authors"
 device-model-column: "Device_PANEL_Device Model"
 device-model-options: ["OpenEarable", "eSense", "AirPods", "Samsung", "Sony", "Bose", "Other", "N/A"]
 
-metadata-sidebar-categories: ["Main Author", "Keywords"]
-slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures"]
+metadata-sidebar-categories: ["Main Author", "Keywords", "Pages"]
+slider-categories: ["Year", "Interaction_PANEL_Number of Selected Gestures", "Pages"]
 
 # Listing a column here automatically excludes it from the normal sidebar and marks it as parenthical.
 performance-metrics-columns:
@@ -40,4 +40,4 @@ other-threshold-columns: ["Keywords", "Sensing_PANEL_Sensors", "Study_PANEL_Eval
   "Study_PANEL_Evaluation of User-Related Conditions",
   "Study_PANEL_Evaluation of Device-Related Conditions",
   "Study_PANEL_Evaluation of Environment-Related Conditions", "Gesture"]
-token-search-columns: ["Main Author", "Gesture", "Keywords", "Authors", "Title"]
+token-search-columns: ["Main Author", "Gesture", "Keywords", "Authors", "Title", "Abstract"]

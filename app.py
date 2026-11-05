@@ -87,6 +87,7 @@ BIBTEX_COLUMNS = {
     "url": "Study Link",
     "title": "Title",
     "abstract": "Abstract",
+    "numpages": "Pages",  # falls back to the length of the `pages` range
 }
 
 app = Flask(__name__)
@@ -222,6 +223,16 @@ def _format_keywords(value):
     parts = [part.strip() for part in value.replace(';', ',').split(',')]
     return ', '.join(part for part in parts if part)
 
+def _page_count(numpages, pages):
+    """``numpages`` as an int, else the length of a ``473–480`` page range,
+    else ``''`` (left out, so the study shows as N/A)."""
+    if numpages.strip().isdigit():
+        return int(numpages)
+    page_range = re.fullmatch(r'\s*(\d+)\s*[-–—]+\s*(\d+)\s*', pages)
+    if page_range:
+        return int(page_range.group(2)) - int(page_range.group(1)) + 1
+    return ''
+
 def load_bibtex_metadata(path=None):
     """Parse the BibTeX file into ``{ID: {column: value}}``.
 
@@ -246,7 +257,7 @@ def load_bibtex_metadata(path=None):
         for field, raw_value in re.findall(r'^\s*(\w+)\s*=\s*\{(.*)\}\s*,?\s*$',
                                            entry.group(2), re.M):
             field = field.lower()
-            if field in BIBTEX_COLUMNS:
+            if field in BIBTEX_COLUMNS or field == 'pages':
                 fields[field] = _unescape_bibtex(raw_value)
 
         row = {}
@@ -256,6 +267,8 @@ def load_bibtex_metadata(path=None):
                 value = _format_authors(value)
             elif field == 'keywords':
                 value = _format_keywords(value)
+            elif field == 'numpages':
+                value = _page_count(value, fields.get('pages', ''))
             # Fields the entry does not define are left out, so the CSV value
             # survives — a few entries have no abstract or keywords.
             if value:
@@ -479,8 +492,10 @@ def generate_sidebar_panels(data, explanations):
           # for numerical columns, get min and max values and add Slider to the respective panel
           if col in SLIDER_CATEGORIES:
             # determine min and max values for the slider
-            min_value = min(list(map(lambda entry: entry[col], data)))
-            max_value = max(list(map(lambda entry: entry[col], data)))
+            # numeric values only: 'N/A' would break min()/max()
+            numeric = [entry[col] for entry in data if isinstance(entry[col], (int, float))]
+            min_value = min(numeric)
+            max_value = max(numeric)
 
             unbounded_max = False
             # Fixed / capped overrides for specific sliders
@@ -598,11 +613,13 @@ def generate_sidebar_panels(data, explanations):
         for panel in sidebar_panels:
             if panel.value == "Metadata":
                 existing_cols = {entry['column'] for entry in panel.token_search_block}
-                for col in ["Authors", "Title"]:
+                # Abstract has no suggestion list (it is removed from data before
+                # TOKEN_SEARCH_OPTIONS is built), so tokenSearch.mjs treats it as free text
+                for col in ["Authors", "Title", "Abstract"]:
                     if col in TOKEN_SEARCH_COLUMNS and col not in existing_cols:
                         panel.token_search_block.append({'column': col, 'label': col, 'explanation': explanations.get(col, None)})
                 # Sort into desired display order
-                desired_order = ["Keywords", "Main Author", "Authors", "Title"]
+                desired_order = ["Keywords", "Main Author", "Authors", "Title", "Abstract"]
                 panel.token_search_block.sort(
                     key=lambda x: desired_order.index(x['column'])
                     if x['column'] in desired_order else len(desired_order)
