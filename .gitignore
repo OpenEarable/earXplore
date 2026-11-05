@@ -18,3 +18,9 @@ Thumbs.db
 /rejected.csv
 /*_raw.csv
 /test.csv
+
+# Step 2: PDFs and extracted texts are copyrighted, never commit them
+/pdfs/
+/extraction_work/
+/proposed.csv
+/proposed.bib
